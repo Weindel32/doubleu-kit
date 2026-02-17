@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="it" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DOUBLEU Kit Builder</title>
+
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial;margin:0;background:#0b1220;color:#eaf0ff}
+.wrap{max-width:1100px;margin:auto;padding:18px}
+.card{background:#101a2e;border-radius:16px;padding:14px;margin-bottom:14px}
+input,select{width:100%;padding:10px;border-radius:12px;border:1px solid #24324a;background:#0f1a2e;color:#eaf0ff;margin-top:6px}
+button{background:#6ee7ff;color:#08101e;border:none;padding:12px;border-radius:12px;font-weight:800;margin-top:10px;cursor:pointer}
+.kpi{background:#0f1a2e;border-radius:14px;padding:12px;margin-top:10px}
+.big{font-size:22px;font-weight:900}
+.good{color:#34d399}
+.bad{color:#fb7185}
+.item{border:1px solid #24324a;border-radius:12px;padding:10px;margin-top:10px}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<h1>DOUBLEU Kit Builder</h1>
+
+<div class="card">
+<label>Numero atleti</label>
+<input id="players" type="number" value="80">
+
+<label>Margine target</label>
+<select id="margin">
+  <optgroup label="BASIC PROMOTIONAL">
+    <option value="0.30">Promotional 30%</option>
+    <option value="0.35">Promotional 35%</option>
+  </optgroup>
+  <optgroup label="CLUB DOUBLEU">
+    <option value="0.45">Club minimal 45%</option>
+    <option value="0.50" selected>Club standard 50%</option>
+    <option value="0.55">Club premium 55%</option>
+  </optgroup>
+  <optgroup label="BRAND ONLINE">
+    <option value="0.65">Online continuativo 65%</option>
+  </optgroup>
+  <optgroup label="LIMITED">
+    <option value="0.72">Limited online 72%</option>
+    <option value="0.75">Limited drop 75%</option>
+    <option value="0.80">Exclusive micro-drop 80%</option>
+  </optgroup>
+</select>
+
+<label>IVA %</label>
+<input id="vatPct" type="number" value="22">
+<label><input type="checkbox" id="applyVAT" checked> Applica IVA</label>
+
+<label>Sconto trattativa %</label>
+<input id="discount" type="number" value="0">
+
+<label>Acconto %</label>
+<input id="depositPct" type="number" value="60">
+
+<label>Buffer sicurezza %</label>
+<input id="buffer" type="number" value="5">
+</div>
+
+<div class="card">
+<h2>Articoli</h2>
+<div id="items"></div>
+<button onclick="addItem()">+ Aggiungi articolo</button>
+</div>
+
+<div class="card">
+<button onclick="calculate()">CALCOLA</button>
+
+<div class="kpi">
+Prezzo kit atleta
+<div class="big" id="kitPrice">—</div>
+</div>
+
+<div class="kpi">
+Margine reale
+<div class="big" id="marginOut">—</div>
+<div id="profitOut"></div>
+</div>
+
+<div class="kpi">
+Costo totale ordine
+<div class="big" id="costOut">—</div>
+</div>
+
+<div class="kpi">
+Prezzo minimo accettabile
+<div class="big" id="minPrice">—</div>
+<div>Sotto questo prezzo scendi sotto il margine target</div>
+</div>
+
+<div class="kpi">
+Acconto minimo
+<div class="big" id="depositOut">—</div>
+<div id="depositCheck"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+const baseCosts={
+"T-shirt":15,
+"Polo":18,
+"Pantaloncino":16,
+"Gonnellino":17,
+"Dress":22,
+"Sweatshirt":28,
+"Hoodie":32,
+"Zip Hoodie":35,
+"Pantalone":26
+};
+
+const eur=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n);
+
+function addItem(){
+let div=document.createElement("div");
+div.className="item";
+div.innerHTML=`
+<select class="type">${Object.keys(baseCosts).map(x=>`<option>${x}</option>`).join("")}</select>
+<label>Costo base</label><input class="cost" type="number">
+<label>Extra</label><input class="extra" type="number" value="0">
+<label>Quantità</label><input class="qty" type="number" value="${document.getElementById("players").value}">
+`;
+document.getElementById("items").appendChild(div);
+div.querySelector(".type").onchange=e=>div.querySelector(".cost").value=baseCosts[e.target.value];
+div.querySelector(".type").dispatchEvent(new Event('change'));
+}
+
+function calculate(){
+
+let players=parseFloat(players.value);
+let margin=parseFloat(margin.value);
+let discount=discount.value/100;
+let vat=applyVAT.checked?vatPct.value/100:0;
+let depositPct=parseFloat(depositPct.value)/100;
+let buffer=parseFloat(buffer.value)/100;
+
+let totalCost=0;
+
+document.querySelectorAll(".item").forEach(i=>{
+let cost=parseFloat(i.querySelector(".cost").value)||0;
+let extra=parseFloat(i.querySelector(".extra").value)||0;
+let qty=parseFloat(i.querySelector(".qty").value)||0;
+totalCost+=(cost+extra)*qty;
+});
+
+let netPriceTotal=totalCost/(1-margin);
+let grossTotal=vat>0?netPriceTotal*(1+vat):netPriceTotal;
+grossTotal*=1-discount;
+
+let netFinal=vat>0?grossTotal/(1+vat):grossTotal;
+let profit=netFinal-totalCost;
+let realMargin=profit/netFinal;
+
+let minNetTotal=totalCost/(1-margin);
+let minGrossTotal=vat>0?minNetTotal*(1+vat):minNetTotal;
+let minPricePerPlayer=minGrossTotal/players;
+
+document.getElementById("kitPrice").textContent=eur(grossTotal/players)+(vat?" IVA":" netto");
+document.getElementById("marginOut").textContent=(realMargin*100).toFixed(1)+"%";
+document.getElementById("profitOut").textContent="Utile: "+eur(profit);
+document.getElementById("costOut").textContent=eur(totalCost);
+document.getElementById("minPrice").textContent=eur(minPricePerPlayer);
+
+let dep=Math.max(grossTotal*depositPct,totalCost*(1+buffer));
+document.getElementById("depositOut").textContent=eur(dep);
+document.getElementById("depositCheck").innerHTML=dep>=totalCost?"<span class='good'>Copre costo</span>":"<span class='bad'>Non copre</span>";
+}
+
+addItem();
+</script>
+
+</body>
+</html>
