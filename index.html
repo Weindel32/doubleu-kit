@@ -56,10 +56,10 @@
       border-color:rgba(110,231,255,.35);
     }
 
-    /* PIÙ SPAZIO AL PANNELLO KPI (come mi hai chiesto) */
+    /* colonna KPI più larga */
     .grid{
       display:grid;
-      grid-template-columns: 1.35fr .95fr; /* colonna destra più larga */
+      grid-template-columns: 1.35fr .95fr;
       gap:14px;
       align-items:start;
     }
@@ -127,12 +127,8 @@
       padding:9px 10px;border-radius:12px;margin-top:0;font-size:12px;width:auto
     }
 
-    /* KPI: colonna singola → più leggibile */
-    .kpis{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-    }
+    /* KPI: una colonna, leggibile */
+    .kpis{display:grid;grid-template-columns:1fr;gap:10px;}
     .kpi{
       background:rgba(255,255,255,.04);
       border:1px solid rgba(255,255,255,.10);
@@ -170,9 +166,18 @@
     .ok{color:var(--ok);font-weight:1000}
     .bad{color:var(--bad);font-weight:1000}
 
-    .itemsTop{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px
+    /* ALERT VISIVO prezzo atleta */
+    .kpi.warn{
+      border-color: rgba(251,113,133,.65);
+      box-shadow: 0 0 0 2px rgba(251,113,133,.25) inset, 0 12px 30px rgba(0,0,0,.35);
     }
+    .kpi.warn .val{ color:#fb7185; }
+    .kpi.okcard{
+      border-color: rgba(52,211,153,.55);
+      box-shadow: 0 0 0 2px rgba(52,211,153,.20) inset, 0 12px 30px rgba(0,0,0,.35);
+    }
+
+    .itemsTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
     .itemsTop .left{display:flex;flex-direction:column;gap:4px}
     .itemsTop .muted{color:var(--muted);font-size:12px}
 
@@ -323,7 +328,7 @@
         </table>
 
         <button class="btn" id="btnSave" type="button">Salva configurazione</button>
-        <div class="sub" style="margin-top:8px">I kit salvati restano nel browser (localStorage). Ideale per preventivi ricorrenti.</div>
+        <div class="sub" style="margin-top:8px">I kit salvati restano nel browser (localStorage).</div>
       </div>
 
       <!-- RIGHT -->
@@ -331,7 +336,15 @@
         <h2>Riepilogo</h2>
 
         <div class="kpis">
+          <!-- NUOVO: costo produzione per atleta PRIMA del prezzo -->
           <div class="kpi">
+            <div class="lbl">Costo produzione per atleta</div>
+            <div class="val" id="kCostPerAthlete">€0,00</div>
+            <div class="note">Costo medio del kit su base atleti</div>
+          </div>
+
+          <!-- Prezzo atleta con alert -->
+          <div class="kpi" id="kPriceCard">
             <div class="lbl">Prezzo per atleta</div>
             <div class="val" id="kPriceAthlete">€0,00</div>
             <div class="note" id="kVatLabel">—</div>
@@ -341,6 +354,12 @@
             <div class="lbl">Margine reale</div>
             <div class="val" id="kRealMargin">0%</div>
             <div class="note" id="kTargetLabel">Target: —</div>
+          </div>
+
+          <div class="kpi">
+            <div class="lbl">Prezzo minimo accettabile</div>
+            <div class="val" id="kMinPrice">€0,00</div>
+            <div class="note">Sotto questo prezzo scendi sotto il margine target (con lo sconto attuale)</div>
           </div>
 
           <div class="kpi">
@@ -359,12 +378,6 @@
             <div class="lbl">Utile totale</div>
             <div class="val" id="kProfit">€0,00</div>
             <div class="note">Utile calcolato su imponibile (netto IVA)</div>
-          </div>
-
-          <div class="kpi">
-            <div class="lbl">Prezzo minimo accettabile</div>
-            <div class="val" id="kMinPrice">€0,00</div>
-            <div class="note">Sotto questo prezzo scendi sotto il margine target (con lo sconto attuale)</div>
           </div>
         </div>
 
@@ -398,7 +411,7 @@
   <div id="viewSaved" style="display:none">
     <div class="card">
       <h2>Kit salvati</h2>
-      <div class="sub" style="margin-top:-6px">Qui trovi le configurazioni salvate su questo browser.</div>
+      <div class="sub" style="margin-top:-6px">Configurazioni salvate su questo browser.</div>
       <div class="divider"></div>
       <div class="savedList" id="savedList"></div>
       <button class="btn secondary" id="btnClearAll" type="button" style="margin-top:12px">Elimina tutti i kit salvati</button>
@@ -417,7 +430,6 @@
   };
   const clamp = (x,min,max)=>Math.min(max,Math.max(min,x));
 
-  // Costi di riferimento (modificabili per riga)
   const COST_DW = {
     "T-shirt": 15, "Polo": 18, "Pantaloncino": 16, "Gonnellino": 17, "Dress": 22,
     "Sweatshirt": 28, "Hoodie": 32, "Zip Hoodie": 35, "Pantalone": 26
@@ -427,25 +439,34 @@
     "Sweatshirt": 16.0, "Hoodie": 18.0, "Zip Hoodie": 20.0, "Pantalone": 15.0
   };
   const ITEM_ORDER = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
-  const STORAGE_KEY = "doubleu_kits_v2";
+  const STORAGE_KEY = "doubleu_kits_v3";
 
   let items = [];
+
+  function newId(){
+    return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()));
+  }
 
   function newItem(){
     const players = Math.max(1, nval("players"));
     return {
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+      id: newId(),
       name: "T-shirt",
       line: "DOUBLEU",
       base: COST_DW["T-shirt"],
       extra: 0,
       qty: players,
-      costLocked: false   // <<< BLOCCO AUTOMATICO COSTO
+      costLocked: false
     };
   }
 
   function ensureAtLeastOne(){
     if(items.length === 0) items.push(newItem());
+  }
+
+  function applyReferenceCost(it){
+    if(it.line === "DOUBLEU") it.base = COST_DW[it.name] ?? it.base;
+    else if(it.line === "PROMO") it.base = COST_PROMO[it.name] ?? it.base;
   }
 
   function renderItems(){
@@ -491,29 +512,18 @@
       tbody.appendChild(tr);
     }
 
-    // input/select events
     tbody.querySelectorAll("[data-act]").forEach(node => {
       const act = node.getAttribute("data-act");
       const id = node.getAttribute("data-id");
-
-      if(node.tagName === "SELECT" || node.tagName === "INPUT"){
-        node.addEventListener("input", () => onItemChange(id, act, node.value));
-        node.addEventListener("change", () => onItemChange(id, act, node.value));
-      }
+      node.addEventListener("input", () => onItemChange(id, act, node.value));
+      node.addEventListener("change", () => onItemChange(id, act, node.value));
     });
 
-    // action buttons
     tbody.querySelectorAll("button[data-act]").forEach(btn=>{
       btn.addEventListener("click", ()=> onItemAction(btn.getAttribute("data-id"), btn.getAttribute("data-act")));
     });
 
     recalc();
-  }
-
-  function applyReferenceCost(it){
-    if(it.line === "DOUBLEU") it.base = COST_DW[it.name] ?? it.base;
-    else if(it.line === "PROMO") it.base = COST_PROMO[it.name] ?? it.base;
-    // CUSTOM: non toccare
   }
 
   function onItemChange(id, act, val){
@@ -522,27 +532,23 @@
 
     if(act === "name"){
       it.name = val;
-
-      // se costo non bloccato, aggiorna da riferimento
       if(!it.costLocked) applyReferenceCost(it);
     }
 
     if(act === "line"){
       it.line = val;
-
-      // se costo non bloccato, aggiorna da riferimento
       if(!it.costLocked) applyReferenceCost(it);
     }
 
     if(act === "base"){
       it.base = parseFloat(val) || 0;
-      it.costLocked = true; // <<< appena modifichi a mano, blocca
+      it.costLocked = true;
     }
 
     if(act === "extra") it.extra = parseFloat(val) || 0;
     if(act === "qty") it.qty = Math.max(0, parseFloat(val) || 0);
 
-    renderItems(); // rerender per aggiornare label costo bloccato/auto
+    renderItems();
   }
 
   function onItemAction(id, act){
@@ -558,7 +564,7 @@
 
     if(act==="dup"){
       const base = items[idx];
-      const copy = {...base, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())};
+      const copy = {...base, id: newId()};
       items.splice(idx+1,0,copy);
       renderItems();
       return;
@@ -566,8 +572,8 @@
 
     if(act==="reset"){
       const it = items[idx];
-      it.costLocked = false;      // sblocca
-      applyReferenceCost(it);     // ripristina reference
+      it.costLocked = false;
+      applyReferenceCost(it);
       renderItems();
       return;
     }
@@ -589,9 +595,15 @@
       totalCost += ((parseFloat(it.base)||0) + (parseFloat(it.extra)||0)) * (parseFloat(it.qty)||0);
     }
 
+    // NUOVO KPI: costo medio per atleta
+    const costPerAthlete = players>0 ? totalCost/players : 0;
+    el("kCostPerAthlete").textContent = eur(costPerAthlete);
+
     const netTarget = totalCost > 0 ? ( totalCost / (1 - marginTarget) ) : 0;
     const grossBeforeDiscount = vat>0 ? netTarget*(1+vat) : netTarget;
     const grossFinal = grossBeforeDiscount * (1 - discount);
+
+    const priceAthlete = players>0 ? grossFinal/players : 0;
 
     // netto reale: se IVA off, grossFinal è già NETTO
     const netFinal = vat>0 ? (grossFinal/(1+vat)) : grossFinal;
@@ -606,11 +618,14 @@
     const depMin = totalCost * (1 + buffer);
     const depFinal = Math.max(depByPct, depMin);
 
-    el("kPriceAthlete").textContent = eur(players>0 ? grossFinal/players : 0);
+    // update UI
+    el("kPriceAthlete").textContent = eur(priceAthlete);
     el("kVatLabel").textContent = vat>0 ? "IVA inclusa nel prezzo" : "Prezzo netto (IVA non applicata)";
 
     el("kRealMargin").textContent = `${(realMargin*100).toFixed(1)}%`;
     el("kTargetLabel").textContent = `Target: ${(marginTarget*100).toFixed(0)}%`;
+
+    el("kMinPrice").textContent = eur(minPriceAthlete);
 
     el("kTotalCost").textContent = eur(totalCost);
     el("kGrossRevenue").textContent = eur(grossFinal);
@@ -621,15 +636,25 @@
     el("kRevenueNote").textContent = revNote;
 
     el("kProfit").textContent = eur(profit);
-    el("kMinPrice").textContent = eur(minPriceAthlete);
 
     el("kDeposit").textContent = eur(depFinal);
     el("kDepositNote").innerHTML = depFinal >= totalCost
       ? `<span class="ok">Copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`
       : `<span class="bad">NON copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`;
+
+    // ALERT VISIVO prezzo atleta
+    const priceCard = el("kPriceCard");
+    priceCard.classList.remove("warn","okcard");
+
+    if(priceAthlete < minPriceAthlete){
+      priceCard.classList.add("warn");
+      el("kVatLabel").textContent += " • Sotto il minimo consigliato";
+    }else{
+      priceCard.classList.add("okcard");
+    }
   }
 
-  // --- saved kits
+  // storage
   function loadSaved(){
     try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
     catch(e){ return []; }
@@ -640,7 +665,7 @@
 
   function packCurrent(){
     return {
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+      id: newId(),
       ts: Date.now(),
       name: (el("projectName").value || "Kit").trim(),
       notes: (el("notes").value || "").trim(),
@@ -710,7 +735,7 @@
 
         if(act==="load") applyKit(kit);
         if(act==="dup"){
-          const copy = {...kit, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), ts: Date.now(), name: (kit.name||"Kit")+" (copia)"};
+          const copy = {...kit, id: newId(), ts: Date.now(), name: (kit.name||"Kit")+" (copia)"};
           all.unshift(copy); saveSaved(all); renderSaved();
         }
         if(act==="del"){
@@ -721,7 +746,6 @@
     });
   }
 
-  // tabs
   function setTab(which){
     const isBuilder = which === "builder";
     el("viewBuilder").style.display = isBuilder ? "block" : "none";
@@ -753,6 +777,7 @@
       lines.push(`- ${idx+1}) ${it.name} • Linea: ${it.line} • Costo ${it.base}€ ${it.costLocked?"(bloccato)":"(auto)"} • Extra ${it.extra}€ • Qtà ${it.qty}`);
     });
     lines.push("");
+    lines.push(`Costo produzione per atleta: ${el("kCostPerAthlete").textContent}`);
     lines.push(`Prezzo per atleta: ${el("kPriceAthlete").textContent}`);
     lines.push(`Costo totale: ${el("kTotalCost").textContent}`);
     lines.push(`Totale fatturato: ${el("kGrossRevenue").textContent}`);
