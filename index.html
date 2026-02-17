@@ -24,12 +24,9 @@
     :root{
       --bg0:#070b14;
       --bg1:#0b1220;
-      --card:rgba(255,255,255,.06);
       --line:rgba(255,255,255,.10);
       --text:#eaf0ff;
       --muted:rgba(234,240,255,.70);
-      --accent:#6ee7ff;
-      --accent2:#a78bfa;
       --ok:#34d399;
       --bad:#fb7185;
       --shadow:0 16px 40px rgba(0,0,0,.45);
@@ -56,7 +53,7 @@
       box-shadow:0 12px 24px rgba(0,0,0,.35);
     }
     h1{margin:0;font-size:18px;letter-spacing:.2px}
-    .sub{margin-top:3px;font-size:12px;color:var(--muted)}
+    .sub{margin-top:3px;font-size:12px;color:var(--muted);line-height:1.35}
     .tabs{display:flex;gap:10px}
     .tab{
       display:inline-flex;align-items:center;gap:8px;
@@ -71,7 +68,6 @@
       border-color:rgba(110,231,255,.35);
     }
 
-    /* KPI column wider */
     .grid{
       display:grid;
       grid-template-columns: 1.35fr .95fr;
@@ -94,16 +90,21 @@
       letter-spacing:.25px;
       text-transform:uppercase;
     }
+
     label{display:block;font-size:12px;color:var(--muted);margin-top:10px}
+
+    /* INPUT più grandi (richiesta) */
     input,select{
       width:100%;
-      padding:11px 12px;
+      padding:12px 14px;
       border-radius:14px;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(5,10,20,.35);
       color:var(--text);
       margin-top:6px;
       outline:none;
+      font-size:18px; /* ⬆︎ */
+      font-weight:600;
     }
     input:focus,select:focus{
       border-color:rgba(110,231,255,.42);
@@ -142,7 +143,6 @@
       padding:9px 10px;border-radius:12px;margin-top:0;font-size:12px;width:auto
     }
 
-    /* KPI: single column */
     .kpis{display:grid;grid-template-columns:1fr;gap:10px;}
     .kpi{
       background:rgba(255,255,255,.04);
@@ -167,7 +167,7 @@
       line-height:1.15;
     }
     .kpi .val{
-      font-size:28px;
+      font-size:30px; /* ⬆︎ leggibilità KPI */
       font-weight:1000;
       margin-top:6px;
       letter-spacing:.2px;
@@ -181,7 +181,7 @@
     .ok{color:var(--ok);font-weight:1000}
     .bad{color:var(--bad);font-weight:1000}
 
-    /* price alert */
+    /* alert prezzo atleta */
     .kpi.warn{
       border-color: rgba(251,113,133,.65);
       box-shadow: 0 0 0 2px rgba(251,113,133,.25) inset, 0 12px 30px rgba(0,0,0,.35);
@@ -217,11 +217,29 @@
     }
     .table tr:last-child td{border-bottom:none}
     .table input,.table select{
-      padding:9px 10px;border-radius:12px;margin-top:0;
+      padding:10px 12px;border-radius:12px;margin-top:0;
       background:rgba(5,10,20,.35);
+      font-size:18px; /* ⬆︎ anche nella tabella */
+      font-weight:650;
     }
+
     .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
     .divider{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
+
+    /* Qty controls */
+    .qtybox{display:flex;align-items:center;gap:6px}
+    .qbtn{
+      width:36px;height:36px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font-size:18px;
+      font-weight:1000;
+      cursor:pointer;
+    }
+    .qbtn:active{ background:rgba(110,231,255,.25); }
+    .qbtn.qdup{ width:40px;font-size:16px;opacity:.95; }
+    .qbtn.qdup:active{ background:rgba(167,139,250,.25); }
 
     .savedList{display:flex;flex-direction:column;gap:10px;}
     .savedCard{
@@ -251,7 +269,7 @@
       <div class="logo"></div>
       <div>
         <h1>DOUBLEU Kit Builder PRO</h1>
-        <div class="sub">Preventivo kit a colpo d’occhio: costo, prezzo atleta, margine reale, acconto, soglia minima.</div>
+        <div class="sub">Preventivo kit veloce: costo, prezzo atleta, margine reale, acconto, soglia minima. (Decimali con virgola OK)</div>
       </div>
     </div>
     <div class="tabs">
@@ -273,7 +291,9 @@
         <div class="row3">
           <div>
             <label>Numero atleti (stima)</label>
-            <input id="players" type="number" value="80" inputmode="decimal">
+            <!-- vuoto di default -->
+            <input id="players" type="text" value="" inputmode="decimal" placeholder="es. 80">
+            <div class="sub">Suggerimento: inserisci atleti e premi “Usa numero atleti”.</div>
           </div>
           <div>
             <label>Margine target</label>
@@ -299,7 +319,7 @@
           </div>
           <div>
             <label>IVA %</label>
-            <input id="vatPct" type="number" value="22" inputmode="decimal">
+            <input id="vatPct" type="text" value="22" inputmode="decimal">
             <div class="switch">
               <input type="checkbox" id="applyVAT" checked>
               <span>Applica IVA</span>
@@ -310,7 +330,7 @@
         <div class="row">
           <div>
             <label>Sconto trattativa %</label>
-            <input id="discount" type="number" value="0" inputmode="decimal">
+            <input id="discount" type="text" value="0" inputmode="decimal">
           </div>
           <div>
             <label>Note (opzionale)</label>
@@ -323,9 +343,13 @@
         <div class="itemsTop">
           <div class="left">
             <div style="font-weight:1000">Articoli kit</div>
-            <div class="muted">Aggiungi 1+ articoli. Quantità predefinita = numero atleti, modificabile per riga.</div>
+            <div class="muted">Aggiungi articoli e allinea rapidamente le quantità.</div>
           </div>
-          <button class="btn secondary small" id="btnAdd" type="button">+ Aggiungi articolo</button>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn secondary small" id="btnFillQty" type="button">Usa numero atleti</button>
+            <button class="btn secondary small" id="btnAdd" type="button">+ Aggiungi articolo</button>
+          </div>
         </div>
 
         <table class="table" aria-label="Kit items">
@@ -333,16 +357,20 @@
             <tr>
               <th style="min-width:210px">Articolo</th>
               <th style="min-width:170px">Linea</th>
-              <th style="min-width:130px">Costo base €</th>
+              <th style="min-width:140px">Costo base €</th>
               <th style="min-width:140px">Extra € (pezzo)</th>
-              <th style="min-width:110px">Quantità</th>
+              <th style="min-width:190px">Quantità</th>
               <th style="min-width:210px;text-align:right">Azioni</th>
             </tr>
           </thead>
           <tbody id="itemsBody"></tbody>
         </table>
 
-        <button class="btn" id="btnSave" type="button">Salva configurazione</button>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btnSave" type="button">Salva configurazione</button>
+          <button class="btn secondary" id="btnNew" type="button">Nuovo preventivo (pulisci)</button>
+        </div>
+
         <div class="sub" style="margin-top:8px">I kit salvati restano nel browser (localStorage).</div>
       </div>
 
@@ -353,26 +381,26 @@
         <div class="kpis">
           <div class="kpi">
             <div class="lbl">Costo produzione per atleta</div>
-            <div class="val" id="kCostPerAthlete">€0,00</div>
-            <div class="note">Costo medio del kit su base atleti</div>
+            <div class="val" id="kCostPerAthlete">—</div>
+            <div class="note">Media su base atleti</div>
           </div>
 
           <div class="kpi" id="kPriceCard">
             <div class="lbl">Prezzo per atleta</div>
-            <div class="val" id="kPriceAthlete">€0,00</div>
+            <div class="val" id="kPriceAthlete">—</div>
             <div class="note" id="kVatLabel">—</div>
           </div>
 
           <div class="kpi">
             <div class="lbl">Margine reale</div>
-            <div class="val" id="kRealMargin">0%</div>
+            <div class="val" id="kRealMargin">—</div>
             <div class="note" id="kTargetLabel">Target: —</div>
           </div>
 
           <div class="kpi">
             <div class="lbl">Prezzo minimo accettabile</div>
-            <div class="val" id="kMinPrice">€0,00</div>
-            <div class="note">Sotto questo prezzo scendi sotto il margine target (con lo sconto attuale)</div>
+            <div class="val" id="kMinPrice">—</div>
+            <div class="note">Sotto questo prezzo scendi sotto il target (con lo sconto attuale)</div>
           </div>
 
           <div class="kpi">
@@ -400,11 +428,11 @@
         <div class="row">
           <div>
             <label>Acconto %</label>
-            <input id="depositPct" type="number" value="60" inputmode="decimal">
+            <input id="depositPct" type="text" value="60" inputmode="decimal">
           </div>
           <div>
             <label>Buffer sicurezza %</label>
-            <input id="bufferPct" type="number" value="5" inputmode="decimal">
+            <input id="bufferPct" type="text" value="5" inputmode="decimal">
           </div>
         </div>
 
@@ -415,7 +443,7 @@
         </div>
 
         <button class="btn secondary" id="btnCopySummary" type="button">Copia riepilogo</button>
-        <div class="sub" style="margin-top:8px">Copia negli appunti un testo pronto per WhatsApp/email.</div>
+        <div class="sub" style="margin-top:8px">Testo pronto per WhatsApp/email.</div>
       </div>
     </div>
   </div>
@@ -437,10 +465,14 @@
 (() => {
   const el = (id) => document.getElementById(id);
   const eur = (n) => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n || 0);
-  const nval = (id) => {
-    const v = parseFloat(el(id).value);
+
+  // ✅ supporta virgole: "7,5" -> 7.5
+  const toNum = (x) => {
+    const s = String(x ?? "").trim().replace(/\s+/g,"").replace(",", ".");
+    const v = parseFloat(s);
     return Number.isFinite(v) ? v : 0;
   };
+  const nval = (id) => toNum(el(id).value);
   const clamp = (x,min,max)=>Math.min(max,Math.max(min,x));
 
   const COST_DW = {
@@ -452,7 +484,7 @@
     "Sweatshirt": 16.0, "Hoodie": 18.0, "Zip Hoodie": 20.0, "Pantalone": 15.0
   };
   const ITEM_ORDER = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
-  const STORAGE_KEY = "doubleu_kits_v4";
+  const STORAGE_KEY = "doubleu_kits_v5";
 
   let items = [];
 
@@ -461,14 +493,14 @@
   }
 
   function newItem(){
-    const players = Math.max(1, nval("players"));
+    const players = nval("players"); // può essere 0 se vuoto
     return {
       id: newId(),
       name: "T-shirt",
       line: "DOUBLEU",
       base: COST_DW["T-shirt"],
       extra: 0,
-      qty: players,
+      qty: players || 0,
       costLocked: false
     };
   }
@@ -503,18 +535,22 @@
           </select>
         </td>
         <td>
-          <input type="number" inputmode="decimal" data-act="base" data-id="${it.id}" value="${it.base}">
+          <input type="text" inputmode="decimal" data-act="base" data-id="${it.id}" value="${it.base}">
         </td>
         <td>
-          <input type="number" inputmode="decimal" data-act="extra" data-id="${it.id}" value="${it.extra}">
+          <input type="text" inputmode="decimal" data-act="extra" data-id="${it.id}" value="${it.extra}">
         </td>
         <td>
-          <input type="number" inputmode="decimal" data-act="qty" data-id="${it.id}" value="${it.qty}">
+          <div class="qtybox">
+            <button class="qbtn" data-act="minus" data-id="${it.id}" type="button">–</button>
+            <input type="text" inputmode="decimal" data-act="qty" data-id="${it.id}" value="${it.qty}">
+            <button class="qbtn" data-act="plus" data-id="${it.id}" type="button">+</button>
+            <button class="qbtn qdup" data-act="dup" data-id="${it.id}" type="button" title="Duplica riga">⧉</button>
+          </div>
         </td>
         <td style="text-align:right">
           <div class="actions">
             <button class="btn secondary small" type="button" data-act="reset" data-id="${it.id}">↺ Costo</button>
-            <button class="btn secondary small" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
             <button class="btn secondary small" type="button" data-act="del" data-id="${it.id}">Rimuovi</button>
           </div>
           <div class="sub" style="margin-top:6px">
@@ -533,7 +569,9 @@
     });
 
     tbody.querySelectorAll("button[data-act]").forEach(btn=>{
-      btn.addEventListener("click", ()=> onItemAction(btn.getAttribute("data-id"), btn.getAttribute("data-act")));
+      const act = btn.getAttribute("data-act");
+      const id = btn.getAttribute("data-id");
+      btn.addEventListener("click", ()=> onItemAction(id, act));
     });
 
     recalc();
@@ -554,12 +592,12 @@
     }
 
     if(act === "base"){
-      it.base = parseFloat(val) || 0;
+      it.base = toNum(val);
       it.costLocked = true;
     }
 
-    if(act === "extra") it.extra = parseFloat(val) || 0;
-    if(act === "qty") it.qty = Math.max(0, parseFloat(val) || 0);
+    if(act === "extra") it.extra = toNum(val);
+    if(act === "qty") it.qty = Math.max(0, toNum(val));
 
     renderItems();
   }
@@ -568,32 +606,36 @@
     const idx = items.findIndex(x=>x.id===id);
     if(idx < 0) return;
 
+    if(act==="plus"){
+      items[idx].qty = (toNum(items[idx].qty) || 0) + 1;
+      renderItems(); return;
+    }
+    if(act==="minus"){
+      items[idx].qty = Math.max(0, (toNum(items[idx].qty) || 0) - 1);
+      renderItems(); return;
+    }
+    if(act==="dup"){
+      const copy = {...items[idx], id: newId()};
+      items.splice(idx+1,0,copy);
+      renderItems(); return;
+    }
+
     if(act==="del"){
       items.splice(idx,1);
       if(items.length===0) items.push(newItem());
-      renderItems();
-      return;
-    }
-
-    if(act==="dup"){
-      const base = items[idx];
-      const copy = {...base, id: newId()};
-      items.splice(idx+1,0,copy);
-      renderItems();
-      return;
+      renderItems(); return;
     }
 
     if(act==="reset"){
       const it = items[idx];
       it.costLocked = false;
       applyReferenceCost(it);
-      renderItems();
-      return;
+      renderItems(); return;
     }
   }
 
   function recalc(){
-    const players = Math.max(1, nval("players"));
+    const players = nval("players"); // può essere 0
     const marginTarget = clamp(parseFloat(el("margin").value)||0, 0, 0.95);
     const discount = clamp(nval("discount")/100, 0, 0.95);
 
@@ -605,12 +647,13 @@
 
     let totalCost = 0;
     for(const it of items){
-      totalCost += ((parseFloat(it.base)||0) + (parseFloat(it.extra)||0)) * (parseFloat(it.qty)||0);
+      totalCost += (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
     }
 
-    const costPerAthlete = players>0 ? totalCost/players : 0;
-    el("kCostPerAthlete").textContent = eur(costPerAthlete);
+    // KPI costo per atleta
+    el("kCostPerAthlete").textContent = (players>0) ? eur(totalCost/players) : "—";
 
+    // prezzo target
     const netTarget = totalCost > 0 ? ( totalCost / (1 - marginTarget) ) : 0;
     const grossBeforeDiscount = vat>0 ? netTarget*(1+vat) : netTarget;
     const grossFinal = grossBeforeDiscount * (1 - discount);
@@ -628,13 +671,13 @@
     const depMin = totalCost * (1 + buffer);
     const depFinal = Math.max(depByPct, depMin);
 
-    el("kPriceAthlete").textContent = eur(priceAthlete);
+    el("kPriceAthlete").textContent = (players>0) ? eur(priceAthlete) : "—";
     el("kVatLabel").textContent = vat>0 ? "IVA inclusa nel prezzo" : "Prezzo netto (IVA non applicata)";
 
-    el("kRealMargin").textContent = `${(realMargin*100).toFixed(1)}%`;
+    el("kRealMargin").textContent = (netFinal>0) ? `${(realMargin*100).toFixed(1)}%` : "—";
     el("kTargetLabel").textContent = `Target: ${(marginTarget*100).toFixed(0)}%`;
 
-    el("kMinPrice").textContent = eur(minPriceAthlete);
+    el("kMinPrice").textContent = (players>0) ? eur(minPriceAthlete) : "—";
 
     el("kTotalCost").textContent = eur(totalCost);
     el("kGrossRevenue").textContent = eur(grossFinal);
@@ -651,17 +694,51 @@
       ? `<span class="ok">Copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`
       : `<span class="bad">NON copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`;
 
+    // ALERT VISIVO prezzo atleta
     const priceCard = el("kPriceCard");
     priceCard.classList.remove("warn","okcard");
-
-    if(priceAthlete < minPriceAthlete){
-      priceCard.classList.add("warn");
-      el("kVatLabel").textContent += " • Sotto il minimo consigliato";
-    }else{
-      priceCard.classList.add("okcard");
+    if(players>0){
+      if(priceAthlete < minPriceAthlete){
+        priceCard.classList.add("warn");
+        el("kVatLabel").textContent += " • Sotto il minimo consigliato";
+      }else{
+        priceCard.classList.add("okcard");
+      }
     }
   }
 
+  function applyPlayersToAll(){
+    const players = nval("players");
+    if(players <= 0){ alert("Inserisci prima il numero atleti"); return; }
+    items.forEach(it => { it.qty = players; });
+    renderItems();
+  }
+
+  function askUpdateQuantities(){
+    const players = nval("players");
+    if(players <= 0) return;
+    if(confirm(`Vuoi aggiornare la quantità di tutti gli articoli a ${players}?`)){
+      items.forEach(it => it.qty = players);
+      renderItems();
+    }
+  }
+
+  function resetForm(){
+    el("projectName").value = "Nuovo kit";
+    el("notes").value = "";
+    el("players").value = "";          // ✅ vuoto
+    el("discount").value = "0";
+    el("margin").value = "0.50";
+    el("vatPct").value = "22";
+    el("applyVAT").checked = true;
+    el("depositPct").value = "60";
+    el("bufferPct").value = "5";
+    items = [newItem()];
+    renderItems();
+    recalc();
+  }
+
+  // storage
   function loadSaved(){
     try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
     catch(e){ return []; }
@@ -676,13 +753,13 @@
       ts: Date.now(),
       name: (el("projectName").value || "Kit").trim(),
       notes: (el("notes").value || "").trim(),
-      players: nval("players"),
+      players: el("players").value,
       margin: parseFloat(el("margin").value)||0,
-      vatPct: nval("vatPct"),
+      vatPct: el("vatPct").value,
       applyVAT: el("applyVAT").checked,
-      discount: nval("discount"),
-      depositPct: nval("depositPct"),
-      bufferPct: nval("bufferPct"),
+      discount: el("discount").value,
+      depositPct: el("depositPct").value,
+      bufferPct: el("bufferPct").value,
       items: JSON.parse(JSON.stringify(items))
     };
   }
@@ -690,13 +767,13 @@
   function applyKit(k){
     el("projectName").value = k.name || "Kit";
     el("notes").value = k.notes || "";
-    el("players").value = k.players ?? 80;
+    el("players").value = k.players ?? "";
     el("margin").value = String(k.margin ?? 0.5);
-    el("vatPct").value = k.vatPct ?? 22;
+    el("vatPct").value = k.vatPct ?? "22";
     el("applyVAT").checked = !!k.applyVAT;
-    el("discount").value = k.discount ?? 0;
-    el("depositPct").value = k.depositPct ?? 60;
-    el("bufferPct").value = k.bufferPct ?? 5;
+    el("discount").value = k.discount ?? "0";
+    el("depositPct").value = k.depositPct ?? "60";
+    el("bufferPct").value = k.bufferPct ?? "5";
     items = (k.items && Array.isArray(k.items) && k.items.length) ? k.items : [newItem()];
     renderItems();
     setTab("builder");
@@ -721,12 +798,12 @@
       div.innerHTML = `
         <div class="meta">
           <div class="name">${escapeHtml(k.name || "Kit")}</div>
-          <div class="mini">${when} • Atleti: ${k.players || "-"} • Margine: ${Math.round((k.margin||0)*100)}%</div>
+          <div class="mini">${when} • Atleti: ${escapeHtml(k.players || "-")} • Margine: ${Math.round((k.margin||0)*100)}%</div>
         </div>
         <div class="btnrow">
-          <button class="btn secondary small" data-act="load" data-id="${k.id}">Apri</button>
-          <button class="btn secondary small" data-act="dup" data-id="${k.id}">Duplica</button>
-          <button class="btn secondary small" data-act="del" data-id="${k.id}">Elimina</button>
+          <button class="btn secondary small" data-act="load" data-id="${k.id}" type="button">Apri</button>
+          <button class="btn secondary small" data-act="dup" data-id="${k.id}" type="button">Duplica</button>
+          <button class="btn secondary small" data-act="del" data-id="${k.id}" type="button">Elimina</button>
         </div>
       `;
       root.appendChild(div);
@@ -764,13 +841,13 @@
 
   async function copySummary(){
     const name = (el("projectName").value||"Kit").trim();
-    const players = Math.max(1, nval("players"));
+    const players = el("players").value || "-";
     const marginT = Math.round((parseFloat(el("margin").value)||0)*100);
     const vatOn = el("applyVAT").checked;
-    const vatPct = nval("vatPct");
-    const discount = nval("discount");
-    const depositPct = nval("depositPct");
-    const bufferPct = nval("bufferPct");
+    const vatPct = el("vatPct").value;
+    const discount = el("discount").value;
+    const depositPct = el("depositPct").value;
+    const bufferPct = el("bufferPct").value;
 
     const lines = [];
     lines.push(`DOUBLEU — Preventivo kit: ${name}`);
@@ -809,10 +886,20 @@
   }
 
   function bind(){
-    ["projectName","players","margin","vatPct","applyVAT","discount","depositPct","bufferPct","notes"].forEach(id=>{
+    // recalc live
+    ["projectName","margin","vatPct","applyVAT","discount","depositPct","bufferPct","notes"].forEach(id=>{
       el(id).addEventListener("input", recalc);
       el(id).addEventListener("change", recalc);
     });
+
+    // players: recalc + popup allinea quantità
+    el("players").addEventListener("change", () => {
+      recalc();
+      askUpdateQuantities();
+    });
+    el("players").addEventListener("input", recalc);
+
+    el("btnFillQty").addEventListener("click", applyPlayersToAll);
 
     el("btnAdd").addEventListener("click", ()=>{
       items.push(newItem());
@@ -827,6 +914,12 @@
       setTimeout(()=> el("btnSave").textContent = "Salva configurazione", 900);
     });
 
+    el("btnNew").addEventListener("click", ()=>{
+      if(confirm("Vuoi pulire i dati e creare un nuovo preventivo?")){
+        resetForm();
+      }
+    });
+
     el("btnCopySummary").addEventListener("click", copySummary);
 
     el("btnClearAll").addEventListener("click", ()=>{
@@ -838,6 +931,17 @@
 
     el("tabBuilder").addEventListener("click", ()=>setTab("builder"));
     el("tabSaved").addEventListener("click", ()=>setTab("saved"));
+
+    // selezione automatica input (mobile friendly)
+    document.addEventListener("focusin", (e) => {
+      const t = e.target;
+      if(t && t.tagName === "INPUT"){
+        // seleziona tutto per velocizzare la sostituzione
+        setTimeout(() => {
+          try{ t.select(); }catch(_){}
+        }, 0);
+      }
+    });
   }
 
   function init(){
@@ -845,6 +949,11 @@
     items = [newItem()];
     renderItems();
     recalc();
+
+    // PWA: registra service worker (per “Installa” su Chrome)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(()=>{});
+    }
   }
 
   init();
@@ -852,3 +961,4 @@
 </script>
 </body>
 </html>
+
