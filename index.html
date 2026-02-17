@@ -1,178 +1,200 @@
 <!doctype html>
 <html lang="it" translate="no">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DOUBLEU Kit Builder PRO</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DOUBLEU Kit Builder PRO</title>
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#12223b">
+  <meta name="theme-color" content="#10243f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<style>
-:root{
-  --bg1:#0b1220;
-  --bg2:#12223b;
+  <style>
+    :root{
+      --bg1:#06101e;
+      --bg2:#0f2646;
 
-  --card: rgba(255,255,255,.08);
-  --card2: rgba(255,255,255,.12);
+      --card: rgba(255,255,255,.10);
+      --card2: rgba(255,255,255,.14);
 
-  --stroke: rgba(255,255,255,.14);
-  --stroke2: rgba(255,255,255,.22);
+      --stroke: rgba(255,255,255,.16);
+      --stroke2: rgba(255,255,255,.24);
 
-  --text:#eef3ff;
-  --muted: rgba(238,243,255,.72);
+      --text:#eef4ff;
+      --muted: rgba(238,244,255,.70);
 
-  --accent:#6ee7ff;
-  --accent2:#a78bfa;
-  --good:#34d399;
-  --bad:#fb7185;
+      --accent:#7ce7ff;
+      --accent2:#a78bfa;
 
-  --input: rgba(255,255,255,.10);
-  --inputStroke: rgba(255,255,255,.22);
-}
+      --good:#34d399;
+      --warn:#fbbf24;
+      --bad:#fb7185;
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  color:var(--text);
-  background:
-    radial-gradient(1100px 700px at 20% 15%, rgba(110,231,255,.20), transparent 60%),
-    radial-gradient(900px 500px at 75% 22%, rgba(167,139,250,.16), transparent 55%),
-    linear-gradient(180deg,var(--bg1),var(--bg2));
-}
+      --input: rgba(255,255,255,.10);
+      --inputStroke: rgba(255,255,255,.22);
+    }
 
-.wrap{max-width:1240px;margin:auto;padding:16px}
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap
-}
-.brand{
-  display:flex;align-items:center;gap:10px
-}
-.logo{
-  width:34px;height:34px;border-radius:10px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  box-shadow:0 10px 22px rgba(0,0,0,.35);
-}
-h1{font-size:20px;margin:0}
-.badge{
-  padding:6px 10px;border-radius:999px;
-  border:1px solid var(--stroke);
-  background: rgba(255,255,255,.06);
-  color: var(--muted);
-  font-size:12px;
-  display:flex;align-items:center;gap:8px;
-}
-#jsStatusDot{
-  width:8px;height:8px;border-radius:999px;background:#777;
-  box-shadow:0 0 0 4px rgba(255,255,255,.06);
-}
-#jsStatusText{font-weight:900}
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 700px at 22% 12%, rgba(124,231,255,.22), transparent 60%),
+        radial-gradient(900px 520px at 78% 18%, rgba(167,139,250,.18), transparent 55%),
+        linear-gradient(180deg,var(--bg1),var(--bg2));
+    }
 
-.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;align-items:start}
+    .wrap{max-width:1240px;margin:auto;padding:16px}
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      flex-wrap:wrap;margin-bottom:12px
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{
+      width:34px;height:34px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 14px 34px rgba(0,0,0,.35);
+    }
+    h1{font-size:20px;margin:0}
+    .sub{font-size:12px;color:var(--muted);margin-top:2px}
 
-.card{
-  background: linear-gradient(180deg, var(--card2), var(--card));
-  border:1px solid var(--stroke);
-  border-radius:18px;
-  padding:14px;
-  box-shadow:0 14px 40px rgba(0,0,0,.35);
-  backdrop-filter: blur(10px);
-}
+    .badge{
+      display:flex;align-items:center;gap:10px;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:12px;
+      user-select:none;
+    }
+    #jsDot{width:8px;height:8px;border-radius:99px;background:#777;box-shadow:0 0 0 4px rgba(255,255,255,.06)}
+    #jsTxt{font-weight:900;color:var(--text)}
 
-label{font-size:12px;color:var(--muted)}
-.hint{font-size:11px;color:var(--muted);margin-top:6px}
+    .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;align-items:start}
+    .card{
+      background:linear-gradient(180deg,var(--card2),var(--card));
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:0 16px 46px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+    }
 
-input,select,textarea{
-  width:100%;
-  padding:12px;
-  margin-top:6px;
-  border-radius:12px;
-  border:1px solid var(--inputStroke);
-  background: var(--input);
-  color: var(--text);
-  font-size:18px;
-  outline:none;
-}
-textarea{min-height:44px;resize:vertical}
+    label{font-size:12px;color:var(--muted)}
+    .hint{font-size:11px;color:var(--muted);margin-top:6px}
+    .sectionTitle{margin:0 0 6px;font-weight:950}
 
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    input,select,textarea{
+      width:100%;
+      padding:12px;
+      margin-top:6px;
+      border-radius:12px;
+      border:1px solid var(--inputStroke);
+      background:var(--input);
+      color:var(--text);
+      font-size:18px; /* numeri più grandi come volevi */
+      outline:none;
+    }
+    textarea{min-height:42px;resize:vertical}
 
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
 
-button{
-  border:none;
-  padding:12px 14px;
-  border-radius:12px;
-  font-weight:950;
-  cursor:pointer;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  color:#06121f;
-}
-button.secondary{background:rgba(255,255,255,.10);border:1px solid var(--stroke2);color:var(--text)}
-button.ghost{background:transparent;border:1px solid var(--stroke2);color:var(--text)}
-button:active{transform:scale(.99)}
+    .toggle{
+      display:flex;align-items:center;gap:10px;margin-top:6px;
+      padding:10px 12px;border-radius:12px;border:1px solid var(--stroke2);
+      background:rgba(255,255,255,.06);
+    }
+    .toggle input{width:auto;margin:0;transform:scale(1.1)}
 
-hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0}
+    button{
+      border:none;
+      padding:12px 14px;
+      border-radius:12px;
+      font-weight:950;
+      cursor:pointer;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      color:#06121f;
+    }
+    button.secondary{background:rgba(255,255,255,.10);border:1px solid var(--stroke2);color:var(--text)}
+    button.ghost{background:transparent;border:1px solid var(--stroke2);color:var(--text)}
+    button:active{transform:scale(.99)}
 
-.toggle{
-  display:flex;align-items:center;gap:10px;margin-top:6px;
-  padding:10px 12px;border-radius:12px;border:1px solid var(--stroke2);
-  background: rgba(255,255,255,.06);
-}
-.toggle input{width:auto;margin:0;transform:scale(1.1)}
+    hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0}
 
-.kpis{display:flex;flex-direction:column;gap:10px}
-.kpi{
-  background: rgba(255,255,255,.07);
-  border:1px solid var(--stroke);
-  border-radius:14px;
-  padding:14px;
-}
-.kpi.good{border-color:rgba(52,211,153,.55)}
-.kpi.bad{border-color:rgba(251,113,133,.55)}
-.kpi .lbl{font-size:12px;color:var(--muted)}
-.kpi .val{font-size:28px;font-weight:950;letter-spacing:.2px}
-.kpi .note{font-size:11px;color:var(--muted);margin-top:6px}
+    /* KPI */
+    .kpis{display:flex;flex-direction:column;gap:10px}
+    .kpi{
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:14px;
+    }
+    .kpi.good{border-color:rgba(52,211,153,.60)}
+    .kpi.warn{border-color:rgba(251,191,36,.65)}
+    .kpi.bad{border-color:rgba(251,113,133,.65)}
+    .kpi .lbl{font-size:12px;color:var(--muted)}
+    .kpi .val{font-size:30px;font-weight:950;letter-spacing:.2px}
+    .kpi .note{font-size:11px;color:var(--muted);margin-top:6px}
 
-.kpiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+    /* Items table */
+    table{width:100%;border-collapse:separate;border-spacing:0 10px;margin-top:10px}
+    td{padding:0 6px;vertical-align:top}
+    .tdWide{min-width:210px}
+    .tdLine{min-width:210px}
+    .tdNum{min-width:150px}
+    select.wide{min-width:210px}
 
-.table{width:100%;margin-top:10px;border-collapse:separate;border-spacing:0 10px}
-.table td{padding:0 6px;vertical-align:middle}
+    .qtybox{display:flex;gap:6px;align-items:center}
+    .qbtn{
+      width:38px;height:38px;border-radius:12px;
+      background:rgba(255,255,255,.10);
+      border:1px solid var(--stroke2);
+      color:var(--text);
+      font-weight:950;
+    }
 
-.qtybox{display:flex;gap:6px;align-items:center}
-.qbtn{
-  width:36px;height:36px;border-radius:10px;
-  background:rgba(255,255,255,.10);
-  border:1px solid var(--stroke2);
-  color:var(--text);
-  font-weight:950;
-}
-.smallbtn{padding:10px 12px;border-radius:12px}
+    .actionsRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .actionsRow .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .actionsRow .right{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 
-select.wide {min-width:170px}
-td.tdWide {min-width:180px}
-td.tdLine {min-width:190px}
-td.tdNum  {min-width:130px}
+    .bottomZone{margin-top:14px}
+    .bottomActions{
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between
+    }
+    .bottomActions .group{display:flex;gap:10px;flex-wrap:wrap}
+    .drawer{
+      margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06);
+    }
+    .drawerRow{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+    .drawerRow>div{flex:1;min-width:230px}
 
-@media (max-width:980px){
-  .grid{grid-template-columns:1fr}
-  .kpiGrid{grid-template-columns:1fr}
-}
+    .alertBox{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .alertLine{display:flex;gap:10px;align-items:center;margin:6px 0}
+    .pill{
+      padding:6px 10px;border-radius:999px;font-weight:950;font-size:12px;
+      border:1px solid var(--stroke2);
+      background:rgba(255,255,255,.08);
+      color:var(--text);
+      white-space:nowrap;
+    }
+    .pill.good{border-color:rgba(52,211,153,.60); color:rgba(52,211,153,.95)}
+    .pill.warn{border-color:rgba(251,191,36,.65); color:rgba(251,191,36,.95)}
+    .pill.bad{border-color:rgba(251,113,133,.65); color:rgba(251,113,133,.95)}
 
-/* Saved kits drawer */
-.drawer{
-  margin-top:10px;
-  padding:12px;
-  border-radius:14px;
-  border:1px solid var(--stroke);
-  background:rgba(255,255,255,.06);
-}
-.drawerRow{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-.drawerRow > div{flex:1;min-width:220px}
-</style>
+  </style>
 </head>
 
 <body>
@@ -183,14 +205,15 @@ td.tdNum  {min-width:130px}
       <div class="logo"></div>
       <div>
         <h1>DOUBLEU Kit Builder PRO</h1>
-        <div class="hint">Preventivo rapido: costo → prezzo → margine → acconto → soglie</div>
+        <div class="sub">Preventivo rapido: costo → prezzo → margine → acconto → soglie</div>
       </div>
     </div>
+
     <div class="badge">
-      <span id="jsStatusDot"></span>
-      <span id="jsStatusText">JS non avviato</span>
-      <span style="opacity:.7">|</span>
-      <span id="buildTag">build v1</span>
+      <span id="jsDot"></span>
+      <span id="jsTxt">JS non avviato</span>
+      <span style="opacity:.6">|</span>
+      <span id="buildTxt">build v4</span>
     </div>
   </div>
 
@@ -203,12 +226,12 @@ td.tdNum  {min-width:130px}
         <div>
           <label>Nome progetto</label>
           <input id="projectName" placeholder="Es. Kit Club Roma - Stima">
-          <div class="hint">Usalo per salvare e ritrovare i preventivi.</div>
+          <div class="hint">Solo per te: utile per salvare e ritrovare preventivi.</div>
         </div>
         <div>
           <label>Quantità stimata</label>
-          <input id="players" placeholder="es. 80" inputmode="decimal">
-          <div class="hint">Default quantità nelle righe. Puoi allineare con un click.</div>
+          <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
+          <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
         </div>
       </div>
 
@@ -228,17 +251,15 @@ td.tdNum  {min-width:130px}
           </select>
           <div class="hint">Target sul netto (imponibile).</div>
         </div>
-
         <div>
           <label>IVA %</label>
           <input id="vat" value="22" inputmode="decimal">
-          <div class="hint">Se estero: togli “Applica IVA”.</div>
+          <div class="hint">Disattivabile per estero (reverse charge).</div>
         </div>
-
         <div>
           <label>Sconto trattativa %</label>
           <input id="discount" value="0" inputmode="decimal">
-          <div class="hint">Agisce sul prezzo “a target”.</div>
+          <div class="hint">Sconto sul prezzo finale (solo modalità “target”).</div>
         </div>
       </div>
 
@@ -246,7 +267,7 @@ td.tdNum  {min-width:130px}
         <div>
           <label>Prezzo proposto per atleta</label>
           <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal">
-          <div class="hint" id="offerHint">Budget club. Se attivi, controllo sostenibilità su questo prezzo.</div>
+          <div class="hint">Budget club. Se attivi, calcolo sostenibilità su questo prezzo.</div>
         </div>
         <div>
           <label>Usa prezzo proposto</label>
@@ -263,13 +284,13 @@ td.tdNum  {min-width:130px}
       <div class="row3" style="margin-top:10px">
         <div>
           <label>Acconto %</label>
-          <input id="deposit" value="60" inputmode="decimal">
-          <div class="hint">Serve per non anticipare produzione.</div>
+          <input id="depositPct" value="60" inputmode="decimal">
+          <div class="hint">Obiettivo: coprire produzione senza anticipare.</div>
         </div>
         <div>
           <label>Buffer sicurezza %</label>
-          <input id="buffer" value="5" inputmode="decimal">
-          <div class="hint">Imprevisti / extra / errori.</div>
+          <input id="bufferPct" value="5" inputmode="decimal">
+          <div class="hint">Cuscinetto su costo (imprevisti, extra).</div>
         </div>
         <div>
           <label>IVA</label>
@@ -283,590 +304,700 @@ td.tdNum  {min-width:130px}
         </div>
       </div>
 
-      <div class="actions">
-        <button id="btnApplyPlayers" type="button">Usa quantità stimata</button>
-        <button id="btnReset" class="secondary" type="button">Nuovo preventivo (pulisci)</button>
-        <button id="btnCopy" class="ghost" type="button">Copia riepilogo</button>
-      </div>
-
       <hr>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div>
-          <h3 style="margin:0 0 4px">Articoli kit</h3>
-          <div class="hint">Ogni riga: (costo base + extra per pezzo) × quantità</div>
-        </div>
-        <button id="btnAddItem" type="button">+ Aggiungi articolo</button>
-      </div>
-
-      <table class="table"><tbody id="items"></tbody></table>
-
-      <div class="hint">Extra = sponsor aggiuntivo / accessori / seconda stampa. Logo club incluso (di norma).</div>
-
-      <!-- SALVA / CARICA -->
-      <div class="drawer">
-        <div style="font-weight:950;margin-bottom:6px">Progetti (solo tuo browser)</div>
-        <div class="drawerRow">
+      <div class="actionsRow">
+        <div class="left">
           <div>
-            <label>Kit salvati</label>
-            <select id="savedSelect">
-              <option value="">— Seleziona un progetto —</option>
-            </select>
-            <div class="hint">I kit sono salvati nel browser (localStorage).</div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button id="btnSave" class="secondary" type="button">Salva progetto</button>
-            <button id="btnLoad" class="secondary" type="button">Carica</button>
-            <button id="btnDelete" class="ghost" type="button">Elimina</button>
+            <div class="sectionTitle">Articoli kit</div>
+            <div class="hint">Ogni riga: (costo base + extra per pezzo) × quantità. Extra = sponsor/accessori/seconda stampa.</div>
           </div>
         </div>
+        <div class="right">
+          <button id="btnApplyQty" class="secondary" type="button">Usa quantità stimata</button>
+          <button id="btnAddItem" type="button">+ Aggiungi articolo</button>
+        </div>
       </div>
+
+      <table><tbody id="itemsBody"></tbody></table>
+
+      <div class="alertBox" id="alertsBox" style="display:none"></div>
 
     </div>
 
     <!-- DESTRA KPI TOP -->
     <div class="card">
       <div class="kpis">
-        <div class="kpi" id="kpiCostBox">
+        <div class="kpi" id="kpiCost">
           <div class="lbl">Costo produzione per atleta</div>
-          <div class="val" id="kCostPerAthlete">—</div>
+          <div class="val" id="kCostAthlete">—</div>
           <div class="note">Media su base quantità stimata</div>
         </div>
 
-        <div class="kpi" id="kpiPriceBox">
+        <div class="kpi" id="kpiPrice">
           <div class="lbl">Prezzo per atleta</div>
           <div class="val" id="kPriceAthlete">—</div>
-          <div class="note" id="kVatLabel">—</div>
+          <div class="note" id="kVatNote">—</div>
         </div>
 
-        <div class="kpi" id="kpiMarginBox">
+        <div class="kpi" id="kpiMargin">
           <div class="lbl">Margine reale</div>
           <div class="val" id="kRealMargin">—</div>
-          <div class="note" id="kTargetLabel">Target: —</div>
+          <div class="note" id="kTarget">Target: —</div>
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- RIEPILOGO SOTTO -->
-  <div class="card" style="margin-top:14px">
-    <h3 style="margin:0 0 6px">Riepilogo ordine</h3>
-
-    <div class="kpiGrid">
+  <!-- RIEPILOGO COMPLETO -->
+  <div class="card bottomZone">
+    <h3 class="sectionTitle">Riepilogo ordine</h3>
+    <div class="row3">
       <div class="kpi">
         <div class="lbl">Costo totale produzione</div>
         <div class="val" id="kTotalCost">—</div>
         <div class="note">Somma (costo base + extra) × quantità</div>
       </div>
-
       <div class="kpi">
         <div class="lbl">Totale fatturato</div>
-        <div class="val" id="kGrossRevenue">—</div>
-        <div class="note" id="kRevenueNote">—</div>
+        <div class="val" id="kGross">—</div>
+        <div class="note" id="kGrossNote">—</div>
       </div>
-
-      <div class="kpi">
-        <div class="lbl">Utile totale (netto IVA)</div>
-        <div class="val" id="kProfit">—</div>
-        <div class="note">Calcolato su imponibile (netto IVA)</div>
-      </div>
-
-      <div class="kpi" id="kpiMinBox">
-        <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
-        <div class="val" id="kMinPrice">—</div>
-        <div class="note">Sotto questa soglia scendi sotto il margine target</div>
-      </div>
-
-      <div class="kpi" id="kpiDepositBox">
-        <div class="lbl">Acconto minimo sicuro</div>
-        <div class="val" id="kRequiredDeposit">—</div>
-        <div class="note" id="kDepositNote">Produzione + buffer (sicurezza)</div>
-      </div>
-
       <div class="kpi">
         <div class="lbl">Imponibile stimato</div>
-        <div class="val" id="kNetRevenue">—</div>
+        <div class="val" id="kNet">—</div>
         <div class="note">Totale netto (senza IVA)</div>
       </div>
     </div>
+
+    <div class="row3" style="margin-top:10px">
+      <div class="kpi">
+        <div class="lbl">Utile totale (netto IVA)</div>
+        <div class="val" id="kProfit">—</div>
+        <div class="note">Utile su imponibile</div>
+      </div>
+      <div class="kpi" id="kpiMinPrice">
+        <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
+        <div class="val" id="kMinPrice">—</div>
+        <div class="note">Sotto questa soglia scendi sotto margine target</div>
+      </div>
+      <div class="kpi" id="kpiDeposit">
+        <div class="lbl">Acconto minimo sicuro</div>
+        <div class="val" id="kMinDeposit">—</div>
+        <div class="note" id="kDepNote">Produzione + buffer (sicurezza)</div>
+      </div>
+    </div>
+
+    <!-- PULSANTI E SALVATAGGI IN FONDO -->
+    <hr>
+
+    <div class="bottomActions">
+      <div class="group">
+        <button id="btnReset" class="secondary" type="button">Nuovo preventivo (pulisci)</button>
+        <button id="btnCopy" class="ghost" type="button">Copia riepilogo</button>
+      </div>
+      <div class="group">
+        <span class="hint" style="margin:0">Suggerimento: dopo un update apri l’URL con <b>?v=1</b> per evitare cache.</span>
+      </div>
+    </div>
+
+    <div class="drawer">
+      <div style="font-weight:950;margin-bottom:6px">Salvataggio progetti (solo tuo browser)</div>
+
+      <div class="drawerRow">
+        <div>
+          <label>Kit salvati</label>
+          <select id="savedSelect">
+            <option value="">— Seleziona un progetto —</option>
+          </select>
+          <div class="hint">I kit restano nel browser (localStorage). Solo tu li vedi su questo dispositivo.</div>
+        </div>
+
+        <div class="group">
+          <button id="btnSave" class="secondary" type="button">Salva progetto</button>
+          <button id="btnLoad" class="secondary" type="button">Carica</button>
+          <button id="btnDelete" class="ghost" type="button">Elimina</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 <script>
-/* ===== Build tag (utile per capire se stai vedendo la versione nuova) ===== */
-document.getElementById("buildTag").textContent = "build v3";
+/* =========================
+   DOUBLEU Kit Builder PRO
+   build v4
+========================= */
 
-/* Helpers */
-const € = (n) => (Number.isFinite(n)?n:0).toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
-const toNum = (v) => {
-  if(v=== "" || v===null || v===undefined) return 0;
-  const s = String(v).replace(/\s/g,"").replace(",",".");
-  const x = parseFloat(s);
-  return Number.isFinite(x) ? x : 0;
-};
-const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+(function(){
+  const buildTxt = document.getElementById("buildTxt");
+  if(buildTxt) buildTxt.textContent = "build v4";
 
-function setJSStatus(ok, msg){
-  const dot = document.getElementById("jsStatusDot");
-  const txt = document.getElementById("jsStatusText");
-  if(!dot || !txt) return;
-  dot.style.background = ok ? "#34d399" : "#fb7185";
-  txt.textContent = msg;
-}
+  const jsDot = document.getElementById("jsDot");
+  const jsTxt = document.getElementById("jsTxt");
+  const setJS = (ok, txt) => {
+    if(jsDot) jsDot.style.background = ok ? "#34d399" : "#fb7185";
+    if(jsTxt) jsTxt.textContent = txt;
+  };
 
-/* Riferimenti costo (auto) */
-const REF_COST = {
-  PREMIUM: {"T-shirt":15,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
-  BASIC: {"T-shirt":9,"Polo":11,"Pantaloncino":10.5,"Gonnellino":11,"Dress":14,"Sweatshirt":19,"Hoodie":22,"Zip Hoodie":24,"Pantalone":18},
-  PROMOTIONAL: {"T-shirt":8,"Polo":10,"Pantaloncino":9,"Gonnellino":10,"Dress":13,"Sweatshirt":16,"Hoodie":18,"Zip Hoodie":20,"Pantalone":15}
-};
-const ARTICLES = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
-const LINES = [
-  { value:"PREMIUM", label:"Premium" },
-  { value:"BASIC", label:"Basic" },
-  { value:"PROMOTIONAL", label:"Promotional" },
-  { value:"ALTRO", label:"Altro" }
-];
+  const eur = (n) => (Number.isFinite(n)?n:0).toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
+  const toNum = (v) => {
+    if(v===null || v===undefined) return 0;
+    const s = String(v).trim().replace(/\s/g,"").replace(",",".");
+    const x = parseFloat(s);
+    return Number.isFinite(x) ? x : 0;
+  };
+  const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
 
-/* State */
-let items = [];
+  // References
+  const ARTICLES = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
+  const LINES = [
+    { value:"PREMIUM", label:"Premium" },
+    { value:"BASIC", label:"Basic" },
+    { value:"PROMOTIONAL", label:"Promotional" },
+    { value:"ALTRO", label:"Altro" }
+  ];
+  const REF_COST = {
+    PREMIUM: {"T-shirt":15,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
+    BASIC: {"T-shirt":9,"Polo":11,"Pantaloncino":10.5,"Gonnellino":11,"Dress":14,"Sweatshirt":19,"Hoodie":22,"Zip Hoodie":24,"Pantalone":18},
+    PROMOTIONAL: {"T-shirt":8,"Polo":10,"Pantaloncino":9,"Gonnellino":10,"Dress":13,"Sweatshirt":16,"Hoodie":18,"Zip Hoodie":20,"Pantalone":15}
+  };
 
-function newItem(){
-  const q = toNum(players.value) || 0;
-  return { id: uid(), article:"T-shirt", line:"PREMIUM", base:REF_COST.PREMIUM["T-shirt"], extra:0, qty:q, costMode:"auto" };
-}
-function ensureAtLeastOneItem(){
-  if(!Array.isArray(items) || items.length === 0) items = [newItem()];
-}
-function applyReferenceCost(it){
-  if(it.costMode !== "auto") return;
-  if(it.line === "ALTRO") return;
-  const ref = REF_COST[it.line]?.[it.article];
-  if(Number.isFinite(ref)) it.base = ref;
-}
+  // DOM
+  const projectName = document.getElementById("projectName");
+  const qtyEst = document.getElementById("qtyEst");
+  const margin = document.getElementById("margin");
+  const vat = document.getElementById("vat");
+  const discount = document.getElementById("discount");
+  const offerPrice = document.getElementById("offerPrice");
+  const useOffer = document.getElementById("useOffer");
+  const depositPct = document.getElementById("depositPct");
+  const bufferPct = document.getElementById("bufferPct");
+  const applyVAT = document.getElementById("applyVAT");
 
-/* Actions */
-function addItem(){
-  ensureAtLeastOneItem();
-  items.push(newItem());
-  renderItems();
-}
-function applyPlayers(){
-  const q = toNum(players.value);
-  items.forEach(it=>it.qty=q);
-  renderItems();
-}
-function resetAll(){
-  projectName.value = "";
-  players.value = "";
-  discount.value = "0";
-  deposit.value = "60";
-  buffer.value = "5";
-  applyVAT.checked = true;
-  vat.value = "22";
-  margin.value = "0.50";
-  offerPrice.value = "";
-  useOffer.checked = false;
-  items = [newItem()];
-  renderItems();
-}
-function toggleCostMode(id){
-  const it = items.find(x=>x.id===id); if(!it) return;
-  it.costMode = (it.costMode==="auto") ? "manual" : "auto";
-  applyReferenceCost(it);
-  renderItems();
-}
-function duplicateItem(id){
-  const idx = items.findIndex(x=>x.id===id); if(idx<0) return;
-  items.splice(idx+1,0,{...items[idx], id:uid()});
-  renderItems();
-}
-function removeItem(id){
-  items = items.filter(x=>x.id!==id);
-  ensureAtLeastOneItem();
-  renderItems();
-}
-function qtyStep(id, delta){
-  const it = items.find(x=>x.id===id); if(!it) return;
-  it.qty = Math.max(0, toNum(it.qty)+delta);
-  renderItems();
-}
+  const btnAddItem = document.getElementById("btnAddItem");
+  const btnApplyQty = document.getElementById("btnApplyQty");
 
-/* Render rows */
-function renderItems(){
-  ensureAtLeastOneItem();
-  const tbody = document.getElementById("items");
-  if(!tbody) return;
+  const btnReset = document.getElementById("btnReset");
+  const btnCopy = document.getElementById("btnCopy");
 
-  let html = "";
-  items.forEach(it=>{
-    const optArticles = ARTICLES.map(a=>`<option value="${a}" ${a===it.article?"selected":""}>${a}</option>`).join("");
-    const optLines = LINES.map(l=>`<option value="${l.value}" ${l.value===it.line?"selected":""}>${l.label}</option>`).join("");
-    const costNote = (it.line==="ALTRO") ? "Costo manuale" : (it.costMode==="auto" ? "Costo: auto (riferimento)" : "Costo: manuale");
+  const itemsBody = document.getElementById("itemsBody");
+  const alertsBox = document.getElementById("alertsBox");
 
-    html += `
-      <tr>
-        <td class="tdWide">
-          <label>Articolo</label>
-          <select class="wide" data-act="article" data-id="${it.id}">${optArticles}</select>
-        </td>
+  const kCostAthlete = document.getElementById("kCostAthlete");
+  const kPriceAthlete = document.getElementById("kPriceAthlete");
+  const kRealMargin = document.getElementById("kRealMargin");
+  const kVatNote = document.getElementById("kVatNote");
+  const kTarget = document.getElementById("kTarget");
 
-        <td class="tdLine">
-          <label>Linea</label>
-          <select class="wide" data-act="line" data-id="${it.id}">${optLines}</select>
-        </td>
+  const kTotalCost = document.getElementById("kTotalCost");
+  const kGross = document.getElementById("kGross");
+  const kNet = document.getElementById("kNet");
+  const kProfit = document.getElementById("kProfit");
+  const kMinPrice = document.getElementById("kMinPrice");
+  const kMinDeposit = document.getElementById("kMinDeposit");
+  const kDepNote = document.getElementById("kDepNote");
+  const kGrossNote = document.getElementById("kGrossNote");
 
-        <td class="tdNum">
-          <label>Costo base €</label>
-          <input data-act="base" data-id="${it.id}" inputmode="decimal" placeholder="es. 15,50" value="${String(it.base).replace(".",",")}">
-          <div class="hint">${costNote}</div>
-        </td>
+  const kpiMargin = document.getElementById("kpiMargin");
+  const kpiPrice = document.getElementById("kpiPrice");
+  const kpiMinPrice = document.getElementById("kpiMinPrice");
+  const kpiDeposit = document.getElementById("kpiDeposit");
 
-        <td class="tdNum">
-          <label>Extra € (per pezzo)</label>
-          <input data-act="extra" data-id="${it.id}" inputmode="decimal" placeholder="es. 2,00" value="${String(it.extra).replace(".",",")}">
-          <div class="hint">Sponsor / accessori / seconda stampa</div>
-        </td>
+  // Save
+  const STORE_KEY = "doubleu_kits_v4";
+  const savedSelect = document.getElementById("savedSelect");
+  const btnSave = document.getElementById("btnSave");
+  const btnLoad = document.getElementById("btnLoad");
+  const btnDelete = document.getElementById("btnDelete");
 
-        <td class="tdNum">
-          <label>Quantità</label>
-          <div class="qtybox" style="margin-top:6px">
-            <button class="qbtn" type="button" data-act="minus" data-id="${it.id}">−</button>
-            <input data-act="qty" data-id="${it.id}" inputmode="decimal" placeholder="es. 80" value="${String(it.qty).replace(".",",")}">
-            <button class="qbtn" type="button" data-act="plus" data-id="${it.id}">+</button>
-          </div>
-          <div class="hint">Default = quantità stimata</div>
-        </td>
+  const getStore = () => {
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      const obj = raw ? JSON.parse(raw) : {};
+      return (obj && typeof obj === "object") ? obj : {};
+    }catch(e){ return {}; }
+  };
+  const setStore = (obj) => localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+  const refreshSaved = () => {
+    const store = getStore();
+    const keys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
+    savedSelect.innerHTML = `<option value="">— Seleziona un progetto —</option>` + keys.map(k=>`<option value="${k}">${k}</option>`).join("");
+  };
 
-        <td style="min-width:210px">
-          <label>Azioni</label>
-          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-            <button class="secondary smallbtn" type="button" data-act="costMode" data-id="${it.id}">${it.costMode==="auto"?"Costo: AUTO":"Costo: MANUALE"}</button>
-            <button class="secondary smallbtn" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
-            <button class="secondary smallbtn" type="button" data-act="remove" data-id="${it.id}">Rimuovi</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
+  // State
+  let items = [];
 
-  tbody.innerHTML = html;
+  const refCost = (line, article) => {
+    if(line==="ALTRO") return null;
+    const r = REF_COST[line] && REF_COST[line][article];
+    return Number.isFinite(r) ? r : null;
+  };
 
-  // Bind row events
-  tbody.querySelectorAll("[data-act]").forEach(el=>{
-    const act = el.getAttribute("data-act");
-    const id = el.getAttribute("data-id");
+  const newItem = () => {
+    const q = toNum(qtyEst.value) || 0;
+    const base = refCost("PREMIUM","T-shirt") ?? 0;
+    return { id: uid(), article:"T-shirt", line:"PREMIUM", base, extra:0, qty:q, costMode:"auto" };
+  };
 
-    if(act==="article"){
-      el.addEventListener("change", ()=>{
-        const it = items.find(x=>x.id===id); if(!it) return;
-        it.article = el.value;
-        applyReferenceCost(it);
-        renderItems();
-      });
+  const ensureOne = () => { if(!items.length) items = [newItem()]; };
+
+  const setBox = (el, state) => {
+    if(!el) return;
+    el.classList.remove("good","warn","bad");
+    if(state) el.classList.add(state);
+  };
+
+  // Render items
+  const render = () => {
+    ensureOne();
+    let html = "";
+    items.forEach(it=>{
+      const optsA = ARTICLES.map(a=>`<option value="${a}" ${a===it.article?"selected":""}>${a}</option>`).join("");
+      const optsL = LINES.map(l=>`<option value="${l.value}" ${l.value===it.line?"selected":""}>${l.label}</option>`).join("");
+
+      const costLabel = (it.line==="ALTRO") ? "Manuale" : (it.costMode==="auto" ? "Auto (rif.)" : "Manuale");
+
+      html += `
+        <tr>
+          <td class="tdWide">
+            <label>Articolo</label>
+            <select class="wide" data-act="article" data-id="${it.id}">${optsA}</select>
+          </td>
+
+          <td class="tdLine">
+            <label>Linea</label>
+            <select class="wide" data-act="line" data-id="${it.id}">${optsL}</select>
+          </td>
+
+          <td class="tdNum">
+            <label>Costo base €</label>
+            <input data-act="base" data-id="${it.id}" inputmode="decimal" value="${String(it.base).replace(".",",")}">
+            <div class="hint">Costo: ${costLabel} (modificabile)</div>
+          </td>
+
+          <td class="tdNum">
+            <label>Extra € (per pezzo)</label>
+            <input data-act="extra" data-id="${it.id}" inputmode="decimal" value="${String(it.extra).replace(".",",")}">
+            <div class="hint">Sponsor / accessori / seconda stampa</div>
+          </td>
+
+          <td class="tdNum">
+            <label>Quantità</label>
+            <div class="qtybox" style="margin-top:6px">
+              <button class="qbtn" type="button" data-act="minus" data-id="${it.id}">−</button>
+              <input data-act="qty" data-id="${it.id}" inputmode="decimal" value="${String(it.qty).replace(".",",")}">
+              <button class="qbtn" type="button" data-act="plus" data-id="${it.id}">+</button>
+            </div>
+            <div class="hint">Default = quantità stimata</div>
+          </td>
+
+          <td style="min-width:260px">
+            <label>Azioni</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <button class="secondary" type="button" data-act="costMode" data-id="${it.id}">Costo: ${it.costMode==="auto"?"AUTO":"MANUALE"}</button>
+              <button class="secondary" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
+              <button class="secondary" type="button" data-act="rm" data-id="${it.id}">Rimuovi</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    itemsBody.innerHTML = html;
+
+    // bind
+    itemsBody.querySelectorAll("[data-act]").forEach(el=>{
+      const act = el.getAttribute("data-act");
+      const id = el.getAttribute("data-id");
+
+      const find = () => items.find(x=>x.id===id);
+
+      if(act==="article"){
+        el.addEventListener("change", ()=>{
+          const it = find(); if(!it) return;
+          it.article = el.value;
+          if(it.costMode==="auto" && it.line!=="ALTRO"){
+            const r = refCost(it.line, it.article);
+            if(r!==null) it.base = r;
+          }
+          render();
+        });
+        return;
+      }
+
+      if(act==="line"){
+        el.addEventListener("change", ()=>{
+          const it = find(); if(!it) return;
+          it.line = el.value;
+          if(it.line==="ALTRO") it.costMode="manual";
+          if(it.costMode==="auto" && it.line!=="ALTRO"){
+            const r = refCost(it.line, it.article);
+            if(r!==null) it.base = r;
+          }
+          render();
+        });
+        return;
+      }
+
+      if(["base","extra","qty"].includes(act)){
+        el.addEventListener("input", ()=>{
+          const it = find(); if(!it) return;
+          it[act] = toNum(el.value);
+          calc();
+        });
+        el.addEventListener("change", ()=>{
+          const it = find(); if(!it) return;
+          it[act] = toNum(el.value);
+          render();
+        });
+        return;
+      }
+
+      if(act==="minus"){ el.addEventListener("click", ()=>{ const it=find(); if(!it) return; it.qty=Math.max(0,toNum(it.qty)-1); render(); }); return; }
+      if(act==="plus"){ el.addEventListener("click", ()=>{ const it=find(); if(!it) return; it.qty=Math.max(0,toNum(it.qty)+1); render(); }); return; }
+
+      if(act==="costMode"){
+        el.addEventListener("click", ()=>{
+          const it = find(); if(!it) return;
+          it.costMode = (it.costMode==="auto") ? "manual" : "auto";
+          if(it.costMode==="auto" && it.line!=="ALTRO"){
+            const r = refCost(it.line, it.article);
+            if(r!==null) it.base = r;
+          }
+          render();
+        });
+        return;
+      }
+
+      if(act==="dup"){
+        el.addEventListener("click", ()=>{
+          const idx = items.findIndex(x=>x.id===id);
+          if(idx<0) return;
+          items.splice(idx+1,0,{...items[idx], id:uid()});
+          render();
+        });
+        return;
+      }
+
+      if(act==="rm"){
+        el.addEventListener("click", ()=>{
+          items = items.filter(x=>x.id!==id);
+          ensureOne();
+          render();
+        });
+        return;
+      }
+    });
+
+    calc();
+  };
+
+  const showAlerts = (list) => {
+    if(!list.length){
+      alertsBox.style.display = "none";
+      alertsBox.innerHTML = "";
       return;
     }
-    if(act==="line"){
-      el.addEventListener("change", ()=>{
-        const it = items.find(x=>x.id===id); if(!it) return;
-        it.line = el.value;
-        if(it.line==="ALTRO") it.costMode="manual";
-        applyReferenceCost(it);
-        renderItems();
-      });
+    alertsBox.style.display = "block";
+    alertsBox.innerHTML = list.map(a=>`
+      <div class="alertLine">
+        <span class="pill ${a.level}">${a.title}</span>
+        <span>${a.text}</span>
+      </div>
+    `).join("");
+  };
+
+  const calc = () => {
+    const q = toNum(qtyEst.value);
+    const qtyBase = q>0 ? q : 1;
+
+    const m = parseFloat(margin.value);
+    const disc = toNum(discount.value)/100;
+    const vatRate = toNum(vat.value)/100;
+    const vatOn = !!applyVAT.checked;
+
+    const dep = toNum(depositPct.value)/100;
+    const buf = toNum(bufferPct.value)/100;
+
+    let totalCost = 0;
+    let hasQty = false;
+    items.forEach(it=>{
+      const qty = toNum(it.qty);
+      if(qty>0) hasQty = true;
+      totalCost += (toNum(it.base)+toNum(it.extra)) * qty;
+    });
+
+    if(!hasQty || totalCost<=0){
+      kCostAthlete.textContent="—";
+      kPriceAthlete.textContent="—";
+      kRealMargin.textContent="—";
+      kTarget.textContent="Target: " + (m*100).toFixed(0) + "%";
+      kVatNote.textContent="—";
+      kTotalCost.textContent="—";
+      kGross.textContent="—";
+      kNet.textContent="—";
+      kProfit.textContent="—";
+      kMinPrice.textContent="—";
+      kMinDeposit.textContent="—";
+      kDepNote.textContent="Inserisci almeno 1 quantità > 0";
+      kGrossNote.textContent="—";
+      showAlerts([]);
+      setBox(kpiMargin,null); setBox(kpiPrice,null); setBox(kpiMinPrice,null); setBox(kpiDeposit,null);
       return;
     }
-    if(["base","extra","qty"].includes(act)){
-      el.addEventListener("input", ()=>{
-        const it = items.find(x=>x.id===id); if(!it) return;
-        it[act] = toNum(el.value);
-        calc();
-      });
-      el.addEventListener("change", ()=>{
-        const it = items.find(x=>x.id===id); if(!it) return;
-        it[act] = toNum(el.value);
-        renderItems();
-      });
-      return;
+
+    // prezzo a target
+    const revenueNetTarget = totalCost / (1 - m);
+    const invoiceTarget = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
+    const invoiceAfterDiscount = invoiceTarget * (1 - disc);
+    const minPricePerAthlete = invoiceAfterDiscount / qtyBase;
+
+    // modalità budget / prezzo proposto
+    let invoiceTotal = invoiceAfterDiscount;
+    let usingOffer = false;
+    if(useOffer.checked){
+      const offer = toNum(offerPrice.value);
+      if(offer>0){
+        invoiceTotal = offer * qtyBase;
+        usingOffer = true;
+      }
     }
 
-    if(act==="minus"){ el.addEventListener("click", ()=>qtyStep(id,-1)); return; }
-    if(act==="plus"){ el.addEventListener("click", ()=>qtyStep(id,+1)); return; }
-    if(act==="costMode"){ el.addEventListener("click", ()=>toggleCostMode(id)); return; }
-    if(act==="dup"){ el.addEventListener("click", ()=>duplicateItem(id)); return; }
-    if(act==="remove"){ el.addEventListener("click", ()=>removeItem(id)); return; }
-  });
+    const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
+    const profit = revenueNet - totalCost;
+    const realMargin = revenueNet>0 ? (profit/revenueNet) : 0;
 
-  calc();
-}
+    const costPerAthlete = totalCost / qtyBase;
+    const pricePerAthlete = invoiceTotal / qtyBase;
 
-/* KPI helpers */
-function setBoxState(box, state){
-  if(!box) return;
-  box.classList.remove("good","bad");
-  if(state==="good") box.classList.add("good");
-  if(state==="bad") box.classList.add("bad");
-}
+    // acconto minimo sicuro (produzione + buffer)
+    const secureNeed = totalCost * (1 + buf);
+    const depositAmount = invoiceTotal * dep;
+    const depositPctRequired = invoiceTotal>0 ? (secureNeed / invoiceTotal) : 0;
 
-function calc(){
-  const qtyEst = toNum(players.value);
-  const qtyBase = qtyEst > 0 ? qtyEst : 1;
+    // output
+    kCostAthlete.textContent = eur(costPerAthlete);
+    kPriceAthlete.textContent = eur(pricePerAthlete);
+    kRealMargin.textContent = (realMargin*100).toFixed(1) + "%";
+    kTarget.textContent = "Target: " + (m*100).toFixed(0) + "%";
+    kVatNote.textContent = vatOn ? "IVA inclusa nel prezzo" : "Prezzi netti (no IVA)";
 
-  const m = parseFloat(margin.value);
-  const disc = toNum(discount.value)/100;
-  const vatRate = toNum(vat.value)/100;
-  const vatOn = !!applyVAT.checked;
+    kTotalCost.textContent = eur(totalCost);
+    kGross.textContent = eur(invoiceTotal);
+    kNet.textContent = eur(revenueNet);
+    kProfit.textContent = eur(profit);
+    kMinPrice.textContent = eur(minPricePerAthlete);
+    kMinDeposit.textContent = eur(secureNeed);
 
-  const depPct = toNum(deposit.value)/100;
-  const bufPct = toNum(buffer.value)/100;
+    kGrossNote.textContent = usingOffer
+      ? (vatOn ? "Modalità BUDGET (IVA incl.)" : "Modalità BUDGET (netto)")
+      : (vatOn ? `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · IVA ${(vatRate*100).toFixed(0)}%`
+              : `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · NO IVA`);
 
-  offerHint.textContent = vatOn
-    ? "Budget club (IVA inclusa). Se attivi, controllo sostenibilità su questo prezzo."
-    : "Budget cliente (netto, no IVA). Se attivi, controllo sostenibilità su questo prezzo.";
+    kDepNote.textContent = `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`;
 
-  let totalCost = 0;
-  items.forEach(it => totalCost += (toNum(it.base)+toNum(it.extra)) * toNum(it.qty));
-  const hasAnyQty = items.some(it=>toNum(it.qty)>0);
+    // alerts + states
+    const alerts = [];
 
-  if(!hasAnyQty || totalCost<=0){
-    kCostPerAthlete.textContent="—";
-    kPriceAthlete.textContent="—";
-    kRealMargin.textContent="—";
-    kTargetLabel.textContent="Target: " + (m*100).toFixed(0) + "%";
-    kVatLabel.textContent="—";
-    kTotalCost.textContent="—";
-    kGrossRevenue.textContent="—";
-    kNetRevenue.textContent="—";
-    kProfit.textContent="—";
-    kMinPrice.textContent="—";
-    kRequiredDeposit.textContent="—";
-    kDepositNote.textContent="Inserisci almeno 1 quantità > 0.";
-    kRevenueNote.textContent="—";
-    setBoxState(kpiMarginBox,"neutral");
-    setBoxState(kpiMinBox,"neutral");
-    setBoxState(kpiDepositBox,"neutral");
-    setBoxState(kpiPriceBox,"neutral");
-    return;
-  }
-
-  const revenueNetTarget = totalCost / (1 - m);
-  const invoiceTarget = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
-  const invoiceMinAfterDiscount = invoiceTarget * (1 - disc);
-  const minPricePerAthlete = invoiceMinAfterDiscount / qtyBase;
-
-  let invoiceTotal = invoiceMinAfterDiscount;
-  let usingOffer = false;
-
-  if(!!useOffer.checked){
-    const offer = toNum(offerPrice.value);
-    if(offer>0){
-      invoiceTotal = offer * qtyBase;
-      usingOffer = true;
+    if(realMargin + 1e-9 < m){
+      alerts.push({level:"bad", title:"Margine sotto target", text:`Stai facendo ${(realMargin*100).toFixed(1)}% invece di ${(m*100).toFixed(0)}%.`});
+      setBox(kpiMargin,"bad");
+    } else {
+      setBox(kpiMargin,"good");
     }
-  }
 
-  const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
-  const profit = revenueNet - totalCost;
-  const realMargin = revenueNet>0 ? profit/revenueNet : 0;
+    if(pricePerAthlete + 1e-9 < minPricePerAthlete){
+      alerts.push({level:"bad", title:"Prezzo sotto minimo", text:`Minimo accettabile: ${eur(minPricePerAthlete)} / atleta.`});
+      setBox(kpiPrice,"bad");
+      setBox(kpiMinPrice,"bad");
+    } else {
+      setBox(kpiPrice,"good");
+      setBox(kpiMinPrice,"good");
+    }
 
-  const costPerAthlete = totalCost / qtyBase;
-  const pricePerAthlete = invoiceTotal / qtyBase;
+    if(depositAmount + 1e-9 < secureNeed){
+      alerts.push({level:"warn", title:"Acconto insufficiente", text:`Per stare “sicuro” servono ${eur(secureNeed)}. Aumenta acconto o riduci costo.`});
+      setBox(kpiDeposit,"warn");
+    } else {
+      setBox(kpiDeposit,"good");
+    }
 
-  const secureNeed = totalCost * (1 + bufPct);
-  const depositAmount = invoiceTotal * depPct;
-  const depositPctRequired = invoiceTotal>0 ? secureNeed/invoiceTotal : 0;
+    showAlerts(alerts);
+  };
 
-  kCostPerAthlete.textContent = €(costPerAthlete);
-  kPriceAthlete.textContent = €(pricePerAthlete);
-  kRealMargin.textContent = (realMargin*100).toFixed(1) + "%";
-  kTargetLabel.textContent = "Target: " + (m*100).toFixed(0) + "%";
-  kVatLabel.textContent = vatOn ? "IVA inclusa nel prezzo" : "Prezzi netti (no IVA)";
+  // Actions
+  const addItem = () => { items.push(newItem()); render(); };
+  const applyQtyToRows = () => {
+    const q = toNum(qtyEst.value);
+    items.forEach(it=>it.qty = q);
+    render();
+  };
 
-  kTotalCost.textContent = €(totalCost);
-  kGrossRevenue.textContent = €(invoiceTotal);
-  kNetRevenue.textContent = €(revenueNet);
-  kProfit.textContent = €(profit);
-  kMinPrice.textContent = €(minPricePerAthlete);
-  kRequiredDeposit.textContent = €(secureNeed);
+  const resetAll = () => {
+    projectName.value = "";
+    qtyEst.value = "";
+    margin.value = "0.50";
+    vat.value = "22";
+    discount.value = "0";
+    offerPrice.value = "";
+    useOffer.checked = false;
+    depositPct.value = "60";
+    bufferPct.value = "5";
+    applyVAT.checked = true;
+    items = [newItem()];
+    render();
+    alert("Nuovo preventivo pronto ✅");
+  };
 
-  kRevenueNote.textContent = usingOffer
-    ? (vatOn ? `Modalità BUDGET (IVA incl.) · Min ${€(minPricePerAthlete)} / atleta` : `Modalità BUDGET (netto) · Min ${€(minPricePerAthlete)} / atleta`)
-    : (vatOn ? `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · IVA ${(vatRate*100).toFixed(0)}%` : `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · NO IVA`);
+  const copySummary = async () => {
+    const vatOn = !!applyVAT.checked;
+    const usingOffer = !!useOffer.checked && toNum(offerPrice.value)>0;
 
-  kDepositNote.textContent = `Acconto attuale: ${€(depositAmount)} (${(depPct*100).toFixed(0)}%) · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`;
+    const lines = [];
+    lines.push(`DOUBLEU — Preventivo kit`);
+    if(projectName.value.trim()) lines.push(`Progetto: ${projectName.value.trim()}`);
+    if(qtyEst.value.trim()) lines.push(`Quantità stimata: ${qtyEst.value.trim()}`);
+    lines.push(`Margine target: ${margin.options[margin.selectedIndex].text}`);
+    lines.push(`IVA: ${vatOn ? "SI" : "NO"} (${vat.value}%)`);
+    lines.push(`Sconto: ${discount.value}%`);
+    lines.push(`Acconto: ${depositPct.value}% · Buffer: ${bufferPct.value}%`);
+    if(usingOffer) lines.push(`Prezzo proposto: ${offerPrice.value} ${vatOn ? "(IVA incl.)" : "(netto)"}`);
+    lines.push(``);
+    lines.push(`ARTICOLI:`);
+    items.forEach(it=>{
+      lines.push(`- ${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}`);
+    });
+    lines.push(``);
+    lines.push(`RIEPILOGO:`);
+    lines.push(`Costo totale produzione: ${kTotalCost.textContent}`);
+    lines.push(`Totale fatturato: ${kGross.textContent}`);
+    lines.push(`Imponibile: ${kNet.textContent}`);
+    lines.push(`Utile: ${kProfit.textContent}`);
+    lines.push(`Costo per atleta: ${kCostAthlete.textContent}`);
+    lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${vatOn ? "IVA incl." : "netto"})`);
+    lines.push(`Margine reale: ${kRealMargin.textContent}`);
+    lines.push(`Prezzo minimo accettabile: ${kMinPrice.textContent}`);
+    lines.push(`Acconto minimo sicuro: ${kMinDeposit.textContent}`);
 
-  setBoxState(kpiMarginBox, (realMargin + 1e-9 < m) ? "bad" : "good");
-  if(pricePerAthlete + 1e-9 < minPricePerAthlete){
-    setBoxState(kpiMinBox, "bad");
-    setBoxState(kpiPriceBox, "bad");
-  } else {
-    setBoxState(kpiMinBox, "good");
-    setBoxState(kpiPriceBox, "good");
-  }
-  setBoxState(kpiDepositBox, (depositAmount + 1e-9 < secureNeed) ? "bad" : "good");
-}
+    const text = lines.join("\n");
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("Riepilogo copiato ✅");
+    }catch(e){
+      const ta=document.createElement("textarea");
+      ta.value=text; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); ta.remove();
+      alert("Riepilogo copiato ✅");
+    }
+  };
 
-async function copySummary(){
-  const vatOn = !!applyVAT.checked;
-  const usingOffer = !!useOffer.checked && toNum(offerPrice.value)>0;
-
-  const lines = [];
-  lines.push(`DOUBLEU — Preventivo kit`);
-  if(projectName.value.trim()) lines.push(`Progetto: ${projectName.value.trim()}`);
-  if(players.value.trim()) lines.push(`Quantità stimata: ${players.value.trim()}`);
-  lines.push(`Margine target: ${margin.options[margin.selectedIndex].text}`);
-  lines.push(`IVA: ${vatOn ? "SI" : "NO"} (${vat.value}%)`);
-  lines.push(`Sconto: ${discount.value}%`);
-  lines.push(`Acconto: ${deposit.value}% · Buffer: ${buffer.value}%`);
-  if(usingOffer) lines.push(`Prezzo proposto: ${offerPrice.value} ${vatOn ? "(IVA incl.)" : "(netto)"}`);
-  lines.push(``);
-  lines.push(`ARTICOLI:`);
-  items.forEach(it=>{
-    lines.push(`- ${it.article} | ${it.line} | base ${€(toNum(it.base))} | extra ${€(toNum(it.extra))} | qty ${toNum(it.qty)}`);
-  });
-  lines.push(``);
-  lines.push(`RIEPILOGO:`);
-  lines.push(`Costo totale produzione: ${kTotalCost.textContent}`);
-  lines.push(`Totale fatturato: ${kGrossRevenue.textContent}`);
-  lines.push(`Imponibile: ${kNetRevenue.textContent}`);
-  lines.push(`Utile: ${kProfit.textContent}`);
-  lines.push(`Costo per atleta: ${kCostPerAthlete.textContent}`);
-  lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${vatOn ? "IVA incl." : "netto"})`);
-  lines.push(`Margine reale: ${kRealMargin.textContent}`);
-  lines.push(`Prezzo minimo accettabile: ${kMinPrice.textContent}`);
-  lines.push(`Acconto minimo sicuro: ${kRequiredDeposit.textContent}`);
-
-  const text = lines.join("\n");
-  try{
-    await navigator.clipboard.writeText(text);
-    alert("Riepilogo copiato ✅");
-  }catch(e){
-    const ta=document.createElement("textarea");
-    ta.value=text; document.body.appendChild(ta);
-    ta.select(); document.execCommand("copy"); ta.remove();
-    alert("Riepilogo copiato ✅");
-  }
-}
-
-/* ===== Salvataggi (localStorage) ===== */
-const STORE_KEY = "doubleu_kits_v1";
-
-function getStore(){
-  try{
-    const raw = localStorage.getItem(STORE_KEY);
-    const data = raw ? JSON.parse(raw) : {};
-    return (data && typeof data === "object") ? data : {};
-  }catch(e){ return {}; }
-}
-function setStore(obj){
-  localStorage.setItem(STORE_KEY, JSON.stringify(obj));
-}
-function currentPayload(){
-  return {
+  // Save project
+  const payload = () => ({
     projectName: projectName.value || "",
-    players: players.value || "",
+    qtyEst: qtyEst.value || "",
     margin: margin.value,
     vat: vat.value,
     discount: discount.value,
     offerPrice: offerPrice.value,
     useOffer: useOffer.checked,
-    deposit: deposit.value,
-    buffer: buffer.value,
+    depositPct: depositPct.value,
+    bufferPct: bufferPct.value,
     applyVAT: applyVAT.checked,
     items
+  });
+
+  const applyPayload = (p) => {
+    projectName.value = p.projectName || "";
+    qtyEst.value = p.qtyEst || "";
+    margin.value = p.margin ?? "0.50";
+    vat.value = p.vat ?? "22";
+    discount.value = p.discount ?? "0";
+    offerPrice.value = p.offerPrice ?? "";
+    useOffer.checked = !!p.useOffer;
+    depositPct.value = p.depositPct ?? "60";
+    bufferPct.value = p.bufferPct ?? "5";
+    applyVAT.checked = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
+    items = Array.isArray(p.items) && p.items.length ? p.items : [newItem()];
+    render();
   };
-}
-function applyPayload(p){
-  projectName.value = p.projectName || "";
-  players.value = p.players || "";
-  margin.value = p.margin ?? "0.50";
-  vat.value = p.vat ?? "22";
-  discount.value = p.discount ?? "0";
-  offerPrice.value = p.offerPrice ?? "";
-  useOffer.checked = !!p.useOffer;
-  deposit.value = p.deposit ?? "60";
-  buffer.value = p.buffer ?? "5";
-  applyVAT.checked = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
-  items = Array.isArray(p.items) && p.items.length ? p.items : [newItem()];
-  renderItems();
-}
-function refreshSavedSelect(){
-  const sel = document.getElementById("savedSelect");
-  const store = getStore();
-  const keys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
-  sel.innerHTML = `<option value="">— Seleziona un progetto —</option>` + keys.map(k=>`<option value="${k}">${k}</option>`).join("");
-}
-function saveProject(){
-  const name = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
-  if(!name) return;
-  const store = getStore();
-  store[name] = { savedAt: Date.now(), payload: currentPayload() };
-  setStore(store);
-  projectName.value = name;
-  refreshSavedSelect();
-  alert("Progetto salvato ✅");
-}
-function loadProject(){
-  const sel = document.getElementById("savedSelect");
-  const key = sel.value;
-  if(!key) return alert("Seleziona un progetto da caricare.");
-  const store = getStore();
-  const entry = store[key];
-  if(!entry) return alert("Progetto non trovato.");
-  applyPayload(entry.payload);
-  alert("Progetto caricato ✅");
-}
-function deleteProject(){
-  const sel = document.getElementById("savedSelect");
-  const key = sel.value;
-  if(!key) return alert("Seleziona un progetto da eliminare.");
-  const store = getStore();
-  if(!store[key]) return alert("Non trovato.");
-  if(!confirm(`Eliminare "${key}"?`)) return;
-  delete store[key];
-  setStore(store);
-  refreshSavedSelect();
-  alert("Eliminato ✅");
-}
 
-/* ===== Init ===== */
-(function init(){
+  const saveProject = () => {
+    const name = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
+    if(!name) return;
+    const store = getStore();
+    store[name] = { savedAt: Date.now(), payload: payload() };
+    setStore(store);
+    projectName.value = name;
+    refreshSaved();
+    alert("Progetto salvato ✅");
+  };
+
+  const loadProject = () => {
+    const key = savedSelect.value;
+    if(!key) return alert("Seleziona un progetto da caricare.");
+    const store = getStore();
+    if(!store[key]) return alert("Progetto non trovato.");
+    applyPayload(store[key].payload);
+    alert("Progetto caricato ✅");
+  };
+
+  const deleteProject = () => {
+    const key = savedSelect.value;
+    if(!key) return alert("Seleziona un progetto da eliminare.");
+    const store = getStore();
+    if(!store[key]) return alert("Non trovato.");
+    if(!confirm(`Eliminare "${key}"?`)) return;
+    delete store[key];
+    setStore(store);
+    refreshSaved();
+    alert("Eliminato ✅");
+  };
+
+  // Bind base listeners
+  const bindCalc = (el, ev="input") => el.addEventListener(ev, calc);
+
+  // Start
   try{
-    setJSStatus(true, "JS OK");
+    // Buttons
+    btnAddItem.addEventListener("click", addItem);
+    btnApplyQty.addEventListener("click", applyQtyToRows);
 
-    // Bind top buttons
-    document.getElementById("btnAddItem").addEventListener("click", addItem);
-    document.getElementById("btnApplyPlayers").addEventListener("click", applyPlayers);
-    document.getElementById("btnReset").addEventListener("click", resetAll);
-    document.getElementById("btnCopy").addEventListener("click", copySummary);
+    // Inputs
+    bindCalc(qtyEst);
+    bindCalc(margin, "change");
+    bindCalc(vat);
+    bindCalc(discount);
+    bindCalc(offerPrice);
+    bindCalc(useOffer, "change");
+    bindCalc(depositPct);
+    bindCalc(bufferPct);
+    bindCalc(applyVAT, "change");
 
-    document.getElementById("btnSave").addEventListener("click", saveProject);
-    document.getElementById("btnLoad").addEventListener("click", loadProject);
-    document.getElementById("btnDelete").addEventListener("click", deleteProject);
+    // Bottom actions
+    btnReset.addEventListener("click", resetAll);
+    btnCopy.addEventListener("click", copySummary);
 
-    // Listeners inputs
-    players.addEventListener("input", calc);
-    margin.addEventListener("change", calc);
-    vat.addEventListener("input", calc);
-    discount.addEventListener("input", calc);
-    deposit.addEventListener("input", calc);
-    buffer.addEventListener("input", calc);
-    applyVAT.addEventListener("change", calc);
-    offerPrice.addEventListener("input", calc);
-    useOffer.addEventListener("change", calc);
+    // Save actions
+    btnSave.addEventListener("click", saveProject);
+    btnLoad.addEventListener("click", loadProject);
+    btnDelete.addEventListener("click", deleteProject);
 
-    // Start
     items = [newItem()];
-    renderItems();
-    refreshSavedSelect();
+    render();
+    refreshSaved();
+
+    setJS(true, "JS OK");
   }catch(err){
     console.error(err);
-    setJSStatus(false, "ERRORE JS");
-    alert("Errore JS: controlla che hai incollato tutto il file index.html (inizio+fine).");
+    setJS(false, "ERRORE JS");
+    alert("Errore JS: controlla che hai incollato TUTTO il file index.html (inizio+fine).");
   }
+
 })();
 </script>
 
+</div>
 </body>
 </html>
- 
