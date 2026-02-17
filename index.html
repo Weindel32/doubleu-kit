@@ -1,181 +1,822 @@
 <!doctype html>
 <html lang="it" translate="no">
 <head>
-<meta charset="utf-8">
-<meta name="google" content="notranslate">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DOUBLEU Kit Builder</title>
+  <meta charset="utf-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DOUBLEU Kit Builder PRO</title>
+  <style>
+    :root{
+      --bg0:#070b14;
+      --bg1:#0b1220;
+      --card:rgba(255,255,255,.06);
+      --line:rgba(255,255,255,.10);
+      --text:#eaf0ff;
+      --muted:rgba(234,240,255,.70);
+      --accent:#6ee7ff;
+      --accent2:#a78bfa;
+      --ok:#34d399;
+      --bad:#fb7185;
+      --shadow:0 16px 40px rgba(0,0,0,.45);
+      --r:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(900px 520px at 18% 12%, rgba(110,231,255,.18), transparent 58%),
+        radial-gradient(900px 520px at 86% 0%, rgba(167,139,250,.16), transparent 60%),
+        radial-gradient(900px 520px at 70% 95%, rgba(110,231,255,.08), transparent 60%),
+        linear-gradient(180deg,var(--bg0),var(--bg1));
+      min-height:100vh;
+    }
+    .wrap{max-width:1240px;margin:auto;padding:18px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background:linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
+      box-shadow:0 12px 24px rgba(0,0,0,.35);
+    }
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .sub{margin-top:3px;font-size:12px;color:var(--muted)}
+    .tabs{display:flex;gap:10px}
+    .tab{
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:9px 12px;border-radius:14px;
+      font-weight:900;font-size:12px;cursor:pointer;
+    }
+    .tab.active{
+      background:linear-gradient(90deg, rgba(110,231,255,.22), rgba(167,139,250,.22));
+      border-color:rgba(110,231,255,.35);
+    }
 
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial;margin:0;background:#0b1220;color:#eaf0ff}
-.wrap{max-width:1100px;margin:auto;padding:18px}
-.card{background:#101a2e;border-radius:16px;padding:14px;margin-bottom:14px}
-input,select{width:100%;padding:10px;border-radius:12px;border:1px solid #24324a;background:#0f1a2e;color:#eaf0ff;margin-top:6px}
-button{background:#6ee7ff;color:#08101e;border:none;padding:12px;border-radius:12px;font-weight:800;margin-top:10px;cursor:pointer}
-.kpi{background:#0f1a2e;border-radius:14px;padding:12px;margin-top:10px}
-.big{font-size:22px;font-weight:900}
-.good{color:#34d399}
-.bad{color:#fb7185}
-.item{border:1px solid #24324a;border-radius:12px;padding:10px;margin-top:10px}
-</style>
+    /* PIÙ SPAZIO AL PANNELLO KPI (come mi hai chiesto) */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.35fr .95fr; /* colonna destra più larga */
+      gap:14px;
+      align-items:start;
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:900;
+      letter-spacing:.25px;
+      text-transform:uppercase;
+    }
+    label{display:block;font-size:12px;color:var(--muted);margin-top:10px}
+    input,select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(5,10,20,.35);
+      color:var(--text);
+      margin-top:6px;
+      outline:none;
+    }
+    input:focus,select:focus{
+      border-color:rgba(110,231,255,.42);
+      box-shadow:0 0 0 4px rgba(110,231,255,.10);
+    }
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+    .switch{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:14px;margin-top:6px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(5,10,20,.28);
+    }
+    .switch input{width:22px;height:22px;margin:0}
+    .switch span{font-size:13px;font-weight:900}
+
+    .btn{
+      width:100%;
+      border:none;
+      border-radius:14px;
+      padding:12px 14px;
+      font-weight:950;
+      cursor:pointer;
+      background:linear-gradient(90deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
+      color:#08101e;
+      margin-top:12px;
+    }
+    .btn.secondary{
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      border:1px solid var(--line);
+      font-weight:900;
+    }
+    .btn.small{
+      padding:9px 10px;border-radius:12px;margin-top:0;font-size:12px;width:auto
+    }
+
+    /* KPI: colonna singola → più leggibile */
+    .kpis{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    .kpi{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .kpi:before{
+      content:"";
+      position:absolute;inset:-60px -60px auto auto;
+      width:160px;height:160px;border-radius:999px;
+      background:radial-gradient(circle at 30% 30%, rgba(110,231,255,.20), transparent 65%);
+    }
+    .kpi .lbl{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:1000;
+      text-transform:uppercase;
+      letter-spacing:.2px;
+      line-height:1.15;
+    }
+    .kpi .val{
+      font-size:28px;
+      font-weight:1000;
+      margin-top:6px;
+      letter-spacing:.2px;
+    }
+    .kpi .note{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+      line-height:1.35;
+    }
+    .ok{color:var(--ok);font-weight:1000}
+    .bad{color:var(--bad);font-weight:1000}
+
+    .itemsTop{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px
+    }
+    .itemsTop .left{display:flex;flex-direction:column;gap:4px}
+    .itemsTop .muted{color:var(--muted);font-size:12px}
+
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+    }
+    .table th,.table td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      vertical-align:middle;
+      font-size:12px;
+    }
+    .table th{
+      text-align:left;color:var(--muted);font-weight:1000;text-transform:uppercase;letter-spacing:.18px;
+      background:rgba(255,255,255,.03);
+    }
+    .table tr:last-child td{border-bottom:none}
+    .table input,.table select{
+      padding:9px 10px;border-radius:12px;margin-top:0;
+      background:rgba(5,10,20,.35);
+    }
+    .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+    .divider{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
+
+    .savedList{display:flex;flex-direction:column;gap:10px;}
+    .savedCard{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      border-radius:16px;
+      padding:12px;
+      display:flex;justify-content:space-between;gap:12px;align-items:center;
+    }
+    .savedCard .meta{display:flex;flex-direction:column;gap:4px}
+    .savedCard .name{font-weight:1000}
+    .savedCard .mini{font-size:12px;color:var(--muted)}
+    .savedCard .btnrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+    @media (max-width:980px){
+      .grid{grid-template-columns:1fr}
+      .row,.row3{grid-template-columns:1fr}
+      .table{display:block;overflow:auto}
+    }
+  </style>
 </head>
 
 <body>
 <div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>DOUBLEU Kit Builder PRO</h1>
+        <div class="sub">Preventivo kit a colpo d’occhio: costo, prezzo atleta, margine reale, acconto, soglia minima.</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tabBuilder" type="button">Builder</button>
+      <button class="tab" id="tabSaved" type="button">Kit salvati</button>
+    </div>
+  </div>
 
-<h1>DOUBLEU Kit Builder</h1>
+  <!-- BUILDER -->
+  <div id="viewBuilder">
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <h2>Parametri ordine</h2>
 
-<div class="card">
-<label>Numero atleti</label>
-<input id="players" type="number" value="80">
+        <label>Nome progetto</label>
+        <input id="projectName" type="text" value="Nuovo kit">
 
-<label>Margine target</label>
-<select id="margin">
-  <optgroup label="BASIC PROMOTIONAL">
-    <option value="0.30">Promotional 30%</option>
-    <option value="0.35">Promotional 35%</option>
-  </optgroup>
-  <optgroup label="CLUB DOUBLEU">
-    <option value="0.45">Club minimal 45%</option>
-    <option value="0.50" selected>Club standard 50%</option>
-    <option value="0.55">Club premium 55%</option>
-  </optgroup>
-  <optgroup label="BRAND ONLINE">
-    <option value="0.65">Online continuativo 65%</option>
-  </optgroup>
-  <optgroup label="LIMITED">
-    <option value="0.72">Limited online 72%</option>
-    <option value="0.75">Limited drop 75%</option>
-    <option value="0.80">Exclusive micro-drop 80%</option>
-  </optgroup>
-</select>
+        <div class="row3">
+          <div>
+            <label>Numero atleti (stima)</label>
+            <input id="players" type="number" value="80" inputmode="decimal">
+          </div>
+          <div>
+            <label>Margine target</label>
+            <select id="margin">
+              <optgroup label="BASIC / PROMOTIONAL">
+                <option value="0.30">Promotional 30%</option>
+                <option value="0.35">Promotional 35%</option>
+              </optgroup>
+              <optgroup label="CLUB DOUBLEU">
+                <option value="0.45">Club minimal 45%</option>
+                <option value="0.50" selected>Club standard 50%</option>
+                <option value="0.55">Club premium 55%</option>
+              </optgroup>
+              <optgroup label="BRAND / ONLINE">
+                <option value="0.65">Online continuativo 65%</option>
+              </optgroup>
+              <optgroup label="LIMITED">
+                <option value="0.72">Limited online 72%</option>
+                <option value="0.75">Limited drop 75%</option>
+                <option value="0.80">Exclusive micro-drop 80%</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label>IVA %</label>
+            <input id="vatPct" type="number" value="22" inputmode="decimal">
+            <div class="switch">
+              <input type="checkbox" id="applyVAT" checked>
+              <span>Applica IVA</span>
+            </div>
+          </div>
+        </div>
 
-<label>IVA %</label>
-<input id="vatPct" type="number" value="22">
-<label><input type="checkbox" id="applyVAT" checked> Applica IVA</label>
+        <div class="row">
+          <div>
+            <label>Sconto trattativa %</label>
+            <input id="discount" type="number" value="0" inputmode="decimal">
+          </div>
+          <div>
+            <label>Note (opzionale)</label>
+            <input id="notes" type="text" placeholder="Es. logo club incluso, sponsor extra a parte…">
+          </div>
+        </div>
 
-<label>Sconto trattativa %</label>
-<input id="discount" type="number" value="0">
+        <div class="divider"></div>
 
-<label>Acconto %</label>
-<input id="depositPct" type="number" value="60">
+        <div class="itemsTop">
+          <div class="left">
+            <div style="font-weight:1000">Articoli kit</div>
+            <div class="muted">Aggiungi 1+ articoli. Quantità predefinita = numero atleti, modificabile per riga.</div>
+          </div>
+          <button class="btn secondary small" id="btnAdd" type="button">+ Aggiungi articolo</button>
+        </div>
 
-<label>Buffer sicurezza %</label>
-<input id="buffer" type="number" value="5">
-</div>
+        <table class="table" aria-label="Kit items">
+          <thead>
+            <tr>
+              <th style="min-width:210px">Articolo</th>
+              <th style="min-width:170px">Linea</th>
+              <th style="min-width:130px">Costo base €</th>
+              <th style="min-width:140px">Extra € (pezzo)</th>
+              <th style="min-width:110px">Quantità</th>
+              <th style="min-width:210px;text-align:right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
 
-<div class="card">
-<h2>Articoli</h2>
-<div id="items"></div>
-<button onclick="addItem()">+ Aggiungi articolo</button>
-</div>
+        <button class="btn" id="btnSave" type="button">Salva configurazione</button>
+        <div class="sub" style="margin-top:8px">I kit salvati restano nel browser (localStorage). Ideale per preventivi ricorrenti.</div>
+      </div>
 
-<div class="card">
-<button onclick="calculate()">CALCOLA</button>
+      <!-- RIGHT -->
+      <div class="card">
+        <h2>Riepilogo</h2>
 
-<div class="kpi">
-Prezzo kit atleta
-<div class="big" id="kitPrice">—</div>
-</div>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="lbl">Prezzo per atleta</div>
+            <div class="val" id="kPriceAthlete">€0,00</div>
+            <div class="note" id="kVatLabel">—</div>
+          </div>
 
-<div class="kpi">
-Margine reale
-<div class="big" id="marginOut">—</div>
-<div id="profitOut"></div>
-</div>
+          <div class="kpi">
+            <div class="lbl">Margine reale</div>
+            <div class="val" id="kRealMargin">0%</div>
+            <div class="note" id="kTargetLabel">Target: —</div>
+          </div>
 
-<div class="kpi">
-Costo totale ordine
-<div class="big" id="costOut">—</div>
-</div>
+          <div class="kpi">
+            <div class="lbl">Costo totale</div>
+            <div class="val" id="kTotalCost">€0,00</div>
+            <div class="note">Somma (costo base + extra) × quantità</div>
+          </div>
 
-<div class="kpi">
-Prezzo minimo accettabile
-<div class="big" id="minPrice">—</div>
-<div>Sotto questo prezzo scendi sotto il margine target</div>
-</div>
+          <div class="kpi">
+            <div class="lbl">Totale fatturato</div>
+            <div class="val" id="kGrossRevenue">€0,00</div>
+            <div class="note" id="kRevenueNote">—</div>
+          </div>
 
-<div class="kpi">
-Acconto minimo
-<div class="big" id="depositOut">—</div>
-<div id="depositCheck"></div>
-</div>
+          <div class="kpi">
+            <div class="lbl">Utile totale</div>
+            <div class="val" id="kProfit">€0,00</div>
+            <div class="note">Utile calcolato su imponibile (netto IVA)</div>
+          </div>
 
-</div>
+          <div class="kpi">
+            <div class="lbl">Prezzo minimo accettabile</div>
+            <div class="val" id="kMinPrice">€0,00</div>
+            <div class="note">Sotto questo prezzo scendi sotto il margine target (con lo sconto attuale)</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>Acconto (sicurezza)</h2>
+        <div class="row">
+          <div>
+            <label>Acconto %</label>
+            <input id="depositPct" type="number" value="60" inputmode="decimal">
+          </div>
+          <div>
+            <label>Buffer sicurezza %</label>
+            <input id="bufferPct" type="number" value="5" inputmode="decimal">
+          </div>
+        </div>
+
+        <div class="kpi" style="margin-top:12px">
+          <div class="lbl">Acconto richiesto</div>
+          <div class="val" id="kDeposit">€0,00</div>
+          <div class="note" id="kDepositNote">—</div>
+        </div>
+
+        <button class="btn secondary" id="btnCopySummary" type="button">Copia riepilogo</button>
+        <div class="sub" style="margin-top:8px">Copia negli appunti un testo pronto per WhatsApp/email.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div id="viewSaved" style="display:none">
+    <div class="card">
+      <h2>Kit salvati</h2>
+      <div class="sub" style="margin-top:-6px">Qui trovi le configurazioni salvate su questo browser.</div>
+      <div class="divider"></div>
+      <div class="savedList" id="savedList"></div>
+      <button class="btn secondary" id="btnClearAll" type="button" style="margin-top:12px">Elimina tutti i kit salvati</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-const baseCosts={
-"T-shirt":15,
-"Polo":18,
-"Pantaloncino":16,
-"Gonnellino":17,
-"Dress":22,
-"Sweatshirt":28,
-"Hoodie":32,
-"Zip Hoodie":35,
-"Pantalone":26
-};
+(() => {
+  const el = (id) => document.getElementById(id);
+  const eur = (n) => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n || 0);
+  const nval = (id) => {
+    const v = parseFloat(el(id).value);
+    return Number.isFinite(v) ? v : 0;
+  };
+  const clamp = (x,min,max)=>Math.min(max,Math.max(min,x));
 
-const eur=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n);
+  // Costi di riferimento (modificabili per riga)
+  const COST_DW = {
+    "T-shirt": 15, "Polo": 18, "Pantaloncino": 16, "Gonnellino": 17, "Dress": 22,
+    "Sweatshirt": 28, "Hoodie": 32, "Zip Hoodie": 35, "Pantalone": 26
+  };
+  const COST_PROMO = {
+    "T-shirt": 7.5, "Polo": 9.5, "Pantaloncino": 9.0, "Gonnellino": 9.5, "Dress": 12.0,
+    "Sweatshirt": 16.0, "Hoodie": 18.0, "Zip Hoodie": 20.0, "Pantalone": 15.0
+  };
+  const ITEM_ORDER = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
+  const STORAGE_KEY = "doubleu_kits_v2";
 
-function addItem(){
-let div=document.createElement("div");
-div.className="item";
-div.innerHTML=`
-<select class="type">${Object.keys(baseCosts).map(x=>`<option>${x}</option>`).join("")}</select>
-<label>Costo base</label><input class="cost" type="number">
-<label>Extra</label><input class="extra" type="number" value="0">
-<label>Quantità</label><input class="qty" type="number" value="${document.getElementById("players").value}">
-`;
-document.getElementById("items").appendChild(div);
-div.querySelector(".type").onchange=e=>div.querySelector(".cost").value=baseCosts[e.target.value];
-div.querySelector(".type").dispatchEvent(new Event('change'));
-}
+  let items = [];
 
-function calculate(){
+  function newItem(){
+    const players = Math.max(1, nval("players"));
+    return {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+      name: "T-shirt",
+      line: "DOUBLEU",
+      base: COST_DW["T-shirt"],
+      extra: 0,
+      qty: players,
+      costLocked: false   // <<< BLOCCO AUTOMATICO COSTO
+    };
+  }
 
-let players=parseFloat(players.value);
-let margin=parseFloat(margin.value);
-let discount=discount.value/100;
-let vat=applyVAT.checked?vatPct.value/100:0;
-let depositPct=parseFloat(depositPct.value)/100;
-let buffer=parseFloat(buffer.value)/100;
+  function ensureAtLeastOne(){
+    if(items.length === 0) items.push(newItem());
+  }
 
-let totalCost=0;
+  function renderItems(){
+    ensureAtLeastOne();
+    const tbody = el("itemsBody");
+    tbody.innerHTML = "";
 
-document.querySelectorAll(".item").forEach(i=>{
-let cost=parseFloat(i.querySelector(".cost").value)||0;
-let extra=parseFloat(i.querySelector(".extra").value)||0;
-let qty=parseFloat(i.querySelector(".qty").value)||0;
-totalCost+=(cost+extra)*qty;
-});
+    for(const it of items){
+      const tr = document.createElement("tr");
+      const options = ITEM_ORDER.map(k => `<option value="${k}" ${k===it.name?"selected":""}>${k}</option>`).join("");
 
-let netPriceTotal=totalCost/(1-margin);
-let grossTotal=vat>0?netPriceTotal*(1+vat):netPriceTotal;
-grossTotal*=1-discount;
+      tr.innerHTML = `
+        <td>
+          <select data-act="name" data-id="${it.id}">${options}</select>
+        </td>
+        <td>
+          <select data-act="line" data-id="${it.id}">
+            <option value="DOUBLEU" ${it.line==="DOUBLEU"?"selected":""}>DOUBLEU (produzione)</option>
+            <option value="PROMO" ${it.line==="PROMO"?"selected":""}>Basic / Promotional</option>
+            <option value="CUSTOM" ${it.line==="CUSTOM"?"selected":""}>Altro (manuale)</option>
+          </select>
+        </td>
+        <td>
+          <input type="number" inputmode="decimal" data-act="base" data-id="${it.id}" value="${it.base}">
+        </td>
+        <td>
+          <input type="number" inputmode="decimal" data-act="extra" data-id="${it.id}" value="${it.extra}">
+        </td>
+        <td>
+          <input type="number" inputmode="decimal" data-act="qty" data-id="${it.id}" value="${it.qty}">
+        </td>
+        <td style="text-align:right">
+          <div class="actions">
+            <button class="btn secondary small" type="button" data-act="reset" data-id="${it.id}">↺ Costo</button>
+            <button class="btn secondary small" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
+            <button class="btn secondary small" type="button" data-act="del" data-id="${it.id}">Rimuovi</button>
+          </div>
+          <div class="sub" style="margin-top:6px">
+            ${it.costLocked ? "Costo: <b>bloccato</b>" : "Costo: <b>auto</b> (da riferimento)"}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
 
-let netFinal=vat>0?grossTotal/(1+vat):grossTotal;
-let profit=netFinal-totalCost;
-let realMargin=profit/netFinal;
+    // input/select events
+    tbody.querySelectorAll("[data-act]").forEach(node => {
+      const act = node.getAttribute("data-act");
+      const id = node.getAttribute("data-id");
 
-let minNetTotal=totalCost/(1-margin);
-let minGrossTotal=vat>0?minNetTotal*(1+vat):minNetTotal;
-let minPricePerPlayer=minGrossTotal/players;
+      if(node.tagName === "SELECT" || node.tagName === "INPUT"){
+        node.addEventListener("input", () => onItemChange(id, act, node.value));
+        node.addEventListener("change", () => onItemChange(id, act, node.value));
+      }
+    });
 
-document.getElementById("kitPrice").textContent=eur(grossTotal/players)+(vat?" IVA":" netto");
-document.getElementById("marginOut").textContent=(realMargin*100).toFixed(1)+"%";
-document.getElementById("profitOut").textContent="Utile: "+eur(profit);
-document.getElementById("costOut").textContent=eur(totalCost);
-document.getElementById("minPrice").textContent=eur(minPricePerPlayer);
+    // action buttons
+    tbody.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.addEventListener("click", ()=> onItemAction(btn.getAttribute("data-id"), btn.getAttribute("data-act")));
+    });
 
-let dep=Math.max(grossTotal*depositPct,totalCost*(1+buffer));
-document.getElementById("depositOut").textContent=eur(dep);
-document.getElementById("depositCheck").innerHTML=dep>=totalCost?"<span class='good'>Copre costo</span>":"<span class='bad'>Non copre</span>";
-}
+    recalc();
+  }
 
-addItem();
+  function applyReferenceCost(it){
+    if(it.line === "DOUBLEU") it.base = COST_DW[it.name] ?? it.base;
+    else if(it.line === "PROMO") it.base = COST_PROMO[it.name] ?? it.base;
+    // CUSTOM: non toccare
+  }
+
+  function onItemChange(id, act, val){
+    const it = items.find(x=>x.id===id);
+    if(!it) return;
+
+    if(act === "name"){
+      it.name = val;
+
+      // se costo non bloccato, aggiorna da riferimento
+      if(!it.costLocked) applyReferenceCost(it);
+    }
+
+    if(act === "line"){
+      it.line = val;
+
+      // se costo non bloccato, aggiorna da riferimento
+      if(!it.costLocked) applyReferenceCost(it);
+    }
+
+    if(act === "base"){
+      it.base = parseFloat(val) || 0;
+      it.costLocked = true; // <<< appena modifichi a mano, blocca
+    }
+
+    if(act === "extra") it.extra = parseFloat(val) || 0;
+    if(act === "qty") it.qty = Math.max(0, parseFloat(val) || 0);
+
+    renderItems(); // rerender per aggiornare label costo bloccato/auto
+  }
+
+  function onItemAction(id, act){
+    const idx = items.findIndex(x=>x.id===id);
+    if(idx < 0) return;
+
+    if(act==="del"){
+      items.splice(idx,1);
+      if(items.length===0) items.push(newItem());
+      renderItems();
+      return;
+    }
+
+    if(act==="dup"){
+      const base = items[idx];
+      const copy = {...base, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())};
+      items.splice(idx+1,0,copy);
+      renderItems();
+      return;
+    }
+
+    if(act==="reset"){
+      const it = items[idx];
+      it.costLocked = false;      // sblocca
+      applyReferenceCost(it);     // ripristina reference
+      renderItems();
+      return;
+    }
+  }
+
+  function recalc(){
+    const players = Math.max(1, nval("players"));
+    const marginTarget = clamp(parseFloat(el("margin").value)||0, 0, 0.95);
+    const discount = clamp(nval("discount")/100, 0, 0.95);
+
+    let vat = clamp(nval("vatPct")/100, 0, 1);
+    if(!el("applyVAT").checked) vat = 0;
+
+    const depPct = clamp(nval("depositPct")/100, 0, 1);
+    const buffer = clamp(nval("bufferPct")/100, 0, 2);
+
+    let totalCost = 0;
+    for(const it of items){
+      totalCost += ((parseFloat(it.base)||0) + (parseFloat(it.extra)||0)) * (parseFloat(it.qty)||0);
+    }
+
+    const netTarget = totalCost > 0 ? ( totalCost / (1 - marginTarget) ) : 0;
+    const grossBeforeDiscount = vat>0 ? netTarget*(1+vat) : netTarget;
+    const grossFinal = grossBeforeDiscount * (1 - discount);
+
+    // netto reale: se IVA off, grossFinal è già NETTO
+    const netFinal = vat>0 ? (grossFinal/(1+vat)) : grossFinal;
+    const profit = netFinal - totalCost;
+    const realMargin = netFinal>0 ? (profit/netFinal) : 0;
+
+    // prezzo minimo accettabile (dato lo sconto attuale)
+    const minGrossFinal = (vat>0 ? netTarget*(1+vat) : netTarget) * (1 - discount);
+    const minPriceAthlete = players>0 ? (minGrossFinal/players) : 0;
+
+    const depByPct = grossFinal * depPct;
+    const depMin = totalCost * (1 + buffer);
+    const depFinal = Math.max(depByPct, depMin);
+
+    el("kPriceAthlete").textContent = eur(players>0 ? grossFinal/players : 0);
+    el("kVatLabel").textContent = vat>0 ? "IVA inclusa nel prezzo" : "Prezzo netto (IVA non applicata)";
+
+    el("kRealMargin").textContent = `${(realMargin*100).toFixed(1)}%`;
+    el("kTargetLabel").textContent = `Target: ${(marginTarget*100).toFixed(0)}%`;
+
+    el("kTotalCost").textContent = eur(totalCost);
+    el("kGrossRevenue").textContent = eur(grossFinal);
+
+    const revNote = vat>0
+      ? `Imponibile: ${eur(netFinal)} • Sconto: ${(discount*100).toFixed(0)}%`
+      : `Netto: ${eur(netFinal)} • Sconto: ${(discount*100).toFixed(0)}%`;
+    el("kRevenueNote").textContent = revNote;
+
+    el("kProfit").textContent = eur(profit);
+    el("kMinPrice").textContent = eur(minPriceAthlete);
+
+    el("kDeposit").textContent = eur(depFinal);
+    el("kDepositNote").innerHTML = depFinal >= totalCost
+      ? `<span class="ok">Copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`
+      : `<span class="bad">NON copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`;
+  }
+
+  // --- saved kits
+  function loadSaved(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    catch(e){ return []; }
+  }
+  function saveSaved(list){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function packCurrent(){
+    return {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
+      ts: Date.now(),
+      name: (el("projectName").value || "Kit").trim(),
+      notes: (el("notes").value || "").trim(),
+      players: nval("players"),
+      margin: parseFloat(el("margin").value)||0,
+      vatPct: nval("vatPct"),
+      applyVAT: el("applyVAT").checked,
+      discount: nval("discount"),
+      depositPct: nval("depositPct"),
+      bufferPct: nval("bufferPct"),
+      items: JSON.parse(JSON.stringify(items))
+    };
+  }
+
+  function applyKit(k){
+    el("projectName").value = k.name || "Kit";
+    el("notes").value = k.notes || "";
+    el("players").value = k.players ?? 80;
+    el("margin").value = String(k.margin ?? 0.5);
+    el("vatPct").value = k.vatPct ?? 22;
+    el("applyVAT").checked = !!k.applyVAT;
+    el("discount").value = k.discount ?? 0;
+    el("depositPct").value = k.depositPct ?? 60;
+    el("bufferPct").value = k.bufferPct ?? 5;
+    items = (k.items && Array.isArray(k.items) && k.items.length) ? k.items : [newItem()];
+    renderItems();
+    setTab("builder");
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+
+  function renderSaved(){
+    const list = loadSaved().sort((a,b)=>b.ts-a.ts);
+    const root = el("savedList");
+    root.innerHTML = "";
+    if(list.length === 0){
+      root.innerHTML = `<div class="sub">Nessun kit salvato.</div>`;
+      return;
+    }
+    for(const k of list){
+      const div = document.createElement("div");
+      div.className = "savedCard";
+      const when = new Date(k.ts || Date.now()).toLocaleString("it-IT");
+      div.innerHTML = `
+        <div class="meta">
+          <div class="name">${escapeHtml(k.name || "Kit")}</div>
+          <div class="mini">${when} • Atleti: ${k.players || "-"} • Margine: ${Math.round((k.margin||0)*100)}%</div>
+        </div>
+        <div class="btnrow">
+          <button class="btn secondary small" data-act="load" data-id="${k.id}">Apri</button>
+          <button class="btn secondary small" data-act="dup" data-id="${k.id}">Duplica</button>
+          <button class="btn secondary small" data-act="del" data-id="${k.id}">Elimina</button>
+        </div>
+      `;
+      root.appendChild(div);
+    }
+
+    root.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const act = btn.getAttribute("data-act");
+        const id = btn.getAttribute("data-id");
+        const all = loadSaved();
+        const kit = all.find(x=>x.id===id);
+        if(!kit) return;
+
+        if(act==="load") applyKit(kit);
+        if(act==="dup"){
+          const copy = {...kit, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), ts: Date.now(), name: (kit.name||"Kit")+" (copia)"};
+          all.unshift(copy); saveSaved(all); renderSaved();
+        }
+        if(act==="del"){
+          const filtered = all.filter(x=>x.id!==id);
+          saveSaved(filtered); renderSaved();
+        }
+      });
+    });
+  }
+
+  // tabs
+  function setTab(which){
+    const isBuilder = which === "builder";
+    el("viewBuilder").style.display = isBuilder ? "block" : "none";
+    el("viewSaved").style.display = isBuilder ? "none" : "block";
+    el("tabBuilder").classList.toggle("active", isBuilder);
+    el("tabSaved").classList.toggle("active", !isBuilder);
+    if(!isBuilder) renderSaved();
+  }
+
+  async function copySummary(){
+    const name = (el("projectName").value||"Kit").trim();
+    const players = Math.max(1, nval("players"));
+    const marginT = Math.round((parseFloat(el("margin").value)||0)*100);
+    const vatOn = el("applyVAT").checked;
+    const vatPct = nval("vatPct");
+    const discount = nval("discount");
+    const depositPct = nval("depositPct");
+    const bufferPct = nval("bufferPct");
+
+    const lines = [];
+    lines.push(`DOUBLEU — Preventivo kit: ${name}`);
+    lines.push(`Atleti (stima): ${players}`);
+    lines.push(`Margine target: ${marginT}%`);
+    lines.push(`IVA: ${vatOn ? (vatPct+"% (inclusa)") : "non applicata (netto)"}`);
+    lines.push(`Sconto trattativa: ${discount}%`);
+    lines.push("");
+    lines.push("Articoli:");
+    items.forEach((it, idx)=>{
+      lines.push(`- ${idx+1}) ${it.name} • Linea: ${it.line} • Costo ${it.base}€ ${it.costLocked?"(bloccato)":"(auto)"} • Extra ${it.extra}€ • Qtà ${it.qty}`);
+    });
+    lines.push("");
+    lines.push(`Prezzo per atleta: ${el("kPriceAthlete").textContent}`);
+    lines.push(`Costo totale: ${el("kTotalCost").textContent}`);
+    lines.push(`Totale fatturato: ${el("kGrossRevenue").textContent}`);
+    lines.push(`Margine reale: ${el("kRealMargin").textContent}`);
+    lines.push(`Utile totale: ${el("kProfit").textContent}`);
+    lines.push(`Prezzo minimo accettabile (atleta): ${el("kMinPrice").textContent}`);
+    lines.push("");
+    lines.push(`Acconto: ${depositPct}% • Buffer: ${bufferPct}% → Richiesto: ${el("kDeposit").textContent}`);
+    if(el("notes").value.trim()){
+      lines.push("");
+      lines.push(`Note: ${el("notes").value.trim()}`);
+    }
+
+    const summary = lines.join("\n");
+    try{
+      await navigator.clipboard.writeText(summary);
+      el("btnCopySummary").textContent = "Copiato ✓";
+      setTimeout(()=> el("btnCopySummary").textContent = "Copia riepilogo", 900);
+    }catch(e){
+      window.prompt("Copia il testo:", summary);
+    }
+  }
+
+  function bind(){
+    ["projectName","players","margin","vatPct","applyVAT","discount","depositPct","bufferPct","notes"].forEach(id=>{
+      el(id).addEventListener("input", recalc);
+      el(id).addEventListener("change", recalc);
+    });
+
+    el("btnAdd").addEventListener("click", ()=>{
+      items.push(newItem());
+      renderItems();
+    });
+
+    el("btnSave").addEventListener("click", ()=>{
+      const all = loadSaved();
+      all.unshift(packCurrent());
+      saveSaved(all);
+      el("btnSave").textContent = "Salvato ✓";
+      setTimeout(()=> el("btnSave").textContent = "Salva configurazione", 900);
+    });
+
+    el("btnCopySummary").addEventListener("click", copySummary);
+
+    el("btnClearAll").addEventListener("click", ()=>{
+      if(confirm("Eliminare tutti i kit salvati su questo browser?")){
+        saveSaved([]);
+        renderSaved();
+      }
+    });
+
+    el("tabBuilder").addEventListener("click", ()=>setTab("builder"));
+    el("tabSaved").addEventListener("click", ()=>setTab("saved"));
+  }
+
+  function init(){
+    bind();
+    items = [newItem()];
+    renderItems();
+    recalc();
+  }
+
+  init();
+})();
 </script>
-
 </body>
 </html>
