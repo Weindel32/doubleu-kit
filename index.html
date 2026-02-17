@@ -1,964 +1,316 @@
 <!doctype html>
 <html lang="it" translate="no">
 <head>
-  <meta charset="utf-8">
-  <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DOUBLEU Kit Builder PRO</title>
 
-  <title>DOUBLEU Kit Builder</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1220">
 
-  <!-- iOS APP MODE -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="DOUBLEU Kit">
+<style>
+:root{
+--bg:#0b1220;
+--card:#111a30;
+--accent:#6ee7ff;
+--text:#eaf0ff;
+--muted:#94a3b8;
+--good:#34d399;
+--bad:#fb7185;
+}
 
-  <!-- PWA -->
-  <meta name="theme-color" content="#0b1220">
-  <link rel="manifest" href="manifest.json">
+body{
+margin:0;
+font-family:system-ui,-apple-system,Segoe UI,Roboto;
+background:linear-gradient(180deg,#070b14,#0b1220);
+color:var(--text);
+}
 
-  <!-- ICONS -->
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="icon" href="icon-192.png">
+.wrap{max-width:1200px;margin:auto;padding:16px}
 
-  <style>
-    :root{
-      --bg0:#070b14;
-      --bg1:#0b1220;
-      --line:rgba(255,255,255,.10);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.70);
-      --ok:#34d399;
-      --bad:#fb7185;
-      --shadow:0 16px 40px rgba(0,0,0,.45);
-      --r:18px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
-      background:
-        radial-gradient(900px 520px at 18% 12%, rgba(110,231,255,.18), transparent 58%),
-        radial-gradient(900px 520px at 86% 0%, rgba(167,139,250,.16), transparent 60%),
-        radial-gradient(900px 520px at 70% 95%, rgba(110,231,255,.08), transparent 60%),
-        linear-gradient(180deg,var(--bg0),var(--bg1));
-      min-height:100vh;
-    }
-    .wrap{max-width:1240px;margin:auto;padding:18px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{
-      width:36px;height:36px;border-radius:12px;
-      background:linear-gradient(135deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
-      box-shadow:0 12px 24px rgba(0,0,0,.35);
-    }
-    h1{margin:0;font-size:18px;letter-spacing:.2px}
-    .sub{margin-top:3px;font-size:12px;color:var(--muted);line-height:1.35}
-    .tabs{display:flex;gap:10px}
-    .tab{
-      display:inline-flex;align-items:center;gap:8px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      color:var(--text);
-      padding:9px 12px;border-radius:14px;
-      font-weight:900;font-size:12px;cursor:pointer;
-    }
-    .tab.active{
-      background:linear-gradient(90deg, rgba(110,231,255,.22), rgba(167,139,250,.22));
-      border-color:rgba(110,231,255,.35);
-    }
+h1{font-size:20px;margin:0 0 12px}
 
-    .grid{
-      display:grid;
-      grid-template-columns: 1.35fr .95fr;
-      gap:14px;
-      align-items:start;
-    }
+.grid{display:grid;grid-template-columns:1.3fr .9fr;gap:14px}
+.card{
+background:var(--card);
+border-radius:18px;
+padding:14px;
+box-shadow:0 10px 30px rgba(0,0,0,.4);
+}
 
-    .card{
-      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
-      border:1px solid var(--line);
-      border-radius:var(--r);
-      padding:14px;
-      box-shadow:var(--shadow);
-    }
-    .card h2{
-      margin:0 0 10px;
-      font-size:12px;
-      color:var(--muted);
-      font-weight:900;
-      letter-spacing:.25px;
-      text-transform:uppercase;
-    }
+label{font-size:12px;color:var(--muted)}
+input,select{
+width:100%;
+padding:12px;
+margin-top:6px;
+border-radius:12px;
+border:1px solid #25304f;
+background:#0f172a;
+color:white;
+font-size:18px;
+}
 
-    label{display:block;font-size:12px;color:var(--muted);margin-top:10px}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 
-    /* INPUT più grandi (richiesta) */
-    input,select{
-      width:100%;
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(5,10,20,.35);
-      color:var(--text);
-      margin-top:6px;
-      outline:none;
-      font-size:18px; /* ⬆︎ */
-      font-weight:600;
-    }
-    input:focus,select:focus{
-      border-color:rgba(110,231,255,.42);
-      box-shadow:0 0 0 4px rgba(110,231,255,.10);
-    }
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+button{
+border:none;
+padding:12px;
+border-radius:12px;
+font-weight:700;
+cursor:pointer;
+background:linear-gradient(90deg,#6ee7ff,#a78bfa);
+color:#001;
+}
 
-    .switch{
-      display:flex;align-items:center;gap:10px;
-      padding:10px 12px;border-radius:14px;margin-top:6px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(5,10,20,.28);
-    }
-    .switch input{width:22px;height:22px;margin:0}
-    .switch span{font-size:13px;font-weight:900}
+button.secondary{
+background:#1f2a44;
+color:#fff;
+}
 
-    .btn{
-      width:100%;
-      border:none;
-      border-radius:14px;
-      padding:12px 14px;
-      font-weight:950;
-      cursor:pointer;
-      background:linear-gradient(90deg, rgba(110,231,255,.95), rgba(167,139,250,.95));
-      color:#08101e;
-      margin-top:12px;
-    }
-    .btn.secondary{
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      border:1px solid var(--line);
-      font-weight:900;
-    }
-    .btn.small{
-      padding:9px 10px;border-radius:12px;margin-top:0;font-size:12px;width:auto
-    }
+.table{width:100%;margin-top:10px;border-collapse:collapse}
+.table td{padding:6px}
 
-    .kpis{display:grid;grid-template-columns:1fr;gap:10px;}
-    .kpi{
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      padding:14px;
-      position:relative;
-      overflow:hidden;
-    }
-    .kpi:before{
-      content:"";
-      position:absolute;inset:-60px -60px auto auto;
-      width:160px;height:160px;border-radius:999px;
-      background:radial-gradient(circle at 30% 30%, rgba(110,231,255,.20), transparent 65%);
-    }
-    .kpi .lbl{
-      font-size:12px;
-      color:var(--muted);
-      font-weight:1000;
-      text-transform:uppercase;
-      letter-spacing:.2px;
-      line-height:1.15;
-    }
-    .kpi .val{
-      font-size:30px; /* ⬆︎ leggibilità KPI */
-      font-weight:1000;
-      margin-top:6px;
-      letter-spacing:.2px;
-    }
-    .kpi .note{
-      font-size:12px;
-      color:var(--muted);
-      margin-top:6px;
-      line-height:1.35;
-    }
-    .ok{color:var(--ok);font-weight:1000}
-    .bad{color:var(--bad);font-weight:1000}
+.qtybox{display:flex;gap:6px;align-items:center}
+.qbtn{
+width:34px;height:34px;border-radius:10px;
+background:#1f2a44;color:#fff;border:none;font-weight:900
+}
 
-    /* alert prezzo atleta */
-    .kpi.warn{
-      border-color: rgba(251,113,133,.65);
-      box-shadow: 0 0 0 2px rgba(251,113,133,.25) inset, 0 12px 30px rgba(0,0,0,.35);
-    }
-    .kpi.warn .val{ color:#fb7185; }
-    .kpi.okcard{
-      border-color: rgba(52,211,153,.55);
-      box-shadow: 0 0 0 2px rgba(52,211,153,.20) inset, 0 12px 30px rgba(0,0,0,.35);
-    }
+.kpis{display:flex;flex-direction:column;gap:10px}
+.kpi{
+background:#0f172a;
+border-radius:14px;
+padding:14px;
+}
+.kpi .lbl{font-size:12px;color:var(--muted)}
+.kpi .val{font-size:28px;font-weight:900}
 
-    .itemsTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-    .itemsTop .left{display:flex;flex-direction:column;gap:4px}
-    .itemsTop .muted{color:var(--muted);font-size:12px}
+.kpiGrid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+margin-top:14px
+}
 
-    .table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      overflow:hidden;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.03);
-    }
-    .table th,.table td{
-      padding:10px 10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      vertical-align:middle;
-      font-size:12px;
-    }
-    .table th{
-      text-align:left;color:var(--muted);font-weight:1000;text-transform:uppercase;letter-spacing:.18px;
-      background:rgba(255,255,255,.03);
-    }
-    .table tr:last-child td{border-bottom:none}
-    .table input,.table select{
-      padding:10px 12px;border-radius:12px;margin-top:0;
-      background:rgba(5,10,20,.35);
-      font-size:18px; /* ⬆︎ anche nella tabella */
-      font-weight:650;
-    }
-
-    .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-    .divider{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
-
-    /* Qty controls */
-    .qtybox{display:flex;align-items:center;gap:6px}
-    .qbtn{
-      width:36px;height:36px;border-radius:12px;
-      border:1px solid rgba(255,255,255,.15);
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      font-size:18px;
-      font-weight:1000;
-      cursor:pointer;
-    }
-    .qbtn:active{ background:rgba(110,231,255,.25); }
-    .qbtn.qdup{ width:40px;font-size:16px;opacity:.95; }
-    .qbtn.qdup:active{ background:rgba(167,139,250,.25); }
-
-    .savedList{display:flex;flex-direction:column;gap:10px;}
-    .savedCard{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.04);
-      border-radius:16px;
-      padding:12px;
-      display:flex;justify-content:space-between;gap:12px;align-items:center;
-    }
-    .savedCard .meta{display:flex;flex-direction:column;gap:4px}
-    .savedCard .name{font-weight:1000}
-    .savedCard .mini{font-size:12px;color:var(--muted)}
-    .savedCard .btnrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-
-    @media (max-width:980px){
-      .grid{grid-template-columns:1fr}
-      .row,.row3{grid-template-columns:1fr}
-      .table{display:block;overflow:auto}
-    }
-  </style>
+</style>
 </head>
-
 <body>
 <div class="wrap">
-  <div class="topbar">
-    <div class="brand">
-      <div class="logo"></div>
-      <div>
-        <h1>DOUBLEU Kit Builder PRO</h1>
-        <div class="sub">Preventivo kit veloce: costo, prezzo atleta, margine reale, acconto, soglia minima. (Decimali con virgola OK)</div>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="tab active" id="tabBuilder" type="button">Builder</button>
-      <button class="tab" id="tabSaved" type="button">Kit salvati</button>
-    </div>
-  </div>
 
-  <!-- BUILDER -->
-  <div id="viewBuilder">
-    <div class="grid">
-      <!-- LEFT -->
-      <div class="card">
-        <h2>Parametri ordine</h2>
+<h1>DOUBLEU Kit Builder PRO</h1>
 
-        <label>Nome progetto</label>
-        <input id="projectName" type="text" value="Nuovo kit">
+<div class="grid">
 
-        <div class="row3">
-          <div>
-            <label>Numero atleti (stima)</label>
-            <!-- vuoto di default -->
-            <input id="players" type="text" value="" inputmode="decimal" placeholder="es. 80">
-            <div class="sub">Suggerimento: inserisci atleti e premi “Usa numero atleti”.</div>
-          </div>
-          <div>
-            <label>Margine target</label>
-            <select id="margin">
-              <optgroup label="BASIC / PROMOTIONAL">
-                <option value="0.30">Promotional 30%</option>
-                <option value="0.35">Promotional 35%</option>
-              </optgroup>
-              <optgroup label="CLUB DOUBLEU">
-                <option value="0.45">Club minimal 45%</option>
-                <option value="0.50" selected>Club standard 50%</option>
-                <option value="0.55">Club premium 55%</option>
-              </optgroup>
-              <optgroup label="BRAND / ONLINE">
-                <option value="0.65">Online continuativo 65%</option>
-              </optgroup>
-              <optgroup label="LIMITED">
-                <option value="0.72">Limited online 72%</option>
-                <option value="0.75">Limited drop 75%</option>
-                <option value="0.80">Exclusive micro-drop 80%</option>
-              </optgroup>
-            </select>
-          </div>
-          <div>
-            <label>IVA %</label>
-            <input id="vatPct" type="text" value="22" inputmode="decimal">
-            <div class="switch">
-              <input type="checkbox" id="applyVAT" checked>
-              <span>Applica IVA</span>
-            </div>
-          </div>
-        </div>
+<div class="card">
 
-        <div class="row">
-          <div>
-            <label>Sconto trattativa %</label>
-            <input id="discount" type="text" value="0" inputmode="decimal">
-          </div>
-          <div>
-            <label>Note (opzionale)</label>
-            <input id="notes" type="text" placeholder="Es. logo club incluso, sponsor extra a parte…">
-          </div>
-        </div>
+<label>Numero atleti</label>
+<input id="players" placeholder="es. 80">
 
-        <div class="divider"></div>
+<div class="row">
+<div>
+<label>Margine</label>
+<select id="margin">
+<option value="0.45">Minimal 45%</option>
+<option value="0.50" selected>Standard 50%</option>
+<option value="0.55">Premium 55%</option>
+<option value="0.65">Online 65%</option>
+<option value="0.72">Limited 72%</option>
+<option value="0.75">Drop 75%</option>
+</select>
+</div>
 
-        <div class="itemsTop">
-          <div class="left">
-            <div style="font-weight:1000">Articoli kit</div>
-            <div class="muted">Aggiungi articoli e allinea rapidamente le quantità.</div>
-          </div>
+<div>
+<label>IVA %</label>
+<input id="vat" value="22">
+</div>
 
-          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-            <button class="btn secondary small" id="btnFillQty" type="button">Usa numero atleti</button>
-            <button class="btn secondary small" id="btnAdd" type="button">+ Aggiungi articolo</button>
-          </div>
-        </div>
+<div>
+<label>Sconto %</label>
+<input id="discount" value="0">
+</div>
+</div>
 
-        <table class="table" aria-label="Kit items">
-          <thead>
-            <tr>
-              <th style="min-width:210px">Articolo</th>
-              <th style="min-width:170px">Linea</th>
-              <th style="min-width:140px">Costo base €</th>
-              <th style="min-width:140px">Extra € (pezzo)</th>
-              <th style="min-width:190px">Quantità</th>
-              <th style="min-width:210px;text-align:right">Azioni</th>
-            </tr>
-          </thead>
-          <tbody id="itemsBody"></tbody>
-        </table>
+<div style="margin-top:10px">
+<button onclick="applyPlayers()">Usa numero atleti</button>
+<button class="secondary" onclick="resetAll()">Nuovo preventivo</button>
+</div>
 
-        <div class="row" style="margin-top:10px">
-          <button class="btn" id="btnSave" type="button">Salva configurazione</button>
-          <button class="btn secondary" id="btnNew" type="button">Nuovo preventivo (pulisci)</button>
-        </div>
-
-        <div class="sub" style="margin-top:8px">I kit salvati restano nel browser (localStorage).</div>
-      </div>
-
-      <!-- RIGHT -->
-      <div class="card">
-        <h2>Riepilogo</h2>
-
-        <div class="kpis">
-          <div class="kpi">
-            <div class="lbl">Costo produzione per atleta</div>
-            <div class="val" id="kCostPerAthlete">—</div>
-            <div class="note">Media su base atleti</div>
-          </div>
-
-          <div class="kpi" id="kPriceCard">
-            <div class="lbl">Prezzo per atleta</div>
-            <div class="val" id="kPriceAthlete">—</div>
-            <div class="note" id="kVatLabel">—</div>
-          </div>
-
-          <div class="kpi">
-            <div class="lbl">Margine reale</div>
-            <div class="val" id="kRealMargin">—</div>
-            <div class="note" id="kTargetLabel">Target: —</div>
-          </div>
-
-          <div class="kpi">
-            <div class="lbl">Prezzo minimo accettabile</div>
-            <div class="val" id="kMinPrice">—</div>
-            <div class="note">Sotto questo prezzo scendi sotto il target (con lo sconto attuale)</div>
-          </div>
-
-          <div class="kpi">
-            <div class="lbl">Costo totale</div>
-            <div class="val" id="kTotalCost">€0,00</div>
-            <div class="note">Somma (costo base + extra) × quantità</div>
-          </div>
-
-          <div class="kpi">
-            <div class="lbl">Totale fatturato</div>
-            <div class="val" id="kGrossRevenue">€0,00</div>
-            <div class="note" id="kRevenueNote">—</div>
-          </div>
-
-          <div class="kpi">
-            <div class="lbl">Utile totale</div>
-            <div class="val" id="kProfit">€0,00</div>
-            <div class="note">Utile calcolato su imponibile (netto IVA)</div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <h2>Acconto (sicurezza)</h2>
-        <div class="row">
-          <div>
-            <label>Acconto %</label>
-            <input id="depositPct" type="text" value="60" inputmode="decimal">
-          </div>
-          <div>
-            <label>Buffer sicurezza %</label>
-            <input id="bufferPct" type="text" value="5" inputmode="decimal">
-          </div>
-        </div>
-
-        <div class="kpi" style="margin-top:12px">
-          <div class="lbl">Acconto richiesto</div>
-          <div class="val" id="kDeposit">€0,00</div>
-          <div class="note" id="kDepositNote">—</div>
-        </div>
-
-        <button class="btn secondary" id="btnCopySummary" type="button">Copia riepilogo</button>
-        <div class="sub" style="margin-top:8px">Testo pronto per WhatsApp/email.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SAVED -->
-  <div id="viewSaved" style="display:none">
-    <div class="card">
-      <h2>Kit salvati</h2>
-      <div class="sub" style="margin-top:-6px">Configurazioni salvate su questo browser.</div>
-      <div class="divider"></div>
-      <div class="savedList" id="savedList"></div>
-      <button class="btn secondary" id="btnClearAll" type="button" style="margin-top:12px">Elimina tutti i kit salvati</button>
-    </div>
-  </div>
+<h3 style="margin-top:18px">Articoli</h3>
+<table class="table">
+<tbody id="items"></tbody>
+</table>
+<button onclick="addItem()">+ Aggiungi articolo</button>
 
 </div>
 
+<div class="card">
+<div class="kpis">
+<div class="kpi"><div class="lbl">Costo atleta</div><div class="val" id="kCost">-</div></div>
+<div class="kpi"><div class="lbl">Prezzo atleta</div><div class="val" id="kPrice">-</div></div>
+<div class="kpi"><div class="lbl">Margine reale</div><div class="val" id="kMargin">-</div></div>
+</div>
+</div>
+
+</div>
+
+<div class="card">
+<h3>Riepilogo ordine</h3>
+<div class="kpiGrid">
+<div class="kpi"><div class="lbl">Costo totale</div><div class="val" id="kTotal">-</div></div>
+<div class="kpi"><div class="lbl">Fatturato</div><div class="val" id="kRevenue">-</div></div>
+<div class="kpi"><div class="lbl">Utile</div><div class="val" id="kProfit">-</div></div>
+<div class="kpi"><div class="lbl">Prezzo minimo</div><div class="val" id="kMin">-</div></div>
+</div>
+</div>
 <script>
-(() => {
-  const el = (id) => document.getElementById(id);
-  const eur = (n) => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n || 0);
-
-  // ✅ supporta virgole: "7,5" -> 7.5
-  const toNum = (x) => {
-    const s = String(x ?? "").trim().replace(/\s+/g,"").replace(",", ".");
-    const v = parseFloat(s);
-    return Number.isFinite(v) ? v : 0;
-  };
-  const nval = (id) => toNum(el(id).value);
-  const clamp = (x,min,max)=>Math.min(max,Math.max(min,x));
-
-  const COST_DW = {
-    "T-shirt": 15, "Polo": 18, "Pantaloncino": 16, "Gonnellino": 17, "Dress": 22,
-    "Sweatshirt": 28, "Hoodie": 32, "Zip Hoodie": 35, "Pantalone": 26
-  };
-  const COST_PROMO = {
-    "T-shirt": 7.5, "Polo": 9.5, "Pantaloncino": 9.0, "Gonnellino": 9.5, "Dress": 12.0,
-    "Sweatshirt": 16.0, "Hoodie": 18.0, "Zip Hoodie": 20.0, "Pantalone": 15.0
-  };
-  const ITEM_ORDER = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
-  const STORAGE_KEY = "doubleu_kits_v5";
-
-  let items = [];
-
-  function newId(){
-    return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()));
-  }
-
-  function newItem(){
-    const players = nval("players"); // può essere 0 se vuoto
-    return {
-      id: newId(),
-      name: "T-shirt",
-      line: "DOUBLEU",
-      base: COST_DW["T-shirt"],
-      extra: 0,
-      qty: players || 0,
-      costLocked: false
-    };
-  }
-
-  function ensureAtLeastOne(){
-    if(items.length === 0) items.push(newItem());
-  }
-
-  function applyReferenceCost(it){
-    if(it.line === "DOUBLEU") it.base = COST_DW[it.name] ?? it.base;
-    else if(it.line === "PROMO") it.base = COST_PROMO[it.name] ?? it.base;
-  }
-
-  function renderItems(){
-    ensureAtLeastOne();
-    const tbody = el("itemsBody");
-    tbody.innerHTML = "";
-
-    for(const it of items){
-      const tr = document.createElement("tr");
-      const options = ITEM_ORDER.map(k => `<option value="${k}" ${k===it.name?"selected":""}>${k}</option>`).join("");
-
-      tr.innerHTML = `
-        <td>
-          <select data-act="name" data-id="${it.id}">${options}</select>
-        </td>
-        <td>
-          <select data-act="line" data-id="${it.id}">
-            <option value="DOUBLEU" ${it.line==="DOUBLEU"?"selected":""}>DOUBLEU (produzione)</option>
-            <option value="PROMO" ${it.line==="PROMO"?"selected":""}>Basic / Promotional</option>
-            <option value="CUSTOM" ${it.line==="CUSTOM"?"selected":""}>Altro (manuale)</option>
-          </select>
-        </td>
-        <td>
-          <input type="text" inputmode="decimal" data-act="base" data-id="${it.id}" value="${it.base}">
-        </td>
-        <td>
-          <input type="text" inputmode="decimal" data-act="extra" data-id="${it.id}" value="${it.extra}">
-        </td>
-        <td>
-          <div class="qtybox">
-            <button class="qbtn" data-act="minus" data-id="${it.id}" type="button">–</button>
-            <input type="text" inputmode="decimal" data-act="qty" data-id="${it.id}" value="${it.qty}">
-            <button class="qbtn" data-act="plus" data-id="${it.id}" type="button">+</button>
-            <button class="qbtn qdup" data-act="dup" data-id="${it.id}" type="button" title="Duplica riga">⧉</button>
-          </div>
-        </td>
-        <td style="text-align:right">
-          <div class="actions">
-            <button class="btn secondary small" type="button" data-act="reset" data-id="${it.id}">↺ Costo</button>
-            <button class="btn secondary small" type="button" data-act="del" data-id="${it.id}">Rimuovi</button>
-          </div>
-          <div class="sub" style="margin-top:6px">
-            ${it.costLocked ? "Costo: <b>bloccato</b>" : "Costo: <b>auto</b> (da riferimento)"}
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    tbody.querySelectorAll("[data-act]").forEach(node => {
-      const act = node.getAttribute("data-act");
-      const id = node.getAttribute("data-id");
-      node.addEventListener("input", () => onItemChange(id, act, node.value));
-      node.addEventListener("change", () => onItemChange(id, act, node.value));
-    });
-
-    tbody.querySelectorAll("button[data-act]").forEach(btn=>{
-      const act = btn.getAttribute("data-act");
-      const id = btn.getAttribute("data-id");
-      btn.addEventListener("click", ()=> onItemAction(id, act));
-    });
-
-    recalc();
-  }
-
-  function onItemChange(id, act, val){
-    const it = items.find(x=>x.id===id);
-    if(!it) return;
-
-    if(act === "name"){
-      it.name = val;
-      if(!it.costLocked) applyReferenceCost(it);
-    }
-
-    if(act === "line"){
-      it.line = val;
-      if(!it.costLocked) applyReferenceCost(it);
-    }
-
-    if(act === "base"){
-      it.base = toNum(val);
-      it.costLocked = true;
-    }
-
-    if(act === "extra") it.extra = toNum(val);
-    if(act === "qty") it.qty = Math.max(0, toNum(val));
-
-    renderItems();
-  }
-
-  function onItemAction(id, act){
-    const idx = items.findIndex(x=>x.id===id);
-    if(idx < 0) return;
-
-    if(act==="plus"){
-      items[idx].qty = (toNum(items[idx].qty) || 0) + 1;
-      renderItems(); return;
-    }
-    if(act==="minus"){
-      items[idx].qty = Math.max(0, (toNum(items[idx].qty) || 0) - 1);
-      renderItems(); return;
-    }
-    if(act==="dup"){
-      const copy = {...items[idx], id: newId()};
-      items.splice(idx+1,0,copy);
-      renderItems(); return;
-    }
-
-    if(act==="del"){
-      items.splice(idx,1);
-      if(items.length===0) items.push(newItem());
-      renderItems(); return;
-    }
-
-    if(act==="reset"){
-      const it = items[idx];
-      it.costLocked = false;
-      applyReferenceCost(it);
-      renderItems(); return;
-    }
-  }
-
-  function recalc(){
-    const players = nval("players"); // può essere 0
-    const marginTarget = clamp(parseFloat(el("margin").value)||0, 0, 0.95);
-    const discount = clamp(nval("discount")/100, 0, 0.95);
-
-    let vat = clamp(nval("vatPct")/100, 0, 1);
-    if(!el("applyVAT").checked) vat = 0;
-
-    const depPct = clamp(nval("depositPct")/100, 0, 1);
-    const buffer = clamp(nval("bufferPct")/100, 0, 2);
-
-    let totalCost = 0;
-    for(const it of items){
-      totalCost += (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
-    }
-
-    // KPI costo per atleta
-    el("kCostPerAthlete").textContent = (players>0) ? eur(totalCost/players) : "—";
-
-    // prezzo target
-    const netTarget = totalCost > 0 ? ( totalCost / (1 - marginTarget) ) : 0;
-    const grossBeforeDiscount = vat>0 ? netTarget*(1+vat) : netTarget;
-    const grossFinal = grossBeforeDiscount * (1 - discount);
-
-    const priceAthlete = players>0 ? grossFinal/players : 0;
-
-    const netFinal = vat>0 ? (grossFinal/(1+vat)) : grossFinal;
-    const profit = netFinal - totalCost;
-    const realMargin = netFinal>0 ? (profit/netFinal) : 0;
-
-    const minGrossFinal = (vat>0 ? netTarget*(1+vat) : netTarget) * (1 - discount);
-    const minPriceAthlete = players>0 ? (minGrossFinal/players) : 0;
-
-    const depByPct = grossFinal * depPct;
-    const depMin = totalCost * (1 + buffer);
-    const depFinal = Math.max(depByPct, depMin);
-
-    el("kPriceAthlete").textContent = (players>0) ? eur(priceAthlete) : "—";
-    el("kVatLabel").textContent = vat>0 ? "IVA inclusa nel prezzo" : "Prezzo netto (IVA non applicata)";
-
-    el("kRealMargin").textContent = (netFinal>0) ? `${(realMargin*100).toFixed(1)}%` : "—";
-    el("kTargetLabel").textContent = `Target: ${(marginTarget*100).toFixed(0)}%`;
-
-    el("kMinPrice").textContent = (players>0) ? eur(minPriceAthlete) : "—";
-
-    el("kTotalCost").textContent = eur(totalCost);
-    el("kGrossRevenue").textContent = eur(grossFinal);
-
-    const revNote = vat>0
-      ? `Imponibile: ${eur(netFinal)} • Sconto: ${(discount*100).toFixed(0)}%`
-      : `Netto: ${eur(netFinal)} • Sconto: ${(discount*100).toFixed(0)}%`;
-    el("kRevenueNote").textContent = revNote;
-
-    el("kProfit").textContent = eur(profit);
-
-    el("kDeposit").textContent = eur(depFinal);
-    el("kDepositNote").innerHTML = depFinal >= totalCost
-      ? `<span class="ok">Copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`
-      : `<span class="bad">NON copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`;
-
-    // ALERT VISIVO prezzo atleta
-    const priceCard = el("kPriceCard");
-    priceCard.classList.remove("warn","okcard");
-    if(players>0){
-      if(priceAthlete < minPriceAthlete){
-        priceCard.classList.add("warn");
-        el("kVatLabel").textContent += " • Sotto il minimo consigliato";
-      }else{
-        priceCard.classList.add("okcard");
-      }
-    }
-  }
-
-  function applyPlayersToAll(){
-    const players = nval("players");
-    if(players <= 0){ alert("Inserisci prima il numero atleti"); return; }
-    items.forEach(it => { it.qty = players; });
-    renderItems();
-  }
-
-  function askUpdateQuantities(){
-    const players = nval("players");
-    if(players <= 0) return;
-    if(confirm(`Vuoi aggiornare la quantità di tutti gli articoli a ${players}?`)){
-      items.forEach(it => it.qty = players);
-      renderItems();
-    }
-  }
-
-  function resetForm(){
-    el("projectName").value = "Nuovo kit";
-    el("notes").value = "";
-    el("players").value = "";          // ✅ vuoto
-    el("discount").value = "0";
-    el("margin").value = "0.50";
-    el("vatPct").value = "22";
-    el("applyVAT").checked = true;
-    el("depositPct").value = "60";
-    el("bufferPct").value = "5";
-    items = [newItem()];
-    renderItems();
-    recalc();
-  }
-
-  // storage
-  function loadSaved(){
-    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-    catch(e){ return []; }
-  }
-  function saveSaved(list){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  }
-
-  function packCurrent(){
-    return {
-      id: newId(),
-      ts: Date.now(),
-      name: (el("projectName").value || "Kit").trim(),
-      notes: (el("notes").value || "").trim(),
-      players: el("players").value,
-      margin: parseFloat(el("margin").value)||0,
-      vatPct: el("vatPct").value,
-      applyVAT: el("applyVAT").checked,
-      discount: el("discount").value,
-      depositPct: el("depositPct").value,
-      bufferPct: el("bufferPct").value,
-      items: JSON.parse(JSON.stringify(items))
-    };
-  }
-
-  function applyKit(k){
-    el("projectName").value = k.name || "Kit";
-    el("notes").value = k.notes || "";
-    el("players").value = k.players ?? "";
-    el("margin").value = String(k.margin ?? 0.5);
-    el("vatPct").value = k.vatPct ?? "22";
-    el("applyVAT").checked = !!k.applyVAT;
-    el("discount").value = k.discount ?? "0";
-    el("depositPct").value = k.depositPct ?? "60";
-    el("bufferPct").value = k.bufferPct ?? "5";
-    items = (k.items && Array.isArray(k.items) && k.items.length) ? k.items : [newItem()];
-    renderItems();
-    setTab("builder");
-  }
-
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-  }
-
-  function renderSaved(){
-    const list = loadSaved().sort((a,b)=>b.ts-a.ts);
-    const root = el("savedList");
-    root.innerHTML = "";
-    if(list.length === 0){
-      root.innerHTML = `<div class="sub">Nessun kit salvato.</div>`;
-      return;
-    }
-    for(const k of list){
-      const div = document.createElement("div");
-      div.className = "savedCard";
-      const when = new Date(k.ts || Date.now()).toLocaleString("it-IT");
-      div.innerHTML = `
-        <div class="meta">
-          <div class="name">${escapeHtml(k.name || "Kit")}</div>
-          <div class="mini">${when} • Atleti: ${escapeHtml(k.players || "-")} • Margine: ${Math.round((k.margin||0)*100)}%</div>
-        </div>
-        <div class="btnrow">
-          <button class="btn secondary small" data-act="load" data-id="${k.id}" type="button">Apri</button>
-          <button class="btn secondary small" data-act="dup" data-id="${k.id}" type="button">Duplica</button>
-          <button class="btn secondary small" data-act="del" data-id="${k.id}" type="button">Elimina</button>
-        </div>
-      `;
-      root.appendChild(div);
-    }
-
-    root.querySelectorAll("button[data-act]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const act = btn.getAttribute("data-act");
-        const id = btn.getAttribute("data-id");
-        const all = loadSaved();
-        const kit = all.find(x=>x.id===id);
-        if(!kit) return;
-
-        if(act==="load") applyKit(kit);
-        if(act==="dup"){
-          const copy = {...kit, id: newId(), ts: Date.now(), name: (kit.name||"Kit")+" (copia)"};
-          all.unshift(copy); saveSaved(all); renderSaved();
-        }
-        if(act==="del"){
-          const filtered = all.filter(x=>x.id!==id);
-          saveSaved(filtered); renderSaved();
-        }
-      });
-    });
-  }
-
-  function setTab(which){
-    const isBuilder = which === "builder";
-    el("viewBuilder").style.display = isBuilder ? "block" : "none";
-    el("viewSaved").style.display = isBuilder ? "none" : "block";
-    el("tabBuilder").classList.toggle("active", isBuilder);
-    el("tabSaved").classList.toggle("active", !isBuilder);
-    if(!isBuilder) renderSaved();
-  }
-
-  async function copySummary(){
-    const name = (el("projectName").value||"Kit").trim();
-    const players = el("players").value || "-";
-    const marginT = Math.round((parseFloat(el("margin").value)||0)*100);
-    const vatOn = el("applyVAT").checked;
-    const vatPct = el("vatPct").value;
-    const discount = el("discount").value;
-    const depositPct = el("depositPct").value;
-    const bufferPct = el("bufferPct").value;
-
-    const lines = [];
-    lines.push(`DOUBLEU — Preventivo kit: ${name}`);
-    lines.push(`Atleti (stima): ${players}`);
-    lines.push(`Margine target: ${marginT}%`);
-    lines.push(`IVA: ${vatOn ? (vatPct+"% (inclusa)") : "non applicata (netto)"}`);
-    lines.push(`Sconto trattativa: ${discount}%`);
-    lines.push("");
-    lines.push("Articoli:");
-    items.forEach((it, idx)=>{
-      lines.push(`- ${idx+1}) ${it.name} • Linea: ${it.line} • Costo ${it.base}€ ${it.costLocked?"(bloccato)":"(auto)"} • Extra ${it.extra}€ • Qtà ${it.qty}`);
-    });
-    lines.push("");
-    lines.push(`Costo produzione per atleta: ${el("kCostPerAthlete").textContent}`);
-    lines.push(`Prezzo per atleta: ${el("kPriceAthlete").textContent}`);
-    lines.push(`Costo totale: ${el("kTotalCost").textContent}`);
-    lines.push(`Totale fatturato: ${el("kGrossRevenue").textContent}`);
-    lines.push(`Margine reale: ${el("kRealMargin").textContent}`);
-    lines.push(`Utile totale: ${el("kProfit").textContent}`);
-    lines.push(`Prezzo minimo accettabile (atleta): ${el("kMinPrice").textContent}`);
-    lines.push("");
-    lines.push(`Acconto: ${depositPct}% • Buffer: ${bufferPct}% → Richiesto: ${el("kDeposit").textContent}`);
-    if(el("notes").value.trim()){
-      lines.push("");
-      lines.push(`Note: ${el("notes").value.trim()}`);
-    }
-
-    const summary = lines.join("\n");
-    try{
-      await navigator.clipboard.writeText(summary);
-      el("btnCopySummary").textContent = "Copiato ✓";
-      setTimeout(()=> el("btnCopySummary").textContent = "Copia riepilogo", 900);
-    }catch(e){
-      window.prompt("Copia il testo:", summary);
-    }
-  }
-
-  function bind(){
-    // recalc live
-    ["projectName","margin","vatPct","applyVAT","discount","depositPct","bufferPct","notes"].forEach(id=>{
-      el(id).addEventListener("input", recalc);
-      el(id).addEventListener("change", recalc);
-    });
-
-    // players: recalc + popup allinea quantità
-    el("players").addEventListener("change", () => {
-      recalc();
-      askUpdateQuantities();
-    });
-    el("players").addEventListener("input", recalc);
-
-    el("btnFillQty").addEventListener("click", applyPlayersToAll);
-
-    el("btnAdd").addEventListener("click", ()=>{
-      items.push(newItem());
-      renderItems();
-    });
-
-    el("btnSave").addEventListener("click", ()=>{
-      const all = loadSaved();
-      all.unshift(packCurrent());
-      saveSaved(all);
-      el("btnSave").textContent = "Salvato ✓";
-      setTimeout(()=> el("btnSave").textContent = "Salva configurazione", 900);
-    });
-
-    el("btnNew").addEventListener("click", ()=>{
-      if(confirm("Vuoi pulire i dati e creare un nuovo preventivo?")){
-        resetForm();
-      }
-    });
-
-    el("btnCopySummary").addEventListener("click", copySummary);
-
-    el("btnClearAll").addEventListener("click", ()=>{
-      if(confirm("Eliminare tutti i kit salvati su questo browser?")){
-        saveSaved([]);
-        renderSaved();
-      }
-    });
-
-    el("tabBuilder").addEventListener("click", ()=>setTab("builder"));
-    el("tabSaved").addEventListener("click", ()=>setTab("saved"));
-
-    // selezione automatica input (mobile friendly)
-    document.addEventListener("focusin", (e) => {
-      const t = e.target;
-      if(t && t.tagName === "INPUT"){
-        // seleziona tutto per velocizzare la sostituzione
-        setTimeout(() => {
-          try{ t.select(); }catch(_){}
-        }, 0);
-      }
-    });
-  }
-
-  function init(){
-    bind();
-    items = [newItem()];
-    renderItems();
-    recalc();
-
-    // PWA: registra service worker (per “Installa” su Chrome)
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js").catch(()=>{});
-    }
-  }
-
-  init();
-})();
+
+const toNum = v => {
+  if(v === "" || v === null || v === undefined) return 0;
+  return parseFloat(String(v).replace(",", ".")) || 0;
+};
+
+const COST_PREMIUM = {
+"T-shirt":15,"Pantaloncino":16,"Sweatshirt":28,"Pantalone":26
+};
+const COST_BASIC = {
+"T-shirt":9,"Pantaloncino":10.5,"Sweatshirt":19,"Pantalone":18
+};
+const COST_PROMOTIONAL = {
+"T-shirt":8,"Pantaloncino":9,"Sweatshirt":16,"Pantalone":15
+};
+
+let items=[];
+
+function newItem(){
+return {name:"T-shirt",line:"PREMIUM",base:15,extra:0,qty:toNum(players.value)||0};
+}
+
+function addItem(){items.push(newItem());renderItems();}
+
+function applyPlayers(){
+let p=toNum(players.value);
+items.forEach(it=>it.qty=p);
+renderItems();
+}
+
+function resetAll(){
+players.value="";
+items=[newItem()];
+renderItems();
+}
+
+function autoCost(i){
+const it=items[i];
+if(it.line=="PREMIUM") it.base=COST_PREMIUM[it.name]||it.base;
+if(it.line=="BASIC") it.base=COST_BASIC[it.name]||it.base;
+if(it.line=="PROMOTIONAL") it.base=COST_PROMOTIONAL[it.name]||it.base;
+}
+
+function renderItems(){
+let html="";
+items.forEach((it,i)=>{
+html+=`
+<tr>
+
+<td>
+<select onchange="items[${i}].name=this.value;autoCost(${i});renderItems()">
+<option ${it.name=="T-shirt"?"selected":""}>T-shirt</option>
+<option ${it.name=="Pantaloncino"?"selected":""}>Pantaloncino</option>
+<option ${it.name=="Sweatshirt"?"selected":""}>Sweatshirt</option>
+<option ${it.name=="Pantalone"?"selected":""}>Pantalone</option>
+</select>
+</td>
+
+<td>
+<select onchange="items[${i}].line=this.value;autoCost(${i});renderItems()">
+<option ${it.line=="PREMIUM"?"selected":""}>PREMIUM</option>
+<option ${it.line=="BASIC"?"selected":""}>BASIC</option>
+<option ${it.line=="PROMOTIONAL"?"selected":""}>PROMOTIONAL</option>
+<option ${it.line=="ALTRO"?"selected":""}>ALTRO</option>
+</select>
+</td>
+
+<td><input value="${it.base}" oninput="items[${i}].base=toNum(this.value);calc()"></td>
+<td><input value="${it.extra}" oninput="items[${i}].extra=toNum(this.value);calc()"></td>
+
+<td>
+<div class="qtybox">
+<button class="qbtn" onclick="items[${i}].qty=Math.max(0,items[${i}].qty-1);renderItems()">-</button>
+<input value="${it.qty}" oninput="items[${i}].qty=toNum(this.value);calc()">
+<button class="qbtn" onclick="items[${i}].qty++;renderItems()">+</button>
+<button class="qbtn" onclick="items.splice(${i}+1,0,{...items[${i}]});renderItems()">⧉</button>
+</div>
+</td>
+
+<td><button onclick="items.splice(${i},1);renderItems()">✕</button></td>
+
+</tr>`;
+});
+document.getElementById("items").innerHTML=html;
+calc();
+}
+
+</script>
+<script>
+
+function eur(v){
+return (v||0).toFixed(2)+"€";
+}
+
+function calc(){
+
+let playersN = toNum(players.value) || 1;
+let margin = parseFloat(marginEl.value);
+let vat = toNum(vatEl.value)/100;
+let discount = toNum(discountEl.value)/100;
+
+let totalCost = 0;
+
+items.forEach(it=>{
+totalCost += (toNum(it.base)+toNum(it.extra))*toNum(it.qty);
+});
+
+let netTarget = totalCost/(1-margin);
+let gross = netTarget*(1+vat);
+gross *= (1-discount);
+
+let netFinal = gross/(1+vat);
+let realMargin = (netFinal-totalCost)/netFinal;
+
+let minPrice = gross/playersN;
+let priceAthlete = gross/playersN;
+let costAthlete = totalCost/playersN;
+let profit = netFinal-totalCost;
+
+/* KPI TOP */
+kCost.innerText = eur(costAthlete);
+kPrice.innerText = eur(priceAthlete);
+kMargin.innerText = (realMargin*100).toFixed(1)+"%";
+
+/* RIEPILOGO */
+kTotal.innerText = eur(totalCost);
+kRevenue.innerText = eur(gross);
+kProfit.innerText = eur(profit);
+kMin.innerText = eur(minPrice);
+
+}
+
+/* elementi */
+const players=document.getElementById("players");
+const marginEl=document.getElementById("margin");
+const vatEl=document.getElementById("vat");
+const discountEl=document.getElementById("discount");
+
+players.addEventListener("input",calc);
+marginEl.addEventListener("change",calc);
+vatEl.addEventListener("input",calc);
+discountEl.addEventListener("input",calc);
+
+/* start */
+items=[newItem()];
+renderItems();
+
 </script>
 </body>
 </html>
-
