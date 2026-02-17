@@ -4,7 +4,22 @@
   <meta charset="utf-8">
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>DOUBLEU Kit Builder PRO</title>
+
+  <title>DOUBLEU Kit Builder</title>
+
+  <!-- iOS APP MODE -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DOUBLEU Kit">
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#0b1220">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- ICONS -->
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-192.png">
+
   <style>
     :root{
       --bg0:#070b14;
@@ -56,7 +71,7 @@
       border-color:rgba(110,231,255,.35);
     }
 
-    /* colonna KPI più larga */
+    /* KPI column wider */
     .grid{
       display:grid;
       grid-template-columns: 1.35fr .95fr;
@@ -127,7 +142,7 @@
       padding:9px 10px;border-radius:12px;margin-top:0;font-size:12px;width:auto
     }
 
-    /* KPI: una colonna, leggibile */
+    /* KPI: single column */
     .kpis{display:grid;grid-template-columns:1fr;gap:10px;}
     .kpi{
       background:rgba(255,255,255,.04);
@@ -166,7 +181,7 @@
     .ok{color:var(--ok);font-weight:1000}
     .bad{color:var(--bad);font-weight:1000}
 
-    /* ALERT VISIVO prezzo atleta */
+    /* price alert */
     .kpi.warn{
       border-color: rgba(251,113,133,.65);
       box-shadow: 0 0 0 2px rgba(251,113,133,.25) inset, 0 12px 30px rgba(0,0,0,.35);
@@ -336,14 +351,12 @@
         <h2>Riepilogo</h2>
 
         <div class="kpis">
-          <!-- NUOVO: costo produzione per atleta PRIMA del prezzo -->
           <div class="kpi">
             <div class="lbl">Costo produzione per atleta</div>
             <div class="val" id="kCostPerAthlete">€0,00</div>
             <div class="note">Costo medio del kit su base atleti</div>
           </div>
 
-          <!-- Prezzo atleta con alert -->
           <div class="kpi" id="kPriceCard">
             <div class="lbl">Prezzo per atleta</div>
             <div class="val" id="kPriceAthlete">€0,00</div>
@@ -439,7 +452,7 @@
     "Sweatshirt": 16.0, "Hoodie": 18.0, "Zip Hoodie": 20.0, "Pantalone": 15.0
   };
   const ITEM_ORDER = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
-  const STORAGE_KEY = "doubleu_kits_v3";
+  const STORAGE_KEY = "doubleu_kits_v4";
 
   let items = [];
 
@@ -595,7 +608,6 @@
       totalCost += ((parseFloat(it.base)||0) + (parseFloat(it.extra)||0)) * (parseFloat(it.qty)||0);
     }
 
-    // NUOVO KPI: costo medio per atleta
     const costPerAthlete = players>0 ? totalCost/players : 0;
     el("kCostPerAthlete").textContent = eur(costPerAthlete);
 
@@ -605,12 +617,10 @@
 
     const priceAthlete = players>0 ? grossFinal/players : 0;
 
-    // netto reale: se IVA off, grossFinal è già NETTO
     const netFinal = vat>0 ? (grossFinal/(1+vat)) : grossFinal;
     const profit = netFinal - totalCost;
     const realMargin = netFinal>0 ? (profit/netFinal) : 0;
 
-    // prezzo minimo accettabile (dato lo sconto attuale)
     const minGrossFinal = (vat>0 ? netTarget*(1+vat) : netTarget) * (1 - discount);
     const minPriceAthlete = players>0 ? (minGrossFinal/players) : 0;
 
@@ -618,7 +628,6 @@
     const depMin = totalCost * (1 + buffer);
     const depFinal = Math.max(depByPct, depMin);
 
-    // update UI
     el("kPriceAthlete").textContent = eur(priceAthlete);
     el("kVatLabel").textContent = vat>0 ? "IVA inclusa nel prezzo" : "Prezzo netto (IVA non applicata)";
 
@@ -642,7 +651,6 @@
       ? `<span class="ok">Copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`
       : `<span class="bad">NON copre il costo</span> • (pct ${eur(depByPct)} | min ${eur(depMin)})`;
 
-    // ALERT VISIVO prezzo atleta
     const priceCard = el("kPriceCard");
     priceCard.classList.remove("warn","okcard");
 
@@ -654,7 +662,6 @@
     }
   }
 
-  // storage
   function loadSaved(){
     try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
     catch(e){ return []; }
