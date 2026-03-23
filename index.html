@@ -803,15 +803,18 @@ let offerStatus = "";
 let offerStatusColor = "";
 
 if(useOffer.checked && toNum(offerPrice.value) > 0){
-  const minOk = pricePerAthlete + 1e-9 >= minPricePerAthlete;
-  const targetOk = realMargin + 1e-9 >= m;
 
-  if(!minOk){
-    offerStatus = `🔴 NON SOSTENIBILE · Minimo: ${eur(minPricePerAthlete)}`;
+  const isBelowMin = effectivePrice + 1e-9 < minPricePerAthlete;
+  const isBelowTarget = realMargin + 1e-9 < m;
+
+  if(isBelowMin){
+    offerStatus = `🔴 NON SOSTENIBILE · Minimo ${eur(minPricePerAthlete)}`;
     offerStatusColor = "#fb7185";
-  } else if(!targetOk){
-    offerStatus = `🟡 ATTENZIONE · Minimo: ${eur(minPricePerAthlete)} · Target ${(m*100).toFixed(0)}%`;
+
+  } else if(isBelowTarget){
+    offerStatus = `🟡 ATTENZIONE · Sostenibile ma sotto target (${(realMargin*100).toFixed(1)}%)`;
     offerStatusColor = "#fbbf24";
+
   } else {
     offerStatus = `🟢 OK · Margine ${(realMargin*100).toFixed(1)}%`;
     offerStatusColor = "#34d399";
