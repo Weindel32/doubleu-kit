@@ -393,7 +393,7 @@
         <div class="val" id="kProfit">—</div>
         <div class="note">Utile su imponibile</div>
       </div>
-      <div class="kpi" id="kpiMinPrice">
+      <div class="kpi" id="kpi">
         <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
         <div class="val" id="kMinPrice">—</div>
         <div class="note">Sotto questa soglia scendi sotto margine target</div>
@@ -770,7 +770,7 @@
     const revenueNetTarget = totalCost / (1 - m);
     const invoiceTarget = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
     const invoiceAfterDiscount = invoiceTarget * (1 - disc);
-    const minPricePerAthlete = invoiceAfterDiscount / qtyBase;
+    const minPricePerAthlete = (totalCost * (1 + buf)) / qtyBase;
 
     // modalità budget / prezzo proposto
     let invoiceTotal = invoiceAfterDiscount;
