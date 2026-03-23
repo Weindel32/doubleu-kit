@@ -532,6 +532,7 @@ const kTargetPrice = document.getElementById("kTargetPrice");
   const kpiMargin = document.getElementById("kpiMargin");
   const kpiPrice = document.getElementById("kpiPrice");
   const kpiMinPrice = document.getElementById("kpiMinPrice");
+  const kpiTargetPrice = document.getElementById("kpiTargetPrice");
   const kpiDeposit = document.getElementById("kpiDeposit");
 
   // Save
@@ -769,13 +770,13 @@ const kTargetPrice = document.getElementById("kTargetPrice");
       kNet.textContent="—";
       kProfit.textContent="—";
       kMinPrice.textContent="—";
-      kMinSustainable.textContent="—";
       kTargetPrice.textContent="—";
       kMinDeposit.textContent="—";
       kDepNote.textContent="Inserisci almeno 1 quantità > 0";
       kGrossNote.textContent="—";
       showAlerts([]);
       setBox(kpiMargin,null); setBox(kpiPrice,null); setBox(kpiMinPrice,null); setBox(kpiDeposit,null);
+      setBox(kpiTargetPrice,null);
       return;
     }
 
