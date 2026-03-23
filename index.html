@@ -788,7 +788,7 @@
   }
 }
 
-    const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
+    const revenueNet = (vatOn && priceIncludesVAT.checked) ? invoiceTotal / (1 + vatRate) : invoiceTotal;
     const profit = revenueNet - totalCost;
     const realMargin = revenueNet>0 ? (profit/revenueNet) : 0;
 
