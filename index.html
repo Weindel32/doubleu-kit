@@ -798,7 +798,7 @@ let offerStatus = "";
 let offerStatusColor = "";
 
 if(useOffer.checked && toNum(offerPrice.value) > 0){
-  if(pricePerAthlete + 1e-9 < minPricePerAthlete){
+  if(effectivePrice + 1e-9 < minPricePerAthlete){
     offerStatus = `🔴 NON SOSTENIBILE · Sotto minimo (${eur(minPricePerAthlete)})`;
     offerStatusColor = "#fb7185";
   } else if(realMargin + 1e-9 < m){
