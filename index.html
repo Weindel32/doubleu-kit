@@ -361,6 +361,15 @@
           <div class="val" id="kRealMargin">—</div>
           <div class="note" id="kTarget">Target: —</div>
         </div>
+        <div class="kpi">
+  <div class="lbl">Minimo sostenibile</div>
+  <div class="val" id="kMinPrice">—</div>
+</div>
+
+<div class="kpi">
+  <div class="lbl">Prezzo target</div>
+  <div class="val" id="kTargetPrice">—</div>
+</div>
       </div>
     </div>
 
@@ -768,12 +777,17 @@
 
     // prezzo a target
     const revenueNetTarget = totalCost / (1 - m);
+    const targetPricePerAthlete = vatOn 
+  ? (revenueNetTarget * (1 + vatRate)) / qtyBase
+  : revenueNetTarget / qtyBase;
     const invoiceTarget = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
     const invoiceAfterDiscount = invoiceTarget * (1 - disc);
     const minNetPerAthlete = (totalCost * (1 + buf)) / qtyBase;
 const minCheckPerAthlete = (vatOn && priceIncludesVAT.checked) ? minNetPerAthlete * (1 + vatRate) : minNetPerAthlete;
 const minPricePerAthlete = minCheckPerAthlete;
-
+const minPriceDisplay = (vatOn && priceIncludesVAT.checked)
+  ? minNetPerAthlete * (1 + vatRate)
+  : minNetPerAthlete;
     // modalità budget / prezzo proposto
     let invoiceTotal = invoiceAfterDiscount;
     let usingOffer = false;
@@ -839,7 +853,8 @@ if(useOffer.checked && toNum(offerPrice.value) > 0){
     kGross.textContent = eur(invoiceTotal);
     kNet.textContent = eur(revenueNet);
     kProfit.textContent = eur(profit);
-    kMinPrice.textContent = eur(minPricePerAthlete);
+    kMinPrice.textContent = eur(minPriceDisplay);
+    kTargetPrice.textContent = eur(targetPricePerAthlete);
     kMinDeposit.textContent = eur(secureNeed);
 
     kGrossNote.textContent = usingOffer
