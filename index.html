@@ -776,16 +776,17 @@
     let invoiceTotal = invoiceAfterDiscount;
     let usingOffer = false;
     if(useOffer.checked){
-      let offer = toNum(offerPrice.value);
+  let offer = toNum(offerPrice.value);
 
-if(priceIncludesVAT.checked && vatOn){
-  offer = offer / (1 + vatRate);
+  if(vatOn && !priceIncludesVAT.checked){
+    offer = offer * (1 + vatRate);
+  }
+
+  if(offer > 0){
+    invoiceTotal = offer * qtyBase;
+    usingOffer = true;
+  }
 }
-      if(offer>0){
-        invoiceTotal = offer * qtyBase;
-        usingOffer = true;
-      }
-    }
 
     const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
     const profit = revenueNet - totalCost;
