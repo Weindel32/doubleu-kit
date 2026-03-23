@@ -805,7 +805,7 @@ let offerStatusColor = "";
 
 if(useOffer.checked && toNum(offerPrice.value) > 0){
 
-  const isBelowMin = pricePerAthlete + 1e-9 < minPricePerAthlete;
+  const isBelowMin = effectivePrice + 1e-9 < minPricePerAthlete;
   const isBelowTarget = realMargin + 1e-9 < m;
 
   if(isBelowMin){
