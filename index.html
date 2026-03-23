@@ -793,16 +793,12 @@ if(priceIncludesVAT.checked && vatOn){
 
     const costPerAthlete = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
-    let effectivePrice = pricePerAthlete;
 
-if (useOffer.checked && priceIncludesVAT.checked && vatOn) {
-  effectivePrice = pricePerAthlete / (1 + vatRate);
-}
 let offerStatus = "";
 let offerStatusColor = "";
 
 if(useOffer.checked && toNum(offerPrice.value) > 0){
-  if(effectivePrice + 1e-9 < minPricePerAthlete){
+  805 if(pricePerAthlete + 1e-9 < minPricePerAthlete){
     offerStatus = `🔴 NON SOSTENIBILE · Minimo richiesto: ${eur(minPricePerAthlete)}`;
     offerStatusColor = "#fb7185";
   } else if(realMargin + 1e-9 < m){
