@@ -799,15 +799,16 @@ let offerStatusColor = "";
 
 if(useOffer.checked && toNum(offerPrice.value) > 0){
   if(pricePerAthlete + 1e-9 < minPricePerAthlete){
-offerStatus = `🔴 NON SOSTENIBILE · Sotto minimo (${eur(minPricePerAthlete)})`;
-   offerStatusColor = "#fb7185";
-   } else if(realMargin + 1e-9 < m){
-     offerStatus = `🟡 ATTENZIONE · Margine ${(realMargin*100).toFixed(1)}% vs target ${(m*100).toFixed(0)}%`;
-     offerStatusColor = "#fbbf24";
-   } else {
-     offerStatus = `🟢 OK · Margine ${(realMargin*100).toFixed(1)}%`;
-     offerStatusColor = "#34d399";
+    offerStatus = `🔴 NON SOSTENIBILE · Sotto minimo (${eur(minPricePerAthlete)})`;
+    offerStatusColor = "#fb7185";
+  } else if(realMargin + 1e-9 < m){
+    offerStatus = `🟡 ATTENZIONE · Margine ${(realMargin*100).toFixed(1)}% vs target ${(m*100).toFixed(0)}%`;
+    offerStatusColor = "#fbbf24";
+  } else {
+    offerStatus = `🟢 OK · Margine ${(realMargin*100).toFixed(1)}%`;
+    offerStatusColor = "#34d399";
   }
+}
 }
     // acconto minimo sicuro (produzione + buffer)
     const secureNeed = totalCost * (1 + buf);
