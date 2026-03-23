@@ -286,7 +286,7 @@
           </div>
         </div>
       </div>
-
+<div id="offerStatusBox" class="hint" style="margin-top:8px;font-size:13px;font-weight:800;"></div>
       <div class="row3" style="margin-top:10px">
         <div>
           <label>Acconto %</label>
@@ -495,6 +495,7 @@
   const kPriceAthlete = document.getElementById("kPriceAthlete");
   const kRealMargin = document.getElementById("kRealMargin");
   const kVatNote = document.getElementById("kVatNote");
+  const offerStatusBox = document.getElementById("offerStatusBox");
   const kTarget = document.getElementById("kTarget");
 
   const kTotalCost = document.getElementById("kTotalCost");
@@ -777,7 +778,21 @@
 
     const costPerAthlete = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
+let offerStatus = "";
+let offerStatusColor = "";
 
+if(useOffer.checked && toNum(offerPrice.value) > 0){
+  if(pricePerAthlete + 1e-9 < minPricePerAthlete){
+    offerStatus = `🔴 NON SOSTENIBILE · Minimo richiesto: ${eur(minPricePerAthlete)}`;
+    offerStatusColor = "#fb7185";
+  } else if(realMargin + 1e-9 < m){
+    offerStatus = `🟡 ATTENZIONE · Margine ridotto: ${(realMargin*100).toFixed(1)}%`;
+    offerStatusColor = "#fbbf24";
+  } else {
+    offerStatus = `🟢 OK · Margine rispettato: ${(realMargin*100).toFixed(1)}%`;
+    offerStatusColor = "#34d399";
+  }
+}
     // acconto minimo sicuro (produzione + buffer)
     const secureNeed = totalCost * (1 + buf);
     const depositAmount = invoiceTotal * dep;
@@ -829,7 +844,10 @@
     } else {
       setBox(kpiDeposit,"good");
     }
-
+if(offerStatusBox){
+  offerStatusBox.textContent = offerStatus;
+  offerStatusBox.style.color = offerStatusColor || "var(--muted)";
+}
     showAlerts(alerts);
   };
 
