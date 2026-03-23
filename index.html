@@ -923,6 +923,8 @@ if(offerStatusBox){
     items = [newItem()];
     render();
     showAlerts([]);
+    offerStatusBox.textContent = "";
+    offerStatusBox.style.color = "";
     setBox(kpiMargin,null); setBox(kpiPrice,null); setBox(kpiMinPrice,null); setBox(kpiTargetPrice,null);
     alert("Nuovo preventivo pronto ✅");
   };
