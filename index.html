@@ -793,6 +793,11 @@ if(priceIncludesVAT.checked && vatOn){
 
     const costPerAthlete = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
+    let effectivePrice = pricePerAthlete;
+
+if (priceIncludesVAT.checked && vatOn) {
+  effectivePrice = pricePerAthlete / (1 + vatRate);
+}
 
 let offerStatus = "";
 let offerStatusColor = "";
