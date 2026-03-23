@@ -225,6 +225,11 @@
 
       <div class="row2">
         <div>
+  <label>Cliente / Club</label>
+  <input id="clientName" placeholder="es. Tennis Club Roma">
+</div>
+
+<div>
           <label>Nome progetto</label>
           <input id="projectName" placeholder="Es. Kit Club Roma - Stima">
           <div class="hint">Solo per te: utile per salvare e ritrovare preventivi.</div>
@@ -925,7 +930,10 @@
   };
 
   const saveProject = () => {
-    const name = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
+    const client = (document.getElementById("clientName")?.value || "").trim();
+const project = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
+const date = new Date().toLocaleDateString("it-IT");
+const name = `${client || "Cliente"} – ${project || "Progetto"} – ${date}`;
     if(!name) return;
     const store = getStore();
     store[name] = { savedAt: Date.now(), payload: payload() };
