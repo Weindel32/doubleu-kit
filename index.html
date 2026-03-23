@@ -514,6 +514,8 @@
   const kCostAthlete = document.getElementById("kCostAthlete");
   const kPriceAthlete = document.getElementById("kPriceAthlete");
   const kRealMargin = document.getElementById("kRealMargin");
+  const kMinSustainable = document.getElementById("kMinPrice");
+const kTargetPrice = document.getElementById("kTargetPrice");
   const kVatNote = document.getElementById("kVatNote");
   const offerStatusBox = document.getElementById("offerStatusBox");
   const kTarget = document.getElementById("kTarget");
@@ -767,6 +769,8 @@
       kNet.textContent="—";
       kProfit.textContent="—";
       kMinPrice.textContent="—";
+      kMinSustainable.textContent="—";
+      kTargetPrice.textContent="—";
       kMinDeposit.textContent="—";
       kDepNote.textContent="Inserisci almeno 1 quantità > 0";
       kGrossNote.textContent="—";
@@ -853,7 +857,7 @@ if(useOffer.checked && toNum(offerPrice.value) > 0){
     kGross.textContent = eur(invoiceTotal);
     kNet.textContent = eur(revenueNet);
     kProfit.textContent = eur(profit);
-    kMinPrice.textContent = eur(minPriceDisplay);
+    kMinSustainable.textContent = eur(minPriceDisplay);
     kTargetPrice.textContent = eur(targetPricePerAthlete);
     kMinDeposit.textContent = eur(secureNeed);
 
