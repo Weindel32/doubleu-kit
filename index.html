@@ -813,7 +813,7 @@ if(useOffer.checked && toNum(offerPrice.value) > 0){
     offerStatusColor = "#fb7185";
 
   } else if(isBelowTarget){
-    offerStatus = `🟡 ATTENZIONE · Sostenibile ma sotto target (${(realMargin*100).toFixed(1)}%)`;
+    offerStatus = `🟡 SOSTENIBILE · Margine ${ (realMargin*100).toFixed(1) }% (target ${ (m*100).toFixed(0) }%)`;offerStatus = `🟡 SOSTENIBILE · Margine ${ (realMargin*100).toFixed(1) }% (target ${ (m*100).toFixed(0) }%)`;
     offerStatusColor = "#fbbf24";
 
   } else {
