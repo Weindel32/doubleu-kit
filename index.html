@@ -770,7 +770,9 @@
     const revenueNetTarget = totalCost / (1 - m);
     const invoiceTarget = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
     const invoiceAfterDiscount = invoiceTarget * (1 - disc);
-    const minPricePerAthlete = (totalCost * (1 + buf)) / qtyBase;
+    const minNetPerAthlete = (totalCost * (1 + buf)) / qtyBase;
+const minCheckPerAthlete = (vatOn && priceIncludesVAT.checked) ? minNetPerAthlete * (1 + vatRate) : minNetPerAthlete;
+const minPricePerAthlete = minCheckPerAthlete;
 
     // modalità budget / prezzo proposto
     let invoiceTotal = invoiceAfterDiscount;
