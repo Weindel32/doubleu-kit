@@ -242,32 +242,24 @@
       </div>
 
       <div class="row3" style="margin-top:10px">
-        <div>
-          <label>Margine target</label>
-          <select id="margin">
-            <option value="0.30">Promotional 30%</option>
-            <option value="0.35">Promotional 35%</option>
-            <option value="0.40">Promotional 40%</option>
-            <option value="0.45">Club entry 45%</option>
-            <option value="0.50" selected>Club standard 50%</option>
-            <option value="0.58">Club recommended 58%</option>
-            <option value="0.65">Online 65%</option>
-            <option value="0.72">Limited 72%</option>
-            <option value="0.75">Limited Drop 75%</option>
-          </select>
-          <div class="hint">Target sul netto (imponibile).</div>
-        </div>
-        <div>
-          <label>IVA %</label>
-          <input id="vat" value="22" inputmode="decimal">
-          <div class="hint">Disattivabile per estero (reverse charge).</div>
-        </div>
-        <div>
-          <label>Sconto trattativa %</label>
-          <input id="discount" value="0" inputmode="decimal">
-          <div class="hint">Sconto sul prezzo finale (solo modalità “target”).</div>
-        </div>
-      </div>
+
+  <div>
+    <label>Quantità stimata</label>
+    <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
+    <div class="hint">Stima del numero atleti/kit</div>
+  </div>
+
+  <div>
+    <label>IVA %</label>
+    <input id="vat" value="22" inputmode="decimal">
+  </div>
+
+  <div>
+    <label>Sconto %</label>
+    <input id="discount" value="0" inputmode="decimal">
+  </div>
+
+</div>
 
       <div class="row2" style="margin-top:10px">
         <div>
