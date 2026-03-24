@@ -234,11 +234,7 @@
           <input id="projectName" placeholder="Es. Kit Club Roma - Stima">
           <div class="hint">Solo per te: utile per salvare e ritrovare preventivi.</div>
         </div>
-        <div>
-          <label>Quantità stimata</label>
-          <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
-          <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
-        </div>
+        
       </div>
 
       <div class="row3" style="margin-top:10px">
@@ -276,23 +272,22 @@
   </select>
   <div class="hint">Target sul netto (imponibile)</div>
 </div>
+     <div>
+  <label>Prezzo proposto per atleta</label>
+  <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal">
+  <div class="hint">Budget club. Se attivi, calcolo sostenibilità su questo prezzo.</div>
+
+  <div style="margin-top:10px">
+    <label>Usa prezzo proposto</label>
+    <div class="toggle">
+      <input type="checkbox" id="useOffer">
       <div>
-        <div>
-          <label>Prezzo proposto per atleta</label>
-          <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal">
-          <div class="hint">Budget club. Se attivi, calcolo sostenibilità su questo prezzo.</div>
-        </div>
-        <div>
-          <label>Usa prezzo proposto</label>
-          <div class="toggle">
-            <input type="checkbox" id="useOffer">
-            <div>
-              <div style="font-weight:950">Attiva</div>
-              <div class="hint" style="margin:0">Se OFF: prezzo calcolato a target</div>
-            </div>
-          </div>
-        </div>
+        <div style="font-weight:950">Attiva</div>
+        <div class="hint" style="margin:0">Se OFF: prezzo calcolato a target</div>
       </div>
+    </div>
+  </div>
+</div>
 <div>
   <label>Prezzo inserito include IVA</label>
   <div class="toggle">
