@@ -659,7 +659,7 @@ const kTargetPrice = document.getElementById("kTargetPrice");
 
           <td style="min-width:260px">
             <label>Azioni</label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;min-width:120px">
               <button class="secondary" type="button" data-act="costMode" data-id="${it.id}">Costo: ${it.costMode==="auto"?"AUTO":"MANUALE"}</button>
               <button class="secondary" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
               <button class="secondary" type="button" data-act="rm" data-id="${it.id}">Rimuovi</button>
