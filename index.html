@@ -109,7 +109,34 @@
       outline:none;
     }
     textarea{min-height:42px;resize:vertical}
+/* RIDUZIONE CAMPI ARTICOLI */
+.tdWide select{
+  max-width:160px;
+}
 
+.tdLine select{
+  max-width:140px;
+}
+
+.tdNum input{
+  max-width:80px;
+}
+
+/* EXTRA */
+td input[type="text"]{
+  max-width:80px;
+}
+
+/* QUANTITÀ */
+.qtybox input{
+  width:50px;
+  text-align:center;
+}
+
+/* AZIONI */
+td:last-child{
+  min-width:120px;
+}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
     @media (max-width:980px){ .grid{grid-template-columns:1fr} }
