@@ -1208,29 +1208,7 @@ const name = `${client || "Cliente"} – ${project || "Progetto"} – ${date}`;
     setJS(false, "ERRORE JS");
     alert("Errore JS: controlla che hai incollato TUTTO il file index.html (inizio+fine).");
   }
-// --- Remove item button (safe) ---
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('remove-btn')) {
-    const row = e.target.closest('tr');
-    if (row) {
-      row.remove();
-      calc();
-    }
-  }
-});
 
-// --- Auto add remove button to each row ---
-const observer = new MutationObserver(() => {
-  document.querySelectorAll('#itemsBody tr').forEach(tr => {
-    if (!tr.querySelector('.remove-btn')) {
-      const td = document.createElement('td');
-      td.innerHTML = '<button class="remove-btn">🗑</button>';
-      tr.appendChild(td);
-    }
-  });
-});
-
-observer.observe(document.getElementById('itemsBody'), { childList: true });
 })();
 </script>
 
