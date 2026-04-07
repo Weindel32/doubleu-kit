@@ -11,9 +11,8 @@
 
   <style>
     :root{
-  --bg1:#040a14;
-  --bg2:#081a33;
-
+      --bg1:#040a14;
+      --bg2:#081a33;
 
       --card: rgba(255,255,255,.10);
       --card2: rgba(255,255,255,.14);
@@ -36,65 +35,95 @@
     }
 
     *{box-sizing:border-box}
+
     body{
       margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto;
+      min-height:100vh;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       color:var(--text);
       background:
-  radial-gradient(1100px 700px at 22% 12%, rgba(124,231,255,.14), transparent 62%),
-  radial-gradient(900px 520px at 78% 18%, rgba(167,139,250,.12), transparent 58%),
-  linear-gradient(180deg,var(--bg1),var(--bg2));
-
-
-    .wrap{width:100%;max-width:1440px;margin:auto;padding:16px 24px}
-    .topbar{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      flex-wrap:wrap;margin-bottom:12px
+        radial-gradient(1100px 700px at 22% 12%, rgba(124,231,255,.14), transparent 62%),
+        radial-gradient(900px 520px at 78% 18%, rgba(167,139,250,.12), transparent 58%),
+        linear-gradient(180deg,var(--bg1),var(--bg2));
     }
-    .brand{display:flex;align-items:center;gap:10px}
+
+    .wrap{
+      width:100%;
+      max-width:1440px;
+      margin:auto;
+      padding:16px 24px 28px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
     .logo{
-      width:34px;height:34px;border-radius:10px;
+      width:34px;
+      height:34px;
+      border-radius:10px;
       background:linear-gradient(135deg,var(--accent),var(--accent2));
       box-shadow:0 14px 34px rgba(0,0,0,.35);
     }
+
     h1{font-size:20px;margin:0}
     .sub{font-size:12px;color:var(--muted);margin-top:2px}
 
     .badge{
-      display:flex;align-items:center;gap:10px;
-      padding:8px 12px;border-radius:999px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 12px;
+      border-radius:999px;
       border:1px solid var(--stroke);
       background:rgba(255,255,255,.08);
       color:var(--muted);
       font-size:12px;
       user-select:none;
     }
-    #jsDot{width:8px;height:8px;border-radius:99px;background:#777;box-shadow:0 0 0 4px rgba(255,255,255,.06)}
+
+    #jsDot{
+      width:8px;
+      height:8px;
+      border-radius:99px;
+      background:#777;
+      box-shadow:0 0 0 4px rgba(255,255,255,.06);
+    }
+
     #jsTxt{font-weight:900;color:var(--text)}
 
     .grid{
-  display:grid;
-  grid-template-columns: 1fr;
-  gap:24px;
-  align-items:start;
-}
+      display:grid;
+      grid-template-columns:1fr;
+      gap:24px;
+      align-items:start;
+    }
 
-.card{
-  background:linear-gradient(180deg,var(--card2),var(--card));
-  border:1px solid var(--stroke);
-  border-radius:18px;
-  padding:16px;
-  box-shadow:0 16px 46px rgba(0,0,0,.35);
-  backdrop-filter: blur(10px);
+    .card{
+      background:linear-gradient(180deg,var(--card2),var(--card));
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 16px 46px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      width:100%;
+      min-width:0;
+      max-width:none;
+      overflow:hidden;
+      margin-bottom:28px;
+    }
 
-  width:100%;
-  min-width:0;
-  max-width:none;
-
-  overflow:hidden;
-
-  margin-bottom:28px;
-}
     label{font-size:12px;color:var(--muted)}
     .hint{font-size:11px;color:var(--muted);margin-top:6px}
     .sectionTitle{margin:0 0 6px;font-weight:950}
@@ -107,107 +136,44 @@
       border:1px solid var(--inputStroke);
       background:var(--input);
       color:var(--text);
-      font-size:18px; /* numeri più grandi come volevi */
+      font-size:18px;
       outline:none;
     }
+
     textarea{min-height:42px;resize:vertical}
-/* RIDUZIONE CAMPI ARTICOLI */
-.tdWide select{
-  max-width:160px;
-}
 
-.tdLine select{
-  max-width:140px;
-}
+    .row2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
 
-.tdNum input{
-  max-width:80px;
-}
+    .row3{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+    }
 
-/* EXTRA */
-td input[type="text"]{
-  max-width:80px;
-}
-
-/* QUANTITÀ */
-.qtybox input{
-  width:50px;
-  text-align:center;
-}
-
-/* AZIONI */
-td:last-child{
-  min-width:120px;
-}
-      .itemsList{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.itemRow{
-  display:grid;
-  grid-template-columns:minmax(140px,1.1fr) minmax(120px,.9fr) 110px 110px 150px 140px;
-  gap:12px;
-  align-items:start;
-  padding:14px;
-  border:1px solid var(--stroke);
-  border-radius:16px;
-  background:rgba(255,255,255,.04);
-}
-
-.itemCell{
-  min-width:0;
-}
-
-.itemCell label{
-  display:block;
-  margin-bottom:6px;
-}
-
-.itemCell .hint{
-  margin-top:6px;
-}
-
-.itemActions{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.itemActions button{
-  width:100%;
-}
-
-.itemQty .qtybox{
-  justify-content:flex-start;
-}
-
-.itemQty .qtybox input{
-  width:52px;
-  text-align:center;
-}
-
-.itemCompact input,
-.itemCompact select{
-  max-width:100%;
-}
-
-@media (max-width:980px){
-  .itemRow{
-    grid-template-columns:1fr 1fr;
-  }
-}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+    @media (max-width:980px){
+      .row2,.row3{grid-template-columns:1fr}
+    }
 
     .toggle{
-      display:flex;align-items:center;gap:10px;margin-top:6px;
-      padding:10px 12px;border-radius:12px;border:1px solid var(--stroke2);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:6px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--stroke2);
       background:rgba(255,255,255,.06);
     }
-    .toggle input{width:auto;margin:0;transform:scale(1.1)}
+
+    .toggle input{
+      width:auto;
+      margin:0;
+      transform:scale(1.1);
+    }
 
     button{
       border:none;
@@ -218,73 +184,152 @@ td:last-child{
       background:linear-gradient(90deg,var(--accent),var(--accent2));
       color:#06121f;
     }
-    button.secondary{background:rgba(255,255,255,.10);border:1px solid var(--stroke2);color:var(--text)}
-    button.ghost{background:transparent;border:1px solid var(--stroke2);color:var(--text)}
+
+    button.secondary{
+      background:rgba(255,255,255,.10);
+      border:1px solid var(--stroke2);
+      color:var(--text);
+    }
+
+    button.ghost{
+      background:transparent;
+      border:1px solid var(--stroke2);
+      color:var(--text);
+    }
+
     button:active{transform:scale(.99)}
 
-    hr{border:none;border-top:1px solid rgba(255,255,255,.10);margin:14px 0}
+    hr{
+      border:none;
+      border-top:1px solid rgba(255,255,255,.10);
+      margin:14px 0;
+    }
 
-    /* KPI */
-    .kpis{display:flex;flex-direction:column;gap:10px}
+    .kpis{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
     .kpi{
       background:rgba(255,255,255,.08);
       border:1px solid var(--stroke);
       border-radius:14px;
       padding:14px;
     }
+
     .kpi.good{border-color:rgba(52,211,153,.60)}
     .kpi.warn{border-color:rgba(251,191,36,.65)}
     .kpi.bad{border-color:rgba(251,113,133,.65)}
-    .kpi .lbl{font-size:12px;color:var(--muted)}
-    .kpi .val{font-size:30px;font-weight:950;letter-spacing:.2px}
-    .kpi .note{font-size:11px;color:var(--muted);margin-top:6px}
 
-    /* Items table */
-    table{width:100%;border-collapse:separate;border-spacing:0 10px;margin-top:10px}
-    td{padding:0 6px;vertical-align:top}
+    .kpi .lbl{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .kpi .val{
+      font-size:30px;
+      font-weight:950;
+      letter-spacing:.2px;
+    }
+
+    .kpi .note{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0 10px;
+      margin-top:10px;
+    }
+
+    td{
+      padding:0 6px;
+      vertical-align:top;
+    }
+
     .tdWide{min-width:210px}
     .tdLine{min-width:210px}
     .tdNum{min-width:150px}
     select.wide{min-width:210px}
 
-    .qtybox{display:flex;gap:6px;align-items:center}
+    .qtybox{
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+
+    .qtybox input{
+      width:50px;
+      text-align:center;
+    }
+
     .qbtn{
-      width:38px;height:38px;border-radius:12px;
+      width:38px;
+      height:38px;
+      border-radius:12px;
       background:rgba(255,255,255,.10);
       border:1px solid var(--stroke2);
       color:var(--text);
       font-weight:950;
     }
 
-    .actionsRow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
-      .actionsRow{
-  max-width:100%;
-}
+    .actionsRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      max-width:100%;
+    }
 
-.actionsRow .right{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  align-items:stretch;
-  min-width:120px;
-}
+    .actionsRow .right{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:stretch;
+      min-width:120px;
+    }
 
-.actionsRow .right button{
-  width:100%;
-}
-
+    .actionsRow .right button{width:100%}
 
     .bottomZone{margin-top:14px}
+
     .bottomActions{
-      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
     }
-    .bottomActions .group{display:flex;gap:10px;flex-wrap:wrap}
+
+    .bottomActions .group{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
     .drawer{
-      margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+      margin-top:10px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
       background:rgba(255,255,255,.06);
     }
-    .drawerRow{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-    .drawerRow>div{flex:1;min-width:230px}
+
+    .drawerRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
+    }
+
+    .drawerRow>div{
+      flex:1;
+      min-width:230px;
+    }
 
     .alertBox{
       margin-top:10px;
@@ -296,295 +341,1030 @@ td:last-child{
       font-size:12px;
       line-height:1.35;
     }
-    .alertLine{display:flex;gap:10px;align-items:center;margin:6px 0}
+
+    .alertLine{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin:6px 0;
+    }
+
     .pill{
-      padding:6px 10px;border-radius:999px;font-weight:950;font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:950;
+      font-size:12px;
       border:1px solid var(--stroke2);
       background:rgba(255,255,255,.08);
       color:var(--text);
       white-space:nowrap;
     }
+
     .pill.good{border-color:rgba(52,211,153,.60); color:rgba(52,211,153,.95)}
     .pill.warn{border-color:rgba(251,191,36,.65); color:rgba(251,191,36,.95)}
     .pill.bad{border-color:rgba(251,113,133,.65); color:rgba(251,113,133,.95)}
-/* --- SEZIONI UI --- */
-.section {
-  margin-top: 24px;
-  padding: 18px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-}
 
-.section-title {
-  font-size: 13px;
-  text-transform: uppercase;
-  opacity: 0.6;
-  margin-bottom: 10px;
-}
+    .section{
+      margin-top:24px;
+      padding:18px;
+      border-radius:14px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.06);
+    }
+
+    .section-title{
+      font-size:13px;
+      text-transform:uppercase;
+      opacity:0.6;
+      margin-bottom:10px;
+    }
+
+    @media (max-width:980px){
+      table,tbody,tr,td{
+        display:block;
+        width:100%;
+      }
+
+      td{
+        padding:0;
+        margin-bottom:10px;
+      }
+
+      .tdWide,.tdLine,.tdNum,select.wide{
+        min-width:0;
+      }
+    }
   </style>
 </head>
 
 <body>
-<div class="wrap">
+  <div class="wrap">
 
-  <div class="topbar">
-    <div class="brand">
-      <div class="logo"></div>
-      <div>
-        <h1>DOUBLEU Kit Builder PRO</h1>
-        <div class="sub">Preventivo rapido: costo → prezzo → margine → acconto → soglie</div>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>DOUBLEU Kit Builder PRO</h1>
+          <div class="sub">Preventivo rapido: costo → prezzo → margine → acconto → soglie</div>
+        </div>
+      </div>
+
+      <div class="badge">
+        <span id="jsDot"></span>
+        <span id="jsTxt">JS non avviato</span>
+        <span style="opacity:.6">|</span>
+        <span id="buildTxt">build v4</span>
       </div>
     </div>
-
-    <div class="badge">
-      <span id="jsDot"></span>
-      <span id="jsTxt">JS non avviato</span>
-      <span style="opacity:.6">|</span>
-      <span id="buildTxt">build v4</span>
-    </div>
-  </div>
 
     <div class="grid">
 
-    <!-- SINISTRA -->
-    <div class="card">
-
-      <div class="section">
-        <div class="section-title">Cliente</div>
-        <div class="row2">
-          <div>
-            <label>Cliente / Club</label>
-            <input id="clientName" placeholder="es. Tennis Club Roma">
-          </div>
-
-          <div>
-            <label>Nome progetto</label>
-            <input id="projectName" placeholder="Es. Kit Club Roma - Stima">
-            <div class="hint">Solo per te: utile per salvare e ritrovare preventivi.</div>
-          </div>
-
-          <div>
-            <label>Quantità stimata</label>
-            <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
-            <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card section" style="margin-top:20px">
-        <div class="sectionTitle">Articoli kit</div>
-        <div class="hint">Ogni riga: (costo base + extra per pezzo) × quantità. Extra = sponsor/accessori/seconda stampa.</div>
-
-        <div class="actionsRow" style="margin-top:12px">
-          <div class="right">
-            <button id="btnApplyQty" class="secondary" type="button">Usa quantità stimata</button>
-            <button id="btnAddItem" type="button">+ Aggiungi articolo</button>
-          </div>
-        </div>
-
-        <table style="margin-top:12px"><tbody id="itemsBody"></tbody></table>
-
-        <div class="alertBox" id="alertsBox" style="display:none"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Prezzo & Margine</div>
-        <div class="row3" style="margin-top:10px">
-          <div>
-            <label>Margine target</label>
-            <select id="margin">
-              <option value="0.30">Promotional 30%</option>
-              <option value="0.35">Promotional 35%</option>
-              <option value="0.40">Promotional 40%</option>
-              <option value="0.45">Club entry 45%</option>
-              <option value="0.50" selected>Club standard 50%</option>
-              <option value="0.58">Club recommended 58%</option>
-              <option value="0.65">Online 65%</option>
-              <option value="0.72">Limited 72%</option>
-              <option value="0.75">Limited Drop 75%</option>
-            </select>
-            <div class="hint">Target sul netto (imponibile).</div>
-          </div>
-          <div>
-            <label>IVA %</label>
-            <input id="vat" value="22" inputmode="decimal">
-            <div class="hint">Disattivabile per estero (reverse charge).</div>
-          </div>
-          <div>
-            <label>Sconto trattativa %</label>
-            <input id="discount" value="0" inputmode="decimal">
-            <div class="hint">Sconto sul prezzo finale (solo modalità “target”).</div>
-          </div>
-        </div>
-
-        <div class="row2" style="margin-top:10px">
-          <div>
-            <label>Prezzo proposto per atleta</label>
-            <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal">
-            <div class="hint">Budget club. Se attivi, calcolo sostenibilità su questo prezzo.</div>
-          </div>
-          <div>
-            <label>Usa prezzo proposto</label>
-            <div class="toggle">
-              <input type="checkbox" id="useOffer">
-              <div>
-                <div style="font-weight:950">Attiva</div>
-                <div class="hint" style="margin:0">Se OFF: prezzo calcolato a target</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label>Budget include IVA</label>
-          <div class="toggle">
-            <input type="checkbox" id="priceIncludesVAT" checked>
-            <div>
-              <div style="font-weight:950">Attivo</div>
-              <div class="hint" style="margin:0">Se ON: il prezzo inserito è lordo (IVA inclusa)</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="offerStatusBox" class="hint" style="margin-top:8px;font-size:13px;font-weight:800;"></div>
-
-        <div class="row3" style="margin-top:10px">
-          <div>
-            <label>Acconto %</label>
-            <input id="depositPct" value="60" inputmode="decimal">
-            <div class="hint">Obiettivo: coprire produzione senza anticipare.</div>
-          </div>
-          <div>
-            <label>Buffer sicurezza %</label>
-            <input id="bufferPct" value="5" inputmode="decimal">
-            <div class="hint">Cuscinetto su costo (imprevisti, extra).</div>
-          </div>
-          <div>
-            <label>IVA</label>
-            <div class="toggle">
-              <input type="checkbox" id="applyVAT" checked>
-              <div>
-                <div style="font-weight:950">Applica IVA</div>
-                <div class="hint" style="margin:0">Se OFF: prezzi netti (no IVA)</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr>
-      </div>
-
-      <!-- KPI -->
       <div class="card">
-        <div class="kpis">
-          <div class="kpi" id="kpiCost">
-            <div class="lbl">Costo produzione per atleta</div>
-            <div class="val" id="kCostAthlete">—</div>
-            <div class="note">Media su base quantità stimata</div>
+
+        <div class="section">
+          <div class="section-title">Cliente</div>
+          <div class="row2">
+            <div>
+              <label>Cliente / Club</label>
+              <input id="clientName" placeholder="es. Tennis Club Roma">
+            </div>
+
+            <div>
+              <label>Nome progetto</label>
+              <input id="projectName" placeholder="Es. Kit Club Roma - Stima">
+              <div class="hint">Solo per te: utile per salvare e ritrovare preventivi.</div>
+            </div>
+
+            <div>
+              <label>Quantità stimata</label>
+              <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
+              <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section" style="margin-top:20px">
+          <div class="sectionTitle">Articoli kit</div>
+          <div class="hint">Ogni riga: (costo base + extra per pezzo) × quantità. Extra = sponsor/accessori/seconda stampa.</div>
+
+          <div class="actionsRow" style="margin-top:12px">
+            <div class="right">
+              <button id="btnApplyQty" class="secondary" type="button">Usa quantità stimata</button>
+              <button id="btnAddItem" type="button">+ Aggiungi articolo</button>
+            </div>
           </div>
 
-          <div class="kpi" id="kpiPrice">
-            <div class="lbl">Prezzo per atleta</div>
-            <div class="val" id="kPriceAthlete">—</div>
-            <div class="note" id="kVatNote">—</div>
+          <table style="margin-top:12px">
+            <tbody id="itemsBody"></tbody>
+          </table>
+
+          <div class="alertBox" id="alertsBox" style="display:none"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Prezzo & Margine</div>
+
+          <div class="row3" style="margin-top:10px">
+            <div>
+              <label>Margine target</label>
+              <select id="margin">
+                <option value="0.30">Promotional 30%</option>
+                <option value="0.35">Promotional 35%</option>
+                <option value="0.40">Promotional 40%</option>
+                <option value="0.45">Club entry 45%</option>
+                <option value="0.50" selected>Club standard 50%</option>
+                <option value="0.58">Club recommended 58%</option>
+                <option value="0.65">Online 65%</option>
+                <option value="0.72">Limited 72%</option>
+                <option value="0.75">Limited Drop 75%</option>
+              </select>
+              <div class="hint">Target sul netto (imponibile).</div>
+            </div>
+
+            <div>
+              <label>IVA %</label>
+              <input id="vat" value="22" inputmode="decimal">
+              <div class="hint">Disattivabile per estero (reverse charge).</div>
+            </div>
+
+            <div>
+              <label>Sconto trattativa %</label>
+              <input id="discount" value="0" inputmode="decimal">
+              <div class="hint">Sconto sul prezzo finale (solo modalità “target”).</div>
+            </div>
           </div>
 
-          <div class="kpi" id="kpiMargin">
-            <div class="lbl">Margine reale</div>
-            <div class="val" id="kRealMargin">—</div>
-            <div class="note" id="kTarget">Target: —</div>
+          <div class="row2" style="margin-top:10px">
+            <div>
+              <label>Prezzo proposto per atleta</label>
+              <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal">
+              <div class="hint">Budget club. Se attivi, calcolo sostenibilità su questo prezzo.</div>
+            </div>
+
+            <div>
+              <label>Usa prezzo proposto</label>
+              <div class="toggle">
+                <input type="checkbox" id="useOffer">
+                <div>
+                  <div style="font-weight:950">Attiva</div>
+                  <div class="hint" style="margin:0">Se OFF: prezzo calcolato a target</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="kpi">
-            <div class="lbl">Minimo sostenibile</div>
-            <div class="val" id="kMinPrice">—</div>
+          <div>
+            <label>Budget include IVA</label>
+            <div class="toggle">
+              <input type="checkbox" id="priceIncludesVAT" checked>
+              <div>
+                <div style="font-weight:950">Attivo</div>
+                <div class="hint" style="margin:0">Se ON: il prezzo inserito è lordo (IVA inclusa)</div>
+              </div>
+            </div>
           </div>
 
-          <div class="kpi">
-            <div class="lbl">Prezzo target</div>
-            <div class="val" id="kTargetPrice">—</div>
+          <div id="offerStatusBox" class="hint" style="margin-top:8px;font-size:13px;font-weight:800;"></div>
+
+          <div class="row3" style="margin-top:10px">
+            <div>
+              <label>Acconto %</label>
+              <input id="depositPct" value="60" inputmode="decimal">
+              <div class="hint">Obiettivo: coprire produzione senza anticipare.</div>
+            </div>
+
+            <div>
+              <label>Buffer sicurezza %</label>
+              <input id="bufferPct" value="5" inputmode="decimal">
+              <div class="hint">Cuscinetto su costo (imprevisti, extra).</div>
+            </div>
+
+            <div>
+              <label>IVA</label>
+              <div class="toggle">
+                <input type="checkbox" id="applyVAT" checked>
+                <div>
+                  <div style="font-weight:950">Applica IVA</div>
+                  <div class="hint" style="margin:0">Se OFF: prezzi netti (no IVA)</div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <hr>
+        </div>
+
+        <div class="section">
+          <div class="section-title">KPI</div>
+          <div class="kpis">
+            <div class="kpi" id="kpiCost">
+              <div class="lbl">Costo produzione per atleta</div>
+              <div class="val" id="kCostAthlete">—</div>
+              <div class="note">Media su base quantità stimata</div>
+            </div>
+
+            <div class="kpi" id="kpiPrice">
+              <div class="lbl">Prezzo per atleta</div>
+              <div class="val" id="kPriceAthlete">—</div>
+              <div class="note" id="kVatNote">—</div>
+            </div>
+
+            <div class="kpi" id="kpiMargin">
+              <div class="lbl">Margine reale</div>
+              <div class="val" id="kRealMargin">—</div>
+              <div class="note" id="kTarget">Target: —</div>
+            </div>
+
+            <div class="kpi" id="kpiMinSustainable">
+              <div class="lbl">Minimo sostenibile</div>
+              <div class="val" id="kMinSustainable">—</div>
+            </div>
+
+            <div class="kpi" id="kpiTargetPrice">
+              <div class="lbl">Prezzo target</div>
+              <div class="val" id="kTargetPrice">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="card bottomZone">
+      <h3 class="sectionTitle">Riepilogo ordine</h3>
+
+      <div class="row3">
+        <div class="kpi">
+          <div class="lbl">Costo totale produzione</div>
+          <div class="val" id="kTotalCost">—</div>
+          <div class="note">Somma (costo base + extra) × quantità</div>
+        </div>
+
+        <div class="kpi">
+          <div class="lbl">Totale fatturato</div>
+          <div class="val" id="kGross">—</div>
+          <div class="note" id="kGrossNote">—</div>
+        </div>
+
+        <div class="kpi">
+          <div class="lbl">Imponibile stimato</div>
+          <div class="val" id="kNet">—</div>
+          <div class="note">Totale netto (senza IVA)</div>
         </div>
       </div>
 
-    </div>
-
-  </div>
-
-  <!-- RIEPILOGO COMPLETO -->
-  <div class="card bottomZone">
-    <h3 class="sectionTitle">Riepilogo ordine</h3>
-    <div class="row3">
-      <div class="kpi">
-        <div class="lbl">Costo totale produzione</div>
-        <div class="val" id="kTotalCost">—</div>
-        <div class="note">Somma (costo base + extra) × quantità</div>
-      </div>
-      <div class="kpi">
-        <div class="lbl">Totale fatturato</div>
-        <div class="val" id="kGross">—</div>
-        <div class="note" id="kGrossNote">—</div>
-      </div>
-      <div class="kpi">
-        <div class="lbl">Imponibile stimato</div>
-        <div class="val" id="kNet">—</div>
-        <div class="note">Totale netto (senza IVA)</div>
-      </div>
-    </div>
-
-    <div class="row3" style="margin-top:10px">
-      <div class="kpi">
-        <div class="lbl">Utile totale (netto IVA)</div>
-        <div class="val" id="kProfit">—</div>
-        <div class="note">Utile su imponibile</div>
-      </div>
-      <div class="kpi" id="kpi">
-        <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
-        <div class="val" id="kMinPrice">—</div>
-        <div class="note">Sotto questa soglia scendi sotto margine target</div>
-      </div>
-      <div class="kpi" id="kpiDeposit">
-        <div class="lbl">Acconto minimo sicuro</div>
-        <div class="val" id="kMinDeposit">—</div>
-        <div class="note" id="kDepNote">Produzione + buffer (sicurezza)</div>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="bottomActions">
-      <div class="group">
-        <button id="btnReset" class="secondary" type="button">Nuovo preventivo (pulisci)</button>
-        <button id="btnCopy" class="ghost" type="button">Copia riepilogo</button>
-      </div>
-      <div class="group">
-        <span class="hint" style="margin:0">Suggerimento: dopo un update apri l’URL con <b>?v=1</b> per evitare cache.</span>
-      </div>
-    </div>
-
-    <div class="drawer">
-      <div style="font-weight:950;margin-bottom:6px">Salvataggio progetti (solo tuo browser)</div>
-
-      <div class="drawerRow">
-        <div>
-          <label>Kit salvati</label>
-          <select id="savedSelect">
-            <option value="">— Seleziona un progetto —</option>
-          </select>
-          <div class="hint">I kit restano nel browser (localStorage). Solo tu li vedi su questo dispositivo.</div>
+      <div class="row3" style="margin-top:10px">
+        <div class="kpi">
+          <div class="lbl">Utile totale (netto IVA)</div>
+          <div class="val" id="kProfit">—</div>
+          <div class="note">Utile su imponibile</div>
         </div>
 
+        <div class="kpi" id="kpiMinPrice">
+          <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
+          <div class="val" id="kMinPrice">—</div>
+          <div class="note">Sotto questa soglia scendi sotto margine target</div>
+        </div>
+
+        <div class="kpi" id="kpiDeposit">
+          <div class="lbl">Acconto minimo sicuro</div>
+          <div class="val" id="kMinDeposit">—</div>
+          <div class="note" id="kDepNote">Produzione + buffer (sicurezza)</div>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="bottomActions">
         <div class="group">
-          <button id="btnSave" class="secondary" type="button">Salva progetto</button>
-          <button id="btnLoad" class="secondary" type="button">Carica</button>
-          <button id="btnDelete" class="ghost" type="button">Elimina</button>
+          <button id="btnReset" class="secondary" type="button">Nuovo preventivo (pulisci)</button>
+          <button id="btnCopy" class="ghost" type="button">Copia riepilogo</button>
+        </div>
+        <div class="group">
+          <span class="hint" style="margin:0">Suggerimento: dopo un update apri l’URL con <b>?v=1</b> per evitare cache.</span>
+        </div>
+      </div>
+
+      <div class="drawer">
+        <div style="font-weight:950;margin-bottom:6px">Salvataggio progetti (solo tuo browser)</div>
+
+        <div class="drawerRow">
+          <div>
+            <label>Kit salvati</label>
+            <select id="savedSelect">
+              <option value="">— Seleziona un progetto —</option>
+            </select>
+            <div class="hint">I kit restano nel browser (localStorage). Solo tu li vedi su questo dispositivo.</div>
+          </div>
+
+          <div class="group">
+            <button id="btnSave" class="secondary" type="button">Salva progetto</button>
+            <button id="btnLoad" class="secondary" type="button">Carica</button>
+            <button id="btnDelete" class="ghost" type="button">Elimina</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+<script>
+/* =========================
+   DOUBLEU Kit Builder PRO
+   build v4
+========================= */
+
+(function(){
+  const buildTxt = document.getElementById("buildTxt");
+  if(buildTxt) buildTxt.textContent = "build v4";
+
+  const jsDot = document.getElementById("jsDot");
+  const jsTxt = document.getElementById("jsTxt");
+  const setJS = (ok, txt) => {
+    if(jsDot) jsDot.style.background = ok ? "#34d399" : "#fb7185";
+    if(jsTxt) jsTxt.textContent = txt;
+  };
+
+  const eur = (n) => (Number.isFinite(n) ? n : 0).toLocaleString("it-IT", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + " €";
+
+  const toNum = (v) => {
+    if(v === null || v === undefined) return 0;
+    const s = String(v).trim().replace(/\s/g,"").replace(",",".");
+    const x = parseFloat(s);
+    return Number.isFinite(x) ? x : 0;
+  };
+
+  const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+  const ARTICLES = ["T-shirt","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
+  const LINES = [
+    { value:"PREMIUM", label:"Premium" },
+    { value:"BASIC", label:"Basic" },
+    { value:"PROMOTIONAL", label:"Promotional" },
+    { value:"ALTRO", label:"Altro" }
+  ];
+
+  const REF_COST = {
+    PREMIUM: {"T-shirt":15,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
+    BASIC: {"T-shirt":9,"Polo":11,"Pantaloncino":10.5,"Gonnellino":11,"Dress":14,"Sweatshirt":19,"Hoodie":22,"Zip Hoodie":24,"Pantalone":18},
+    PROMOTIONAL: {"T-shirt":8,"Polo":10,"Pantaloncino":9,"Gonnellino":10,"Dress":13,"Sweatshirt":16,"Hoodie":18,"Zip Hoodie":20,"Pantalone":15}
+  };
+
+  const clientName = document.getElementById("clientName");
+  const projectName = document.getElementById("projectName");
+  const qtyEst = document.getElementById("qtyEst");
+  const margin = document.getElementById("margin");
+  const vat = document.getElementById("vat");
+  const discount = document.getElementById("discount");
+  const offerPrice = document.getElementById("offerPrice");
+  const useOffer = document.getElementById("useOffer");
+  const depositPct = document.getElementById("depositPct");
+  const bufferPct = document.getElementById("bufferPct");
+  const applyVAT = document.getElementById("applyVAT");
+  const priceIncludesVAT = document.getElementById("priceIncludesVAT");
+
+  const btnAddItem = document.getElementById("btnAddItem");
+  const btnApplyQty = document.getElementById("btnApplyQty");
+  const btnReset = document.getElementById("btnReset");
+  const btnCopy = document.getElementById("btnCopy");
+
+  const itemsBody = document.getElementById("itemsBody");
+  const alertsBox = document.getElementById("alertsBox");
+
+  const kCostAthlete = document.getElementById("kCostAthlete");
+  const kPriceAthlete = document.getElementById("kPriceAthlete");
+  const kRealMargin = document.getElementById("kRealMargin");
+  const kMinSustainable = document.getElementById("kMinSustainable");
+  const kTargetPrice = document.getElementById("kTargetPrice");
+  const kVatNote = document.getElementById("kVatNote");
+  const offerStatusBox = document.getElementById("offerStatusBox");
+  const kTarget = document.getElementById("kTarget");
+
+  const kTotalCost = document.getElementById("kTotalCost");
+  const kGross = document.getElementById("kGross");
+  const kNet = document.getElementById("kNet");
+  const kProfit = document.getElementById("kProfit");
+  const kMinPrice = document.getElementById("kMinPrice");
+  const kMinDeposit = document.getElementById("kMinDeposit");
+  const kDepNote = document.getElementById("kDepNote");
+  const kGrossNote = document.getElementById("kGrossNote");
+
+  const kpiMargin = document.getElementById("kpiMargin");
+  const kpiPrice = document.getElementById("kpiPrice");
+  const kpiMinPrice = document.getElementById("kpiMinPrice");
+  const kpiTargetPrice = document.getElementById("kpiTargetPrice");
+  const kpiDeposit = document.getElementById("kpiDeposit");
+
+  const STORE_KEY = "doubleu_kits_v4";
+  const savedSelect = document.getElementById("savedSelect");
+  const btnSave = document.getElementById("btnSave");
+  const btnLoad = document.getElementById("btnLoad");
+  const btnDelete = document.getElementById("btnDelete");
+
+  const getStore = () => {
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      const obj = raw ? JSON.parse(raw) : {};
+      return (obj && typeof obj === "object") ? obj : {};
+    }catch(e){
+      return {};
+    }
+  };
+
+  const setStore = (obj) => localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+
+  const refreshSaved = () => {
+    const store = getStore();
+    const keys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
+    savedSelect.innerHTML =
+      `<option value="">— Seleziona un progetto —</option>` +
+      keys.map(k=>`<option value="${k}">${k}</option>`).join("");
+  };
+
+  let items = [];
+
+  const refCost = (line, article) => {
+    if(line === "ALTRO") return null;
+    const r = REF_COST[line] && REF_COST[line][article];
+    return Number.isFinite(r) ? r : null;
+  };
+
+  const newItem = () => {
+    const q = toNum(qtyEst.value) || 0;
+    const base = refCost("PREMIUM","T-shirt") ?? 0;
+    return {
+      id: uid(),
+      article:"T-shirt",
+      line:"PREMIUM",
+      base,
+      extra:0,
+      qty:q,
+      costMode:"auto"
+    };
+  };
+
+  const ensureOne = () => {
+    if(!items.length) items = [newItem()];
+  };
+
+  const setBox = (el, state) => {
+    if(!el) return;
+    el.classList.remove("good","warn","bad");
+    if(state) el.classList.add(state);
+  };
+
+  const render = () => {
+    ensureOne();
+
+    let html = "";
+
+    items.forEach(it => {
+      const optsA = ARTICLES.map(a => `<option value="${a}" ${a===it.article ? "selected" : ""}>${a}</option>`).join("");
+      const optsL = LINES.map(l => `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`).join("");
+      const costLabel = (it.line === "ALTRO") ? "Manuale" : (it.costMode === "auto" ? "Auto (rif.)" : "Manuale");
+
+      html += `
+<tr>
+  <td class="tdWide">
+    <label>Articolo</label>
+    <select class="wide" data-act="article" data-id="${it.id}">${optsA}</select>
+  </td>
+
+  <td class="tdLine">
+    <label>Linea</label>
+    <select class="wide" data-act="line" data-id="${it.id}">${optsL}</select>
+  </td>
+
+  <td class="tdNum">
+    <label>Costo base €</label>
+    <input data-act="base" data-id="${it.id}" value="${it.base}">
+    <div class="hint">Costo: ${costLabel}</div>
+  </td>
+
+  <td class="tdNum">
+    <label>Extra €</label>
+    <input data-act="extra" data-id="${it.id}" value="${it.extra}">
+    <div class="hint">Sponsor / accessori / seconda stampa</div>
+  </td>
+
+  <td class="tdNum">
+    <label>Quantità</label>
+    <div class="qtybox">
+      <button class="qbtn" type="button" data-act="minus" data-id="${it.id}">−</button>
+      <input data-act="qty" data-id="${it.id}" value="${it.qty}">
+      <button class="qbtn" type="button" data-act="plus" data-id="${it.id}">+</button>
+    </div>
+  </td>
+
+  <td>
+    <label>Azioni</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="secondary" type="button" data-act="costMode" data-id="${it.id}">Costo: ${it.costMode}</button>
+      <button class="secondary" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
+      <button class="secondary" type="button" data-act="rm" data-id="${it.id}">Rimuovi</button>
+    </div>
+  </td>
+</tr>
+      `;
+    });
+
+    itemsBody.innerHTML = html;
+
+    itemsBody.querySelectorAll("[data-act]").forEach(el => {
+      const act = el.getAttribute("data-act");
+      const id = el.getAttribute("data-id");
+
+      const find = () => items.find(x => x.id === id);
+
+      if(act === "article"){
+        el.addEventListener("change", () => {
+          const it = find();
+          if(!it) return;
+          it.article = el.value;
+          if(it.costMode === "auto" && it.line !== "ALTRO"){
+            const r = refCost(it.line, it.article);
+            if(r !== null) it.base = r;
+          }
+          render();
+        });
+        return;
+      }
+
+      if(act === "line"){
+        el.addEventListener("change", () => {
+          const it = find();
+          if(!it) return;
+          it.line = el.value;
+          if(it.line === "ALTRO") it.costMode = "manual";
+          if(it.costMode === "auto" && it.line !== "ALTRO"){
+            const r = refCost(it.line, it.article);
+            if(r !== null) it.base = r;
+          }
+          render();
+        });
+        return;
+      }
+
+      if(["base","extra","qty"].includes(act)){
+        el.addEventListener("input", () => {
+          const it = find();
+          if(!it) return;
+          it[act] = toNum(el.value);
+          calc();
+        });
+
+        el.addEventListener("change", () => {
+          const it = find();
+          if(!it) return;
+          it[act] = toNum(el.value);
+          render();
+        });
+        return;
+      }
+
+      if(act === "minus"){
+        el.addEventListener("click", () => {
+          const it = find();
+          if(!it) return;
+          it.qty = Math.max(0, toNum(it.qty) - 1);
+          render();
+        });
+        return;
+      }
+
+      if(act === "plus"){
+        el.addEventListener("click", () => {
+          const it = find();
+          if(!it) return;
+          it.qty = Math.max(0, toNum(it.qty) + 1);
+          render();
+        });
+        return;
+      }
+
+      if(act === "costMode"){
+        el.addEventListener("click", () => {
+          const it = find();
+          if(!it) return;
+          it.costMode = (it.costMode === "auto") ? "manual" : "auto";
+          if(it.costMode === "auto" && it.line !== "ALTRO"){
+            const r = refCost(it.line, it.article);
+            if(r !== null) it.base = r;
+          }
+          render();
+        });
+        return;
+      }
+
+      if(act === "dup"){
+        el.addEventListener("click", () => {
+          const idx = items.findIndex(x => x.id === id);
+          if(idx < 0) return;
+          items.splice(idx + 1, 0, { ...items[idx], id: uid() });
+          render();
+        });
+        return;
+      }
+
+      if(act === "rm"){
+        el.addEventListener("click", () => {
+          items = items.filter(x => x.id !== id);
+          ensureOne();
+          render();
+        });
+        return;
+      }
+    });
+
+    calc();
+  };
+
+  const showAlerts = (list) => {
+    if(!list.length){
+      alertsBox.style.display = "none";
+      alertsBox.innerHTML = "";
+      return;
+    }
+
+    alertsBox.style.display = "block";
+    alertsBox.innerHTML = list.map(a => `
+      <div class="alertLine">
+        <span class="pill ${a.level}">${a.title}</span>
+        <span>${a.text}</span>
+      </div>
+    `).join("");
+  };
+
+  const calc = () => {
+    const q = toNum(qtyEst.value);
+    const qtyBase = q > 0 ? q : 1;
+
+    const m = parseFloat(margin.value);
+    const disc = toNum(discount.value) / 100;
+    const vatRate = toNum(vat.value) / 100;
+    const vatOn = !!applyVAT.checked;
+
+    const dep = toNum(depositPct.value) / 100;
+    const buf = toNum(bufferPct.value) / 100;
+
+    let totalCost = 0;
+    let hasQty = false;
+
+    items.forEach(it => {
+      const qty = toNum(it.qty);
+      if(qty > 0) hasQty = true;
+      totalCost += (toNum(it.base) + toNum(it.extra)) * qty;
+    });
+
+    if(!hasQty || totalCost <= 0){
+      kCostAthlete.textContent = "—";
+      kPriceAthlete.textContent = "—";
+      kRealMargin.textContent = "—";
+      kTarget.textContent = "Target: " + (m * 100).toFixed(0) + "%";
+      kVatNote.textContent = "—";
+      kTotalCost.textContent = "—";
+      kGross.textContent = "—";
+      kNet.textContent = "—";
+      kProfit.textContent = "—";
+      kMinSustainable.textContent = "—";
+      kTargetPrice.textContent = "—";
+      kMinPrice.textContent = "—";
+      kMinDeposit.textContent = "—";
+      kDepNote.textContent = "Inserisci almeno 1 quantità > 0";
+      kGrossNote.textContent = "—";
+      offerStatusBox.textContent = "";
+      offerStatusBox.style.color = "";
+      showAlerts([]);
+      setBox(kpiMargin,null);
+      setBox(kpiPrice,null);
+      setBox(kpiMinPrice,null);
+      setBox(kpiDeposit,null);
+      setBox(kpiTargetPrice,null);
+      return;
+    }
+
+    const revenueNetTarget = totalCost / (1 - m);
+    const invoiceTarget = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
+    const invoiceAfterDiscount = invoiceTarget * (1 - disc);
+
+    const targetPricePerAthlete = invoiceTarget / qtyBase;
+    const minAcceptablePerAthlete = invoiceAfterDiscount / qtyBase;
+
+    const minSustainableNetPerAthlete = (totalCost * (1 + buf)) / qtyBase;
+    const minSustainableDisplay = vatOn
+      ? minSustainableNetPerAthlete * (1 + vatRate)
+      : minSustainableNetPerAthlete;
+
+    let invoiceTotal = invoiceAfterDiscount;
+    let usingOffer = false;
+
+    if(useOffer.checked){
+      let offer = toNum(offerPrice.value);
+
+      if(vatOn && !priceIncludesVAT.checked){
+        offer = offer * (1 + vatRate);
+      }
+
+      if(offer > 0){
+        invoiceTotal = offer * qtyBase;
+        usingOffer = true;
+      }
+    }
+
+    const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
+    const profit = revenueNet - totalCost;
+    const realMargin = revenueNet > 0 ? (profit / revenueNet) : 0;
+
+    const costPerAthlete = totalCost / qtyBase;
+    const pricePerAthlete = invoiceTotal / qtyBase;
+
+    let offerStatus = "";
+    let offerStatusColor = "";
+
+    if(useOffer.checked && toNum(offerPrice.value) > 0){
+      const belowSustainable = pricePerAthlete < minSustainableDisplay;
+      const belowTarget = realMargin < m;
+
+      if(belowSustainable){
+        offerStatus = `🔴 NON SOSTENIBILE · Minimo ${eur(minSustainableDisplay)}`;
+        offerStatusColor = "#fb7185";
+      } else if(belowTarget){
+        offerStatus = `🟡 SOSTENIBILE · Margine ${(realMargin*100).toFixed(1)}% (target ${(m*100).toFixed(0)}%)`;
+        offerStatusColor = "#fbbf24";
+      } else {
+        offerStatus = `🟢 OK · Margine ${(realMargin*100).toFixed(1)}%`;
+        offerStatusColor = "#34d399";
+      }
+    }
+
+    const secureNeed = totalCost * (1 + buf);
+    const depositAmount = invoiceTotal * dep;
+    const depositPctRequired = invoiceTotal > 0 ? (secureNeed / invoiceTotal) : 0;
+
+    kCostAthlete.textContent = eur(costPerAthlete);
+    kPriceAthlete.textContent = eur(pricePerAthlete);
+    kRealMargin.textContent = (realMargin * 100).toFixed(1) + "%";
+    kTarget.textContent = "Target: " + (m * 100).toFixed(0) + "%";
+    kVatNote.textContent = vatOn ? "IVA inclusa nel prezzo" : "Prezzi netti (no IVA)";
+
+    kTotalCost.textContent = eur(totalCost);
+    kGross.textContent = eur(invoiceTotal);
+    kNet.textContent = eur(revenueNet);
+    kProfit.textContent = eur(profit);
+    kMinSustainable.textContent = eur(minSustainableDisplay);
+    kTargetPrice.textContent = eur(targetPricePerAthlete);
+    kMinPrice.textContent = eur(minAcceptablePerAthlete);
+    kMinDeposit.textContent = eur(secureNeed);
+
+    kGrossNote.textContent = usingOffer
+      ? (vatOn ? "Modalità BUDGET (IVA incl.)" : "Modalità BUDGET (netto)")
+      : (vatOn
+          ? `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · IVA ${(vatRate*100).toFixed(0)}%`
+          : `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · NO IVA`);
+
+    kDepNote.textContent = `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`;
+
+    const alerts = [];
+
+    if(realMargin + 1e-9 < m){
+      alerts.push({
+        level:"bad",
+        title:"Margine sotto target",
+        text:`Stai facendo ${(realMargin*100).toFixed(1)}% invece di ${(m*100).toFixed(0)}%.`
+      });
+      setBox(kpiMargin,"bad");
+    } else {
+      setBox(kpiMargin,"good");
+    }
+
+    if(pricePerAthlete + 1e-9 < minAcceptablePerAthlete){
+      alerts.push({
+        level:"bad",
+        title:"Prezzo sotto minimo accettabile",
+        text:`Minimo accettabile: ${eur(minAcceptablePerAthlete)} / atleta.`
+      });
+      setBox(kpiPrice,"bad");
+      setBox(kpiMinPrice,"bad");
+    } else {
+      setBox(kpiPrice,"good");
+      setBox(kpiMinPrice,"good");
+    }
+
+    if(depositAmount + 1e-9 < secureNeed){
+      alerts.push({
+        level:"warn",
+        title:"Acconto insufficiente",
+        text:`Per stare “sicuro” servono ${eur(secureNeed)}. Aumenta acconto o riduci costo.`
+      });
+      setBox(kpiDeposit,"warn");
+    } else {
+      setBox(kpiDeposit,"good");
+    }
+
+    setBox(kpiTargetPrice, "good");
+
+    if(offerStatusBox){
+      offerStatusBox.textContent = offerStatus;
+      offerStatusBox.style.color = offerStatusColor || "var(--muted)";
+    }
+
+    showAlerts(alerts);
+  };
+
+  const addItem = () => {
+    items.push(newItem());
+    render();
+  };
+
+  const applyQtyToRows = () => {
+    const q = toNum(qtyEst.value);
+    items.forEach(it => it.qty = q);
+    render();
+  };
+
+  const resetAll = () => {
+    clientName.value = "";
+    projectName.value = "";
+    qtyEst.value = "";
+    margin.value = "0.50";
+    vat.value = "22";
+    discount.value = "0";
+    offerPrice.value = "";
+    useOffer.checked = false;
+    priceIncludesVAT.checked = true;
+    depositPct.value = "60";
+    bufferPct.value = "5";
+    applyVAT.checked = true;
+    items = [newItem()];
+    render();
+    showAlerts([]);
+    offerStatusBox.textContent = "";
+    offerStatusBox.style.color = "";
+    setBox(kpiMargin,null);
+    setBox(kpiPrice,null);
+    setBox(kpiMinPrice,null);
+    setBox(kpiTargetPrice,null);
+    setBox(kpiDeposit,null);
+    alert("Nuovo preventivo pronto ✅");
+  };
+
+  const copySummary = async () => {
+    const vatOn = !!applyVAT.checked;
+    const usingOffer = !!useOffer.checked && toNum(offerPrice.value) > 0;
+
+    const lines = [];
+    lines.push(`DOUBLEU — Preventivo kit`);
+    if(clientName.value.trim()) lines.push(`Cliente: ${clientName.value.trim()}`);
+    if(projectName.value.trim()) lines.push(`Progetto: ${projectName.value.trim()}`);
+    if(qtyEst.value.trim()) lines.push(`Quantità stimata: ${qtyEst.value.trim()}`);
+    lines.push(`Margine target: ${margin.options[margin.selectedIndex].text}`);
+    lines.push(`IVA: ${vatOn ? "SI" : "NO"} (${vat.value}%)`);
+    lines.push(`Sconto: ${discount.value}%`);
+    lines.push(`Acconto: ${depositPct.value}% · Buffer: ${bufferPct.value}%`);
+    if(usingOffer) lines.push(`Prezzo proposto: ${offerPrice.value} ${vatOn ? "(IVA incl.)" : "(netto)"}`);
+    lines.push(``);
+    lines.push(`ARTICOLI:`);
+    items.forEach(it => {
+      lines.push(`- ${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}`);
+    });
+    lines.push(``);
+    lines.push(`RIEPILOGO:`);
+    lines.push(`Costo totale produzione: ${kTotalCost.textContent}`);
+    lines.push(`Totale fatturato: ${kGross.textContent}`);
+    lines.push(`Imponibile: ${kNet.textContent}`);
+    lines.push(`Utile: ${kProfit.textContent}`);
+    lines.push(`Costo per atleta: ${kCostAthlete.textContent}`);
+    lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${vatOn ? "IVA incl." : "netto"})`);
+    lines.push(`Margine reale: ${kRealMargin.textContent}`);
+    lines.push(`Minimo sostenibile: ${kMinSustainable.textContent}`);
+    lines.push(`Prezzo target: ${kTargetPrice.textContent}`);
+    lines.push(`Prezzo minimo accettabile: ${kMinPrice.textContent}`);
+    lines.push(`Acconto minimo sicuro: ${kMinDeposit.textContent}`);
+
+    const text = lines.join("\n");
+
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("Riepilogo copiato ✅");
+    }catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      alert("Riepilogo copiato ✅");
+    }
+  };
+
+  const payload = () => ({
+    clientName: clientName.value || "",
+    projectName: projectName.value || "",
+    qtyEst: qtyEst.value || "",
+    margin: margin.value,
+    vat: vat.value,
+    discount: discount.value,
+    offerPrice: offerPrice.value,
+    useOffer: useOffer.checked,
+    priceIncludesVAT: priceIncludesVAT.checked,
+    depositPct: depositPct.value,
+    bufferPct: bufferPct.value,
+    applyVAT: applyVAT.checked,
+    items
+  });
+
+  const applyPayload = (p) => {
+    clientName.value = p.clientName || "";
+    projectName.value = p.projectName || "";
+    qtyEst.value = p.qtyEst || "";
+    margin.value = p.margin ?? "0.50";
+    vat.value = p.vat ?? "22";
+    discount.value = p.discount ?? "0";
+    offerPrice.value = p.offerPrice ?? "";
+    useOffer.checked = !!p.useOffer;
+    priceIncludesVAT.checked = (p.priceIncludesVAT !== undefined) ? !!p.priceIncludesVAT : true;
+    depositPct.value = p.depositPct ?? "60";
+    bufferPct.value = p.bufferPct ?? "5";
+    applyVAT.checked = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
+    items = Array.isArray(p.items) && p.items.length ? p.items : [newItem()];
+    render();
+  };
+
+  const saveProject = () => {
+    const client = (clientName.value || "").trim();
+    const project = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
+    if(!project) return;
+    const date = new Date().toLocaleDateString("it-IT");
+    const name = `${client || "Cliente"} – ${project} – ${date}`;
+    const store = getStore();
+    store[name] = { savedAt: Date.now(), payload: payload() };
+    setStore(store);
+    projectName.value = project;
+    refreshSaved();
+    alert("Progetto salvato ✅");
+  };
+
+  const loadProject = () => {
+    const key = savedSelect.value;
+    if(!key) return alert("Seleziona un progetto da caricare.");
+    const store = getStore();
+    if(!store[key]) return alert("Progetto non trovato.");
+    applyPayload(store[key].payload);
+    alert("Progetto caricato ✅");
+  };
+
+  const deleteProject = () => {
+    const key = savedSelect.value;
+    if(!key) return alert("Seleziona un progetto da eliminare.");
+    const store = getStore();
+    if(!store[key]) return alert("Non trovato.");
+    if(!confirm(`Eliminare "${key}"?`)) return;
+    delete store[key];
+    setStore(store);
+    refreshSaved();
+    alert("Eliminato ✅");
+  };
+
+  const bindCalc = (el, ev="input") => el.addEventListener(ev, calc);
+
+  try{
+    btnAddItem.addEventListener("click", addItem);
+    btnApplyQty.addEventListener("click", applyQtyToRows);
+
+    bindCalc(qtyEst);
+    bindCalc(margin, "change");
+    bindCalc(vat);
+    bindCalc(discount);
+    bindCalc(offerPrice);
+    bindCalc(useOffer, "change");
+    bindCalc(priceIncludesVAT, "change");
+    bindCalc(depositPct);
+    bindCalc(bufferPct);
+    bindCalc(applyVAT, "change");
+
+    btnReset.addEventListener("click", resetAll);
+    btnCopy.addEventListener("click", copySummary);
+
+    btnSave.addEventListener("click", saveProject);
+    btnLoad.addEventListener("click", loadProject);
+    btnDelete.addEventListener("click", deleteProject);
+
+    items = [newItem()];
+    render();
+    refreshSaved();
+
+    setJS(true, "JS OK");
+  }catch(err){
+    console.error(err);
+    setJS(false, "ERRORE JS");
+    alert("Errore JS: controlla che hai incollato TUTTO il file index.html (inizio+fine).");
+  }
+
+})();
 </script>
 
-</div>
+  </div>
 </body>
 </html>
