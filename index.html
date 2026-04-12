@@ -1305,19 +1305,45 @@
     render();
   };
 
-  const saveProject = () => {
-    const client = (clientName.value || "").trim();
-    const project = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
-    if(!project) return;
-    const date = new Date().toLocaleDateString("it-IT");
-    const name = `${client || "Cliente"} – ${project} – ${date}`;
-    const store = getStore();
-    store[name] = { savedAt: Date.now(), payload: payload() };
-    setStore(store);
-    projectName.value = project;
-    refreshSaved();
-    alert("Progetto salvato ✅");
+    const saveProjectToCloud = async (projectPayload, projectLabel) => {
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .insert([
+          {
+            name: projectLabel || projectPayload.projectName || "Progetto",
+            data: projectPayload
+          }
+        ]);
+
+      if (error) {
+        console.error("Cloud save error:", error);
+      }
+    } catch (err) {
+      console.error("Cloud save exception:", err);
+    }
   };
+  const saveProject = async () => {
+  const client = (clientName.value || "").trim();
+  const project = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
+  if (!project) return;
+
+  const date = new Date().toLocaleDateString("it-IT");
+  const name = `${client || "Cliente"} – ${project} – ${date}`;
+  const projectPayload = payload();
+
+  const store = getStore();
+  store[name] = { savedAt: Date.now(), payload: projectPayload };
+  setStore(store);
+  projectName.value = project;
+  refreshSaved();
+
+  await saveProjectToCloud(projectPayload, name);
+
+  alert("Progetto salvato ✅");
+};
 
   const loadProject = () => {
     const key = savedSelect.value;
