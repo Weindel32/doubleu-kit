@@ -687,9 +687,9 @@ console.log("window.supabase:", window.supabase);
 
 if (window.supabase) {
   supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  console.log("✅ Supabase INIT OK");
+  console.log("Supabase INIT OK");
 } else {
-  console.error("❌ Supabase NON caricato");
+  console.error("Supabase NON caricato");
 }
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build v4";
@@ -1310,7 +1310,7 @@ if (window.supabase) {
   };
 
     const saveProjectToCloud = async (projectPayload, projectLabel) => {
-        console.log("🚀 SAVE CLOUD START");
+        console.log("SAVE CLOUD START");
   console.log("SUPABASE CLIENT:", supabase);
     if (!supabase) return;
 
