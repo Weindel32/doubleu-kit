@@ -804,7 +804,7 @@ const refreshSaved = () => {
   const localKeys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
 
   const localOptions = localKeys.map(k =>
-    <option value="${k}">${k}</option>
+    `<option value="${k}">${k}</option>`
   ).join("");
 
   const cloudOptions = cloudProjects.map(p =>
