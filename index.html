@@ -667,7 +667,7 @@
       </div>
     </div>
 
-<script src>="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     
 <script>
 /* =========================
@@ -679,17 +679,21 @@
     const SUPABASE_URL = "https://bliljqmgzzxshvhyzzos.supabase.co";
   const SUPABASE_KEY = "sb_publishable_vC7hCHCVoOg4i_5sBip5YA__vHAbr8e";
 
-  let supabase = null;
+ let supabase = null;
 
-console.log("SUPABASE URL:", SUPABASE_URL);
-console.log("SUPABASE KEY:", SUPABASE_KEY);
-console.log("window.supabase:", window.supabase);
+try {
+  console.log("SUPABASE URL:", SUPABASE_URL);
+  console.log("SUPABASE KEY:", SUPABASE_KEY);
+  console.log("window.supabase:", window.supabase);
 
-if (window.supabase) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  console.log("Supabase INIT OK");
-} else {
-  console.error("Supabase NON caricato");
+  if (window.supabase && typeof window.supabase.createClient === "function") {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("Supabase INIT OK");
+  } else {
+    console.error("Supabase NON caricato o createClient non disponibile");
+  }
+} catch (e) {
+  console.error("Supabase init error:", e);
 }
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build v4";
