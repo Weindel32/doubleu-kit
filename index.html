@@ -801,18 +801,18 @@ try {
 
 const refreshSaved = () => {
   const store = getStore();
-  const localKeys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
+  const localKeys = Object.keys(store).sort((a, b) => a.localeCompare(b));
 
- const localOptions = localKeys.map(k =>
-  `<option value="${k}">${k}</option>`
-).join("");
+  const localOptions = localKeys.map(function(k) {
+    return '<option value="' + k + '">' + k + '</option>';
+  }).join("");
 
-const cloudOptions = cloudProjects.map(p =>
-  `<option value="${CLOUD_PREFIX}${p.id}">☁️ ${p.name || "Progetto cloud"}</option>`
-).join("");
+  const cloudOptions = cloudProjects.map(function(p) {
+    return '<option value="' + CLOUD_PREFIX + p.id + '">' + (p.name || "Progetto cloud") + '</option>';
+  }).join("");
 
   savedSelect.innerHTML =
-    `<option value="">— Seleziona un progetto —</option>` +
+    '<option value="">— Seleziona un progetto —</option>' +
     localOptions +
     cloudOptions;
 };
