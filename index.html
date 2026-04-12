@@ -1324,12 +1324,14 @@ if (window.supabase) {
           }
         ]);
 
-      if (error) {
-        console.error("Cloud save error:", error);
-      }
-    } catch (err) {
-      console.error("Cloud save exception:", err);
-    }
+    if (error) {
+  console.error("Cloud save error:", error);
+  alert("❌ ERRORE CLOUD: " + error.message);
+}
+    catch (err) {
+  console.error("Cloud save exception:", err);
+  alert("❌ ECCEZIONE CLOUD: " + err.message);
+}
   };
   const saveProject = async () => {
   const client = (clientName.value || "").trim();
