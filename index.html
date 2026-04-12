@@ -1398,13 +1398,29 @@ const refreshSaved = () => {
 };
 
   const loadProject = () => {
-    const key = savedSelect.value;
-    if(!key) return alert("Seleziona un progetto da caricare.");
-    const store = getStore();
-    if(!store[key]) return alert("Progetto non trovato.");
-    applyPayload(store[key].payload);
-    alert("Progetto caricato ✅");
-  };
+  const key = savedSelect.value;
+
+  if (!key) return alert("Seleziona un progetto da caricare.");
+
+  // 👉 CASO CLOUD
+  if (key.startsWith(CLOUD_PREFIX)) {
+    const id = key.replace(CLOUD_PREFIX, "");
+    const project = cloudProjects.find(p => p.id === id);
+
+    if (!project) return alert("Progetto cloud non trovato.");
+
+    applyPayload(project.data);
+    alert("Progetto cloud caricato ☁️");
+    return;
+  }
+
+  // 👉 CASO LOCALE
+  const store = getStore();
+  if (!store[key]) return alert("Progetto non trovato.");
+
+  applyPayload(store[key].payload);
+  alert("Progetto caricato 💾");
+};
 
   const deleteProject = () => {
     const key = savedSelect.value;
