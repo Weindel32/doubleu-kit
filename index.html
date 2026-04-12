@@ -1328,11 +1328,12 @@ try {
           }
         ]);
 
-    if (error) {
+   if (error) {
   console.error("Cloud save error:", error);
   alert("❌ ERRORE CLOUD: " + error.message);
 }
-    catch (err) {
+
+} catch (err) {
   console.error("Cloud save exception:", err);
   alert("❌ ECCEZIONE CLOUD: " + err.message);
 }
