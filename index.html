@@ -797,13 +797,25 @@ try {
 
   const setStore = (obj) => localStorage.setItem(STORE_KEY, JSON.stringify(obj));
 
-  const refreshSaved = () => {
-    const store = getStore();
-    const keys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
-    savedSelect.innerHTML =
-      `<option value="">— Seleziona un progetto —</option>` +
-      keys.map(k=>`<option value="${k}">${k}</option>`).join("");
-  };
+  let cloudProjects = [];
+
+const refreshSaved = () => {
+  const store = getStore();
+  const localKeys = Object.keys(store).sort((a,b)=>a.localeCompare(b));
+
+  const localOptions = localKeys.map(k =>
+    <option value="${k}">${k}</option>
+  ).join("");
+
+  const cloudOptions = cloudProjects.map(p =>
+    `<option value="${CLOUD_PREFIX}${p.id}">☁️ ${p.name || "Progetto cloud"}</option>`
+  ).join("");
+
+  savedSelect.innerHTML =
+    `<option value="">— Seleziona un progetto —</option>` +
+    localOptions +
+    cloudOptions;
+};
 
   let items = [];
 
