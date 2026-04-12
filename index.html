@@ -681,11 +681,11 @@
 
  let supabase = null;
 
-try {
-  console.log("SUPABASE URL:", SUPABASE_URL);
-  console.log("SUPABASE KEY:", SUPABASE_KEY);
-  console.log("window.supabase:", window.supabase);
+console.log("SUPABASE URL:", SUPABASE_URL);
+console.log("SUPABASE KEY:", SUPABASE_KEY);
+console.log("window.supabase:", window.supabase);
 
+try {
   if (window.supabase && typeof window.supabase.createClient === "function") {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log("Supabase INIT OK");
