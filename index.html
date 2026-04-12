@@ -680,13 +680,17 @@
   const SUPABASE_KEY = "sb_publishable_vC7hCHCVoOg4i_5sBip5YA__vHAbr8e";
 
   let supabase = null;
-  try {
-    if (window.supabase && SUPABASE_URL && SUPABASE_KEY) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
-  } catch (e) {
-    console.error("Supabase init error:", e);
-  }
+
+console.log("SUPABASE URL:", SUPABASE_URL);
+console.log("SUPABASE KEY:", SUPABASE_KEY);
+console.log("window.supabase:", window.supabase);
+
+if (window.supabase) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log("✅ Supabase INIT OK");
+} else {
+  console.error("❌ Supabase NON caricato");
+}
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build v4";
 
@@ -1306,6 +1310,8 @@
   };
 
     const saveProjectToCloud = async (projectPayload, projectLabel) => {
+        console.log("🚀 SAVE CLOUD START");
+  console.log("SUPABASE CLIENT:", supabase);
     if (!supabase) return;
 
     try {
