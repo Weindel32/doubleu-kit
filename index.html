@@ -676,6 +676,17 @@
 ========================= */
 
 (function(){
+    const SUPABASE_URL = "https://bliljqmgzzxshvhyzzos.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_vC7hCHCVoOg4i_5sBip5YA__vHAbr8e";
+
+  let supabase = null;
+  try {
+    if (window.supabase && SUPABASE_URL && SUPABASE_KEY) {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+  } catch (e) {
+    console.error("Supabase init error:", e);
+  }
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build v4";
 
