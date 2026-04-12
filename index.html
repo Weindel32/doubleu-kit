@@ -1325,6 +1325,30 @@ const refreshSaved = () => {
     items = Array.isArray(p.items) && p.items.length ? p.items : [newItem()];
     render();
   };
+  const loadProjectsFromCloud = async () => {
+  if (!supabase) {
+    console.warn("Supabase non disponibile: caricamento cloud saltato");
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, name, data, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Cloud load error:", error);
+      return;
+    }
+
+    cloudProjects = Array.isArray(data) ? data : [];
+    refreshSaved();
+    console.log("PROJECTS CLOUD:", cloudProjects);
+  } catch (err) {
+    console.error("Cloud load exception:", err);
+  }
+};
 
     const saveProjectToCloud = async (projectPayload, projectLabel) => {
         console.log("SAVE CLOUD START");
@@ -1341,9 +1365,11 @@ const refreshSaved = () => {
           }
         ]);
 
-   if (error) {
+  if (error) {
   console.error("Cloud save error:", error);
   alert("❌ ERRORE CLOUD: " + error.message);
+} else {
+  await loadProjectsFromCloud();
 }
 
 } catch (err) {
