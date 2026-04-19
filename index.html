@@ -10,6 +10,20 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <style>
+    /* ── Toast ── */
+    #toastWrap{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+    .toast{
+      padding:11px 18px;border-radius:13px;font-size:13px;font-weight:700;
+      border:1px solid rgba(255,255,255,.20);background:rgba(8,26,51,.95);
+      backdrop-filter:blur(16px);color:#eef4ff;
+      opacity:0;transform:translateX(16px);
+      transition:opacity .22s,transform .22s;pointer-events:auto;max-width:280px;
+      box-shadow:0 8px 28px rgba(0,0,0,.45);
+    }
+    .toast.show{opacity:1;transform:translateX(0)}
+    .toast.t-ok{border-color:rgba(52,211,153,.45);background:rgba(5,30,18,.95)}
+    .toast.t-warn{border-color:rgba(251,191,36,.45);background:rgba(30,22,5,.95)}
+    .toast.t-err{border-color:rgba(251,113,133,.45);background:rgba(30,5,10,.95)}
     :root{
       --bg1:#040a14;
       --bg2:#081a33;
@@ -218,25 +232,71 @@
       padding:14px;
     }
 
-    .kpi.good{border-color:rgba(52,211,153,.60)}
-    .kpi.warn{border-color:rgba(251,191,36,.65)}
-    .kpi.bad{border-color:rgba(251,113,133,.65)}
+    .kpi.good{border-color:rgba(52,211,153,.60);background:rgba(52,211,153,.05)}
+    .kpi.warn{border-color:rgba(251,191,36,.65);background:rgba(251,191,36,.05)}
+    .kpi.bad{border-color:rgba(251,113,133,.65);background:rgba(251,113,133,.05)}
 
     .kpi .lbl{
-      font-size:12px;
+      font-size:11px;
       color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      font-weight:600;
     }
 
     .kpi .val{
-      font-size:30px;
+      font-size:28px;
       font-weight:950;
-      letter-spacing:.2px;
+      letter-spacing:-.2px;
+      margin-top:2px;
+      transition:color .3s;
     }
+    .kpi.good .val{color:var(--good)}
+    .kpi.warn .val{color:var(--warn)}
+    .kpi.bad .val{color:var(--bad)}
 
     .kpi .note{
       font-size:11px;
       color:var(--muted);
-      margin-top:6px;
+      margin-top:5px;
+      line-height:1.4;
+    }
+
+    /* Status bar */
+    .statusBar{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;flex-wrap:wrap;
+      padding:10px 16px;border-radius:14px;margin-bottom:16px;
+      background:rgba(255,255,255,.06);border:1px solid var(--stroke);
+      font-size:13px;transition:border-color .4s,background .4s;
+    }
+    .statusBar.good{border-color:rgba(52,211,153,.40);background:rgba(52,211,153,.07)}
+    .statusBar.warn{border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.07)}
+    .statusBar.bad{border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.07)}
+    .statusDot{
+      width:10px;height:10px;border-radius:99px;
+      background:var(--muted);flex-shrink:0;
+      transition:background .4s;display:inline-block;margin-right:6px;
+    }
+    .statusBar.good .statusDot{background:var(--good);box-shadow:0 0 8px var(--good)}
+    .statusBar.warn .statusDot{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+    .statusBar.bad .statusDot{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+    .statusLabel{font-weight:800;color:var(--text)}
+    .statusStats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+    .statusStats strong{color:var(--text);font-weight:700}
+
+    /* Subtotale riga articolo */
+    .item-sub{
+      font-size:12px;font-weight:700;color:var(--accent);
+      margin-top:5px;padding:3px 8px;
+      background:rgba(124,231,255,.09);border-radius:7px;
+      display:inline-block;
+    }
+
+    /* Layout 2 colonne su desktop */
+    @media(min-width:1120px){
+      .mainGrid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+      .kpiPanel{position:sticky;top:16px}
     }
 
     table{
@@ -398,6 +458,7 @@
 </head>
 
 <body>
+  <div id="toastWrap"></div>
   <div class="wrap">
 
     <div class="topbar">
@@ -417,8 +478,19 @@
       </div>
     </div>
 
-    <div class="grid">
+    <!-- Status bar semaforo -->
+    <div class="statusBar" id="statusBar">
+      <div>
+        <span class="statusDot" id="statusDot"></span>
+        <span class="statusLabel" id="statusLabel">Inserisci i dati per calcolare</span>
+      </div>
+      <div class="statusStats" id="statusStats"></div>
+    </div>
 
+    <div class="mainGrid">
+
+    <!-- Colonna sinistra: form -->
+    <div>
       <div class="card">
 
         <div class="section">
@@ -482,12 +554,6 @@
             </div>
 
             <div>
-              <label>IVA %</label>
-              <input id="vat" value="22" inputmode="decimal">
-              <div class="hint">Disattivabile per estero (reverse charge).</div>
-            </div>
-
-            <div>
               <label>Sconto trattativa %</label>
               <input id="discount" value="0" inputmode="decimal">
               <div class="hint">Sconto sul prezzo finale (solo modalità “target”).</div>
@@ -544,23 +610,36 @@
               <div class="toggle">
                 <input type="checkbox" id="applyVAT" checked>
                 <div>
-                  <div style="font-weight:950">Applica IVA</div>
-                  <div class="hint" style="margin:0">Se OFF: prezzi netti (no IVA)</div>
+                  <div style="font-weight:950">IVA 22% — Italia</div>
+                  <div class="hint" style="margin:0">OFF → Estero / Reverse charge (0%)</div>
                 </div>
               </div>
+              <input type="hidden" id="vat" value="22">
             </div>
           </div>
 
           <hr>
         </div>
 
-        <div class="section">
-          <div class="section-title">KPI</div>
+      </div><!-- /card sinistra -->
+    </div><!-- /col sinistra -->
+
+    <!-- Colonna destra: KPI sticky -->
+    <div>
+      <div class="kpiPanel">
+        <div class="card">
+          <div style="font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.06em;opacity:.6;margin-bottom:14px">Analisi live</div>
           <div class="kpis">
+            <div class="kpi" id="kpiMargin">
+              <div class="lbl">Margine reale</div>
+              <div class="val" id="kRealMargin">—</div>
+              <div class="note" id="kTarget">Target: —</div>
+            </div>
+
             <div class="kpi" id="kpiCost">
-              <div class="lbl">Costo produzione per atleta</div>
+              <div class="lbl">Costo per atleta</div>
               <div class="val" id="kCostAthlete">—</div>
-              <div class="note">Media su base quantità stimata</div>
+              <div class="note">Media su quantità stimata</div>
             </div>
 
             <div class="kpi" id="kpiPrice">
@@ -569,27 +648,23 @@
               <div class="note" id="kVatNote">—</div>
             </div>
 
-            <div class="kpi" id="kpiMargin">
-              <div class="lbl">Margine reale</div>
-              <div class="val" id="kRealMargin">—</div>
-              <div class="note" id="kTarget">Target: —</div>
-            </div>
-
             <div class="kpi" id="kpiMinSustainable">
               <div class="lbl">Minimo sostenibile</div>
               <div class="val" id="kMinSustainable">—</div>
+              <div class="note">Breakeven + buffer</div>
             </div>
 
             <div class="kpi" id="kpiTargetPrice">
               <div class="lbl">Prezzo target</div>
               <div class="val" id="kTargetPrice">—</div>
+              <div class="note">Per raggiungere margine target</div>
             </div>
           </div>
         </div>
-
       </div>
+    </div><!-- /col destra -->
 
-    </div>
+    </div><!-- /mainGrid -->
 
     <div class="card bottomZone">
       <h3 class="sectionTitle">Riepilogo ordine</h3>
@@ -672,7 +747,7 @@
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v4
+   build v7
 ========================= */
 
 (async function(){
@@ -681,16 +756,12 @@
 
  let supabase = null;
 
-console.log("SUPABASE URL:", SUPABASE_URL);
-console.log("SUPABASE KEY:", SUPABASE_KEY);
-console.log("window.supabase:", window.supabase);
 
 try {
   if (window.supabase && typeof window.supabase.createClient === "function") {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log("Supabase INIT OK");
   } else {
-    console.error("Supabase NON caricato o createClient non disponibile");
+    console.warn("Supabase non disponibile");
   }
 } catch (e) {
   console.error("Supabase init error:", e);
@@ -705,6 +776,16 @@ try {
     if(jsTxt) jsTxt.textContent = txt;
   };
 
+  const toast = (msg, type = "ok", ms = 3200) => {
+    const wrap = document.getElementById("toastWrap");
+    const el = document.createElement("div");
+    el.className = `toast t-${type}`;
+    el.textContent = msg;
+    wrap.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
+    setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 280); }, ms);
+  };
+
   const eur = (n) => (Number.isFinite(n) ? n : 0).toLocaleString("it-IT", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -712,7 +793,10 @@ try {
 
   const toNum = (v) => {
     if(v === null || v === undefined) return 0;
-    const s = String(v).trim().replace(/\s/g,"").replace(",",".");
+    let s = String(v).trim().replace(/\s/g,"");
+    // Formato italiano: "1.234,56" → rimuovi punti migliaia → "1234,56" → virgola→punto → "1234.56"
+    // Se non c'è virgola (es. "15.5" in inglese), lascia il punto come decimale
+    if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
     const x = parseFloat(s);
     return Number.isFinite(x) ? x : 0;
   };
@@ -858,6 +942,8 @@ const refreshSaved = () => {
       const optsA = ARTICLES.map(a => `<option value="${a}" ${a===it.article ? "selected" : ""}>${a}</option>`).join("");
       const optsL = LINES.map(l => `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`).join("");
       const costLabel = (it.line === "ALTRO") ? "Manuale" : (it.costMode === "auto" ? "Auto (rif.)" : "Manuale");
+      const subtot = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
+      const subtotStr = subtot > 0 ? `Σ ${eur(subtot)}` : "—";
 
       html += `
 <tr>
@@ -890,6 +976,7 @@ const refreshSaved = () => {
       <input data-act="qty" data-id="${it.id}" value="${it.qty}">
       <button class="qbtn" type="button" data-act="plus" data-id="${it.id}">+</button>
     </div>
+    <div class="item-sub">${subtotStr}</div>
   </td>
 
   <td>
@@ -1052,6 +1139,10 @@ const refreshSaved = () => {
       totalCost += (toNum(it.base) + toNum(it.extra)) * qty;
     });
 
+    const statusBar = document.getElementById("statusBar");
+    const statusLabel = document.getElementById("statusLabel");
+    const statusStats = document.getElementById("statusStats");
+
     if(!hasQty || totalCost <= 0){
       kCostAthlete.textContent = "—";
       kPriceAthlete.textContent = "—";
@@ -1071,11 +1162,11 @@ const refreshSaved = () => {
       offerStatusBox.textContent = "";
       offerStatusBox.style.color = "";
       showAlerts([]);
-      setBox(kpiMargin,null);
-      setBox(kpiPrice,null);
-      setBox(kpiMinPrice,null);
-      setBox(kpiDeposit,null);
-      setBox(kpiTargetPrice,null);
+      setBox(kpiMargin,null); setBox(kpiPrice,null);
+      setBox(kpiMinPrice,null); setBox(kpiDeposit,null); setBox(kpiTargetPrice,null);
+      statusBar.className = "statusBar";
+      statusLabel.textContent = "Inserisci i dati per calcolare";
+      statusStats.innerHTML = "";
       return;
     }
 
@@ -1199,6 +1290,18 @@ const refreshSaved = () => {
 
     setBox(kpiTargetPrice, "good");
 
+    // Status bar semaforo
+    const overallState = (realMargin + 1e-9 < m || pricePerAthlete + 1e-9 < minAcceptablePerAthlete) ? "bad"
+      : (depositAmount + 1e-9 < secureNeed) ? "warn" : "good";
+    const stateLabels = {good:"Preventivo OK — margine raggiunto", warn:"Attenzione: acconto insufficiente", bad:"Problema: margine o prezzo sotto soglia"};
+    statusBar.className = "statusBar " + overallState;
+    statusLabel.textContent = stateLabels[overallState];
+    statusStats.innerHTML = `
+      <span>Margine: <strong>${(realMargin*100).toFixed(1)}%</strong></span>
+      <span>Costo/atleta: <strong>${eur(costPerAthlete)}</strong></span>
+      <span>Prezzo/atleta: <strong>${eur(pricePerAthlete)}</strong></span>
+      <span>Utile: <strong>${eur(profit)}</strong></span>`;
+
     if(offerStatusBox){
       offerStatusBox.textContent = offerStatus;
       offerStatusBox.style.color = offerStatusColor || "var(--muted)";
@@ -1241,7 +1344,7 @@ const refreshSaved = () => {
     setBox(kpiMinPrice,null);
     setBox(kpiTargetPrice,null);
     setBox(kpiDeposit,null);
-    alert("Nuovo preventivo pronto ✅");
+    toast("Nuovo preventivo pronto ✓", "ok");
   };
 
   const copySummary = async () => {
@@ -1281,7 +1384,7 @@ const refreshSaved = () => {
 
     try{
       await navigator.clipboard.writeText(text);
-      alert("Riepilogo copiato ✅");
+      toast("Riepilogo copiato ✓", "ok");
     }catch(e){
       const ta = document.createElement("textarea");
       ta.value = text;
@@ -1289,7 +1392,7 @@ const refreshSaved = () => {
       ta.select();
       document.execCommand("copy");
       ta.remove();
-      alert("Riepilogo copiato ✅");
+      toast("Riepilogo copiato ✓", "ok");
     }
   };
 
@@ -1344,16 +1447,13 @@ const refreshSaved = () => {
 
     cloudProjects = Array.isArray(data) ? data : [];
     refreshSaved();
-    console.log("PROJECTS CLOUD:", cloudProjects);
   } catch (err) {
     console.error("Cloud load exception:", err);
   }
 };
 
     const saveProjectToCloud = async (projectPayload, projectLabel) => {
-        console.log("SAVE CLOUD START");
-  console.log("SUPABASE CLIENT:", supabase);
-    if (!supabase) return;
+        if (!supabase) return;
 
     try {
       const { error } = await supabase
@@ -1365,73 +1465,67 @@ const refreshSaved = () => {
           }
         ]);
 
-  if (error) {
-  console.error("Cloud save error:", error);
-  alert("❌ ERRORE CLOUD: " + error.message);
-} else {
-  await loadProjectsFromCloud();
-}
-
-} catch (err) {
-  console.error("Cloud save exception:", err);
-  alert("❌ ECCEZIONE CLOUD: " + err.message);
-}
+      if (error) {
+        console.error("Cloud save error:", error);
+        toast("Errore cloud: " + error.message, "err");
+      } else {
+        await loadProjectsFromCloud();
+      }
+    } catch (err) {
+      console.error("Cloud save exception:", err);
+      toast("Errore cloud: " + err.message, "err");
+    }
   };
   const saveProject = async () => {
-  const client = (clientName.value || "").trim();
-  const project = (projectName.value || "").trim() || prompt("Nome progetto da salvare:", "Nuovo kit");
-  if (!project) return;
-
-  const date = new Date().toLocaleDateString("it-IT");
-  const name = `${client || "Cliente"} – ${project} – ${date}`;
-  const projectPayload = payload();
-
-  const store = getStore();
-  store[name] = { savedAt: Date.now(), payload: projectPayload };
-  setStore(store);
-  projectName.value = project;
-  refreshSaved();
-
-  await saveProjectToCloud(projectPayload, name);
-
-  alert("Progetto salvato ✅");
-};
+    const client = (clientName.value || "").trim();
+    const project = (projectName.value || "").trim();
+    if (!project) {
+      toast("Inserisci un nome progetto prima di salvare", "warn");
+      projectName.focus();
+      return;
+    }
+    const date = new Date().toLocaleDateString("it-IT");
+    const name = `${client || "Cliente"} – ${project} – ${date}`;
+    const projectPayload = payload();
+    const store = getStore();
+    store[name] = { savedAt: Date.now(), payload: projectPayload };
+    setStore(store);
+    refreshSaved();
+    await saveProjectToCloud(projectPayload, name);
+    toast("Progetto salvato ✓", "ok");
+  };
 
   const loadProject = () => {
-  const key = savedSelect.value;
-
-  if (!key) return alert("Seleziona un progetto da caricare.");
-
-  // 👉 CASO CLOUD
-  if (key.startsWith(CLOUD_PREFIX)) {
-    const id = key.replace(CLOUD_PREFIX, "");
-    const project = cloudProjects.find(p => p.id === id);
-
-    if (!project) return alert("Progetto cloud non trovato.");
-
-    applyPayload(project.data);
-    alert("Progetto cloud caricato ☁️");
-    return;
-  }
-
-  // 👉 CASO LOCALE
-  const store = getStore();
-  if (!store[key]) return alert("Progetto non trovato.");
-
-  applyPayload(store[key].payload);
-  alert("Progetto caricato 💾");
-};
+    const key = savedSelect.value;
+    if (!key) { toast("Seleziona un progetto da caricare", "warn"); return; }
+    if (key.startsWith(CLOUD_PREFIX)) {
+      const id = key.replace(CLOUD_PREFIX, "");
+      const project = cloudProjects.find(p => p.id === id);
+      if (!project) { toast("Progetto cloud non trovato", "err"); return; }
+      applyPayload(project.data);
+      toast("Progetto cloud caricato ☁", "ok");
+      return;
+    }
+    const store = getStore();
+    if (!store[key]) { toast("Progetto non trovato", "err"); return; }
+    applyPayload(store[key].payload);
+    toast("Progetto caricato ✓", "ok");
+  };
 
   const deleteProject = () => {
     const key = savedSelect.value;
-    if(!key) return alert("Seleziona un progetto da eliminare.");
+    if(!key) { toast("Seleziona un progetto da eliminare", "warn"); return; }
+    if(key.startsWith(CLOUD_PREFIX)) {
+      toast("Eliminazione cloud: rimuovi direttamente da Supabase", "warn");
+      return;
+    }
     const store = getStore();
-    if(!store[key]) return alert("Non trovato.");
+    if(!store[key]) { toast("Progetto non trovato", "err"); return; }
     if(!confirm(`Eliminare "${key}"?`)) return;
     delete store[key];
     setStore(store);
     refreshSaved();
-    alert("Eliminato ✅");
+    toast("Progetto eliminato", "ok");
   };
 
   const bindCalc = (el, ev="input") => el.addEventListener(ev, calc);
@@ -1442,7 +1536,6 @@ const refreshSaved = () => {
 
     bindCalc(qtyEst);
     bindCalc(margin, "change");
-    bindCalc(vat);
     bindCalc(discount);
     bindCalc(offerPrice);
     bindCalc(useOffer, "change");
