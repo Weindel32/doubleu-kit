@@ -452,11 +452,66 @@
         min-width:0;
       }
     }
+
+    /* ── App lock overlay ── */
+    #lockOv{
+      position:fixed;inset:0;z-index:9000;
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(0,212,255,.05), transparent 60%),
+        linear-gradient(180deg,var(--bg1),var(--bg2));
+      display:none;align-items:center;justify-content:center;padding:24px;
+    }
+    #lockCard{
+      background:var(--card);border:1px solid var(--stroke);border-radius:24px;
+      padding:36px 28px 28px;width:100%;max-width:360px;text-align:center;
+      box-shadow:0 24px 64px rgba(0,0,0,.6);
+    }
+    .lockLogo{
+      width:52px;height:52px;border-radius:16px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+      font-size:24px;
+    }
+    #lockCard h2{margin:0 0 4px;font-size:20px}
+    #lockSub{color:var(--muted);font-size:13px;margin-bottom:22px;line-height:1.4}
+    #lockCard input{margin-top:10px;font-size:16px;text-align:center;letter-spacing:2px}
+    #lockCard input::placeholder{letter-spacing:normal;font-size:14px}
+    #lockCard>button{width:100%;margin-top:14px;font-size:15px;padding:14px}
+    #lockErr{color:var(--bad);font-size:13px;font-weight:700;margin-top:10px;min-height:18px}
+    #lockFooter{margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    #lockFooter button{
+      padding:7px 14px;font-size:12px;background:transparent;
+      border:1px solid var(--stroke);color:var(--muted);border-radius:10px;font-weight:700;cursor:pointer;
+    }
+    #lockFooter button:hover{border-color:var(--accent);color:var(--accent)}
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-9px)}40%{transform:translateX(9px)}
+      60%{transform:translateX(-6px)}80%{transform:translateX(6px)}
+    }
+    .shake{animation:shake .45s ease}
   </style>
 </head>
 
 <body>
   <div id="toastWrap"></div>
+
+  <div id="lockOv">
+    <div id="lockCard">
+      <div class="lockLogo">🔒</div>
+      <h2>DOUBLEU Kit Builder PRO</h2>
+      <div id="lockSub">Inserisci la password per accedere</div>
+      <input type="password" id="lockPwd" placeholder="Password" autocomplete="current-password">
+      <input type="password" id="lockPwdC" placeholder="Conferma password" autocomplete="new-password" style="display:none">
+      <div id="lockErr"></div>
+      <button id="lockBtn" type="button">Sblocca</button>
+      <div id="lockFooter">
+        <button id="lockForgotBtn" type="button">Hai dimenticato la password?</button>
+        <button id="lockRemoveBtn" type="button" style="display:none">Rimuovi password</button>
+      </div>
+    </div>
+  </div>
+
   <div class="wrap">
 
     <div class="topbar">
@@ -773,6 +828,147 @@ try {
     if(jsDot) jsDot.style.background = ok ? "#00FF88" : "#FF4466";
     if(jsTxt) jsTxt.textContent = txt;
   };
+
+  /* ── App lock ─────────────────────────────────────── */
+  const PWD_KEY  = "doubleu_app_pwd";
+  const SESS_KEY = "doubleu_session_v1";
+
+  const hashPwd = async (s) => {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,"0")).join("");
+  };
+
+  const storedHash = () => localStorage.getItem(PWD_KEY);
+  const sessionOk  = () => sessionStorage.getItem(SESS_KEY) === "1";
+
+  const lockOv       = document.getElementById("lockOv");
+  const lockCardEl   = document.getElementById("lockCard");
+  const lockSubEl    = document.getElementById("lockSub");
+  const lockPwdEl    = document.getElementById("lockPwd");
+  const lockPwdCEl   = document.getElementById("lockPwdC");
+  const lockBtnEl    = document.getElementById("lockBtn");
+  const lockErrEl    = document.getElementById("lockErr");
+  const lockForgotEl = document.getElementById("lockForgotBtn");
+  const lockRemoveEl = document.getElementById("lockRemoveBtn");
+
+  let lockMode = "unlock";
+
+  const openLock = (mode) => {
+    lockMode = mode;
+    lockErrEl.textContent = "";
+    lockPwdEl.value  = "";
+    lockPwdCEl.value = "";
+    lockPwdCEl.style.display  = (mode !== "unlock") ? "" : "none";
+    lockForgotEl.style.display = (mode === "unlock") ? "" : "none";
+    lockRemoveEl.style.display = (mode === "change") ? "" : "none";
+    const cfg = {
+      unlock: ["Inserisci la password per accedere",        "Sblocca"],
+      setup:  ["Imposta una password per proteggere l'app", "Imposta password"],
+      change: ["Inserisci la nuova password",               "Salva nuova password"],
+    };
+    lockSubEl.textContent = cfg[mode][0];
+    lockBtnEl.textContent = cfg[mode][1];
+    lockOv.style.display  = "flex";
+    setTimeout(() => lockPwdEl.focus(), 60);
+  };
+
+  const closeLock = () => { lockOv.style.display = "none"; };
+
+  const refreshPwdArea = () => {
+    let area = document.getElementById("pwdArea");
+    if (!area) {
+      area = document.createElement("div");
+      area.id = "pwdArea";
+      area.style.cssText = "display:flex;gap:8px;align-items:center";
+      document.querySelector(".topbar").appendChild(area);
+    }
+    area.innerHTML = "";
+    if (storedHash()) {
+      const b1 = document.createElement("button");
+      b1.className = "secondary"; b1.type = "button";
+      b1.style.cssText = "padding:7px 12px;font-size:12px";
+      b1.textContent = "🔒 Blocca";
+      b1.addEventListener("click", () => {
+        sessionStorage.removeItem(SESS_KEY);
+        openLock("unlock");
+      });
+      const b2 = document.createElement("button");
+      b2.className = "ghost"; b2.type = "button";
+      b2.style.cssText = "padding:7px 12px;font-size:12px";
+      b2.textContent = "⚙ Password";
+      b2.addEventListener("click", () => openLock("change"));
+      area.append(b1, b2);
+    } else {
+      const b = document.createElement("button");
+      b.className = "ghost"; b.type = "button";
+      b.style.cssText = "padding:7px 12px;font-size:12px";
+      b.textContent = "🔐 Imposta password";
+      b.addEventListener("click", () => openLock("setup"));
+      area.appendChild(b);
+    }
+  };
+
+  if (storedHash() && !sessionOk()) openLock("unlock");
+
+  const doLockSubmit = async () => {
+    const p = lockPwdEl.value;
+    const c = lockPwdCEl.value;
+    lockErrEl.textContent = "";
+    if (!p) {
+      lockErrEl.textContent = "Inserisci una password";
+      lockPwdEl.classList.add("shake");
+      setTimeout(() => lockPwdEl.classList.remove("shake"), 450);
+      return;
+    }
+    if (lockMode === "unlock") {
+      if (await hashPwd(p) === storedHash()) {
+        sessionStorage.setItem(SESS_KEY, "1");
+        closeLock();
+        toast("Accesso effettuato ✓", "ok");
+        refreshPwdArea();
+      } else {
+        lockErrEl.textContent = "Password errata";
+        lockPwdEl.value = "";
+        lockPwdEl.focus();
+        lockCardEl.classList.add("shake");
+        setTimeout(() => lockCardEl.classList.remove("shake"), 450);
+      }
+    } else {
+      if (p.length < 4) { lockErrEl.textContent = "Minimo 4 caratteri"; return; }
+      if (p !== c) {
+        lockErrEl.textContent = "Le password non corrispondono";
+        lockPwdCEl.value = ""; lockPwdCEl.focus(); return;
+      }
+      localStorage.setItem(PWD_KEY, await hashPwd(p));
+      sessionStorage.setItem(SESS_KEY, "1");
+      closeLock();
+      toast("Password impostata ✓", "ok");
+      refreshPwdArea();
+    }
+  };
+
+  lockBtnEl.addEventListener("click", doLockSubmit);
+  lockPwdEl.addEventListener("keydown",  e => e.key === "Enter" && doLockSubmit());
+  lockPwdCEl.addEventListener("keydown", e => e.key === "Enter" && doLockSubmit());
+
+  lockForgotEl.addEventListener("click", () => {
+    if (!confirm("Rimuovere la password? I progetti salvati rimarranno intatti.")) return;
+    localStorage.removeItem(PWD_KEY);
+    sessionStorage.removeItem(SESS_KEY);
+    closeLock();
+    toast("Password rimossa. Puoi impostarne una nuova quando vuoi.", "warn");
+    refreshPwdArea();
+  });
+
+  lockRemoveEl.addEventListener("click", () => {
+    if (!confirm("Rimuovere la password? L'app non sarà più protetta.")) return;
+    localStorage.removeItem(PWD_KEY);
+    sessionStorage.removeItem(SESS_KEY);
+    closeLock();
+    toast("Password rimossa ✓", "ok");
+    refreshPwdArea();
+  });
+  /* ── end app lock ────────────────────────────────── */
 
   const toast = (msg, type = "ok", ms = 3200) => {
     const wrap = document.getElementById("toastWrap");
@@ -1553,6 +1749,7 @@ const refreshSaved = () => {
     render();
     refreshSaved();
     await loadProjectsFromCloud();
+    refreshPwdArea();
 
     setJS(true, "JS OK");
   }catch(err){
