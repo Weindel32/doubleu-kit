@@ -506,7 +506,6 @@
       <div id="lockErr"></div>
       <button id="lockBtn" type="button">Sblocca</button>
       <div id="lockFooter">
-        <button id="lockForgotBtn" type="button">Hai dimenticato la password?</button>
         <button id="lockRemoveBtn" type="button" style="display:none">Rimuovi password</button>
       </div>
     </div>
@@ -852,7 +851,6 @@ try {
   const lockPwdCEl   = document.getElementById("lockPwdC");
   const lockBtnEl    = document.getElementById("lockBtn");
   const lockErrEl    = document.getElementById("lockErr");
-  const lockForgotEl = document.getElementById("lockForgotBtn");
   const lockRemoveEl = document.getElementById("lockRemoveBtn");
 
   let lockMode = "unlock";
@@ -863,7 +861,6 @@ try {
     lockPwdEl.value  = "";
     lockPwdCEl.value = "";
     lockPwdCEl.style.display  = (mode !== "unlock") ? "" : "none";
-    lockForgotEl.style.display = (mode === "unlock") ? "" : "none";
     lockRemoveEl.style.display = (mode === "change") ? "" : "none";
     const cfg = {
       unlock: ["Inserisci la password per accedere",        "Sblocca"],
@@ -954,15 +951,6 @@ try {
   lockBtnEl.addEventListener("click", doLockSubmit);
   lockPwdEl.addEventListener("keydown",  e => e.key === "Enter" && doLockSubmit());
   lockPwdCEl.addEventListener("keydown", e => e.key === "Enter" && doLockSubmit());
-
-  lockForgotEl.addEventListener("click", () => {
-    if (!confirm("Rimuovere la password? I progetti salvati rimarranno intatti.")) return;
-    localStorage.removeItem(PWD_KEY);
-    localStorage.removeItem(SESS_KEY);
-    closeLock();
-    toast("Password rimossa. Puoi impostarne una nuova quando vuoi.", "warn");
-    refreshPwdArea();
-  });
 
   lockRemoveEl.addEventListener("click", () => {
     if (!confirm("Rimuovere la password? L'app non sarà più protetta.")) return;
