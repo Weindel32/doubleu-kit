@@ -830,8 +830,9 @@ try {
   };
 
   /* ── App lock ─────────────────────────────────────── */
-  const PWD_KEY  = "doubleu_app_pwd";
-  const SESS_KEY = "doubleu_session_v1";
+  const PWD_KEY         = "doubleu_app_pwd";
+  const SESS_KEY        = "doubleu_session_v1";
+  const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 ore — persiste tra lanci PWA su iOS
 
   const hashPwd = async (s) => {
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -839,7 +840,10 @@ try {
   };
 
   const storedHash = () => localStorage.getItem(PWD_KEY);
-  const sessionOk  = () => sessionStorage.getItem(SESS_KEY) === "1";
+  const sessionOk  = () => {
+    const ts = localStorage.getItem(SESS_KEY);
+    return !!ts && (Date.now() - parseInt(ts, 10)) < SESSION_TIMEOUT;
+  };
 
   const lockOv       = document.getElementById("lockOv");
   const lockCardEl   = document.getElementById("lockCard");
@@ -889,7 +893,7 @@ try {
       b1.style.cssText = "padding:7px 12px;font-size:12px";
       b1.textContent = "🔒 Blocca";
       b1.addEventListener("click", () => {
-        sessionStorage.removeItem(SESS_KEY);
+        localStorage.removeItem(SESS_KEY);
         openLock("unlock");
       });
       const b2 = document.createElement("button");
@@ -922,7 +926,7 @@ try {
     }
     if (lockMode === "unlock") {
       if (await hashPwd(p) === storedHash()) {
-        sessionStorage.setItem(SESS_KEY, "1");
+        localStorage.setItem(SESS_KEY, Date.now().toString());
         closeLock();
         toast("Accesso effettuato ✓", "ok");
         refreshPwdArea();
@@ -940,7 +944,7 @@ try {
         lockPwdCEl.value = ""; lockPwdCEl.focus(); return;
       }
       localStorage.setItem(PWD_KEY, await hashPwd(p));
-      sessionStorage.setItem(SESS_KEY, "1");
+      localStorage.setItem(SESS_KEY, Date.now().toString());
       closeLock();
       toast("Password impostata ✓", "ok");
       refreshPwdArea();
@@ -954,7 +958,7 @@ try {
   lockForgotEl.addEventListener("click", () => {
     if (!confirm("Rimuovere la password? I progetti salvati rimarranno intatti.")) return;
     localStorage.removeItem(PWD_KEY);
-    sessionStorage.removeItem(SESS_KEY);
+    localStorage.removeItem(SESS_KEY);
     closeLock();
     toast("Password rimossa. Puoi impostarne una nuova quando vuoi.", "warn");
     refreshPwdArea();
@@ -963,7 +967,7 @@ try {
   lockRemoveEl.addEventListener("click", () => {
     if (!confirm("Rimuovere la password? L'app non sarà più protetta.")) return;
     localStorage.removeItem(PWD_KEY);
-    sessionStorage.removeItem(SESS_KEY);
+    localStorage.removeItem(SESS_KEY);
     closeLock();
     toast("Password rimossa ✓", "ok");
     refreshPwdArea();
