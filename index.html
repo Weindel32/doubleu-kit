@@ -714,6 +714,7 @@
         <div class="group">
           <button id="btnReset" class="secondary" type="button">Nuovo preventivo (pulisci)</button>
           <button id="btnCopy" class="ghost" type="button">Copia riepilogo</button>
+          <button id="btnPrint" class="ghost" type="button">Stampa / PDF</button>
         </div>
         <div class="group">
           <span class="hint" style="margin:0">Suggerimento: dopo un update apri l’URL con <b>?v=1</b> per evitare cache.</span>
@@ -833,6 +834,7 @@ try {
   const btnApplyQty = document.getElementById("btnApplyQty");
   const btnReset = document.getElementById("btnReset");
   const btnCopy = document.getElementById("btnCopy");
+  const btnPrint = document.getElementById("btnPrint");
 
   const itemsBody = document.getElementById("itemsBody");
   const alertsBox = document.getElementById("alertsBox");
@@ -1395,6 +1397,154 @@ const refreshSaved = () => {
     }
   };
 
+  const kpiState = (id) => {
+    const el = document.getElementById(id);
+    return el.classList.contains("good") ? "good" : el.classList.contains("bad") ? "bad" : el.classList.contains("warn") ? "warn" : "";
+  };
+
+  const printPDF = () => {
+    if (document.getElementById("kTotalCost").textContent === "—") {
+      toast("Inserisci i dati prima di stampare", "warn");
+      return;
+    }
+
+    const sb = document.getElementById("statusBar");
+    const statusCls = sb.classList.contains("good") ? "good" : sb.classList.contains("bad") ? "bad" : "warn";
+    const statusTxt = document.getElementById("statusLabel").textContent;
+    const date = new Date().toLocaleDateString("it-IT", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    const vatOn = !!applyVAT.checked;
+    const usingOffer = !!useOffer.checked && toNum(offerPrice.value) > 0;
+
+    const itemsRows = items.map(it => {
+      const sub = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
+      return `<tr>
+        <td>${it.article}</td>
+        <td>${it.line}</td>
+        <td>${eur(toNum(it.base))}</td>
+        <td>${eur(toNum(it.extra))}</td>
+        <td style="font-weight:700">${toNum(it.qty)}</td>
+        <td style="font-weight:800;color:#007799">${sub > 0 ? eur(sub) : "—"}</td>
+      </tr>`;
+    }).join("");
+
+    const offerPill = usingOffer
+      ? `<div class="pill"><span>Prezzo proposto</span>${offerPrice.value} € ${vatOn ? "(IVA incl.)" : "(netto)"}</div>`
+      : "";
+
+    const marginLabel = margin.options[margin.selectedIndex].text;
+    const g = (id) => document.getElementById(id).textContent;
+
+    const html = `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>DOUBLEU — ${projectName.value || "Preventivo"}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;color:#0b0e14;background:#fff;padding:28px;font-size:13px;line-height:1.4}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:2.5px solid #00D4FF}
+.logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#00D4FF,#00FF88);flex-shrink:0}
+.header h1{font-size:17px;font-weight:900;letter-spacing:-.2px}
+.header .sub{font-size:10px;color:#6090a8;margin-top:2px}
+.meta{margin-left:auto;text-align:right;font-size:11px;color:#6090a8;line-height:1.7}
+.meta strong{color:#0b0e14;font-weight:800}
+.sec{margin-bottom:18px}
+.sec-title{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#8aabbf;font-weight:700;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eef2f6}
+.sbar{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:9px;margin-bottom:18px;font-size:12px;font-weight:800}
+.sbar.good{background:#f0fff8;border:1px solid rgba(0,204,106,.3);color:#007744}
+.sbar.warn{background:#f0faff;border:1px solid rgba(0,184,217,.3);color:#006688}
+.sbar.bad{background:#fff0f3;border:1px solid rgba(232,52,90,.3);color:#bb1133}
+.sdot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
+.sbar.good .sdot{background:#00CC6A}.sbar.warn .sdot{background:#00B8D9}.sbar.bad .sdot{background:#E8345A}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.kpi{background:#f7fafc;border:1px solid #e4eff6;border-radius:11px;padding:11px 12px;border-left:3px solid #e4eff6}
+.kpi.good{border-left-color:#00CC6A;background:#f2fff9}
+.kpi.warn{border-left-color:#00B8D9;background:#f2faff}
+.kpi.bad{border-left-color:#E8345A;background:#fff2f4}
+.kpi .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#8aabbf;font-weight:700}
+.kpi .val{font-size:19px;font-weight:900;letter-spacing:-.2px;margin-top:3px;color:#0b0e14}
+.kpi.good .val{color:#007744}.kpi.warn .val{color:#006688}.kpi.bad .val{color:#bb1133}
+.kpi .note{font-size:9px;color:#aabcca;margin-top:3px}
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#8aabbf;font-weight:700;text-align:left;padding:5px 8px;border-bottom:1.5px solid #e4eff6}
+td{padding:7px 8px;font-size:12px;border-bottom:1px solid #f3f7fa;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.pill{padding:4px 11px;border-radius:999px;background:#f0f4f8;border:1px solid #e0ecf4;font-size:11px;font-weight:700;color:#0b0e14}
+.pill span{color:#8aabbf;font-weight:400;margin-right:4px}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #eef2f6;font-size:9px;color:#aabcca;display:flex;justify-content:space-between}
+@media print{body{padding:16px}@page{margin:.7cm;size:A4 portrait}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"></div>
+  <div><h1>DOUBLEU Kit Builder PRO</h1><div class="sub">Analisi interna preventivo</div></div>
+  <div class="meta">
+    <div>${date}</div>
+    ${clientName.value.trim() ? `<div>Cliente: <strong>${clientName.value.trim()}</strong></div>` : ""}
+    ${projectName.value.trim() ? `<div>Progetto: <strong>${projectName.value.trim()}</strong></div>` : ""}
+    ${qtyEst.value.trim() ? `<div>Quantità stimata: <strong>${qtyEst.value.trim()}</strong></div>` : ""}
+  </div>
+</div>
+
+<div class="sbar ${statusCls}"><div class="sdot"></div><span>${statusTxt}</span></div>
+
+<div class="sec">
+  <div class="sec-title">Parametri</div>
+  <div class="pills">
+    <div class="pill"><span>Margine</span>${marginLabel}</div>
+    <div class="pill"><span>IVA</span>${vatOn ? "22% Italia" : "No IVA (estero)"}</div>
+    <div class="pill"><span>Sconto</span>${discount.value}%</div>
+    <div class="pill"><span>Acconto</span>${depositPct.value}%</div>
+    <div class="pill"><span>Buffer</span>${bufferPct.value}%</div>
+    <div class="pill"><span>Modalità</span>${usingOffer ? "Budget cliente" : "Target margine"}</div>
+    ${offerPill}
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Articoli kit</div>
+  <table>
+    <thead><tr><th>Articolo</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Qtà</th><th>Subtotale</th></tr></thead>
+    <tbody>${itemsRows}</tbody>
+  </table>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Analisi per atleta</div>
+  <div class="grid5">
+    <div class="kpi ${kpiState("kpiMargin")}"><div class="lbl">Margine reale</div><div class="val">${g("kRealMargin")}</div><div class="note">Target: ${marginLabel}</div></div>
+    <div class="kpi"><div class="lbl">Costo / atleta</div><div class="val">${g("kCostAthlete")}</div><div class="note">Su qtà stimata</div></div>
+    <div class="kpi ${kpiState("kpiPrice")}"><div class="lbl">Prezzo / atleta</div><div class="val">${g("kPriceAthlete")}</div><div class="note">${vatOn ? "IVA inclusa" : "netto"}</div></div>
+    <div class="kpi"><div class="lbl">Min. sostenibile</div><div class="val">${g("kMinSustainable")}</div><div class="note">Breakeven + buffer</div></div>
+    <div class="kpi ${kpiState("kpiTargetPrice")}"><div class="lbl">Prezzo target</div><div class="val">${g("kTargetPrice")}</div><div class="note">Per raggiungere target</div></div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Riepilogo ordine</div>
+  <div class="grid3">
+    <div class="kpi"><div class="lbl">Costo totale produzione</div><div class="val">${g("kTotalCost")}</div><div class="note">Somma (base+extra)×qtà</div></div>
+    <div class="kpi"><div class="lbl">Totale fatturato</div><div class="val">${g("kGross")}</div></div>
+    <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
+    <div class="kpi"><div class="lbl">Utile totale</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
+    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo</div><div class="val">${g("kMinPrice")}</div><div class="note">Sotto = fuori margine</div></div>
+    <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Copre produzione + buffer</div></div>
+  </div>
+</div>
+
+<div class="footer"><span>DOUBLEU Kit Builder PRO — uso interno</span><span>${date}</span></div>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { toast("Abilita i popup del browser per stampare", "warn", 5000); return; }
+    win.document.write(html);
+    win.document.close();
+  };
+
   const payload = () => ({
     clientName: clientName.value || "",
     projectName: projectName.value || "",
@@ -1545,6 +1695,7 @@ const refreshSaved = () => {
 
     btnReset.addEventListener("click", resetAll);
     btnCopy.addEventListener("click", copySummary);
+    btnPrint.addEventListener("click", printPDF);
 
     btnSave.addEventListener("click", saveProject);
     btnLoad.addEventListener("click", loadProject);
