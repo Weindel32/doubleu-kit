@@ -291,6 +291,10 @@
       display:inline-block;
     }
 
+    /* Omaggio */
+    .item-sub.omaggio{background:rgba(255,170,0,.13);color:#FFAA00}
+    button.omaggio-on{background:rgba(255,170,0,.12)!important;border-color:rgba(255,170,0,.45)!important;color:#FFAA00!important}
+
     /* Layout 2 colonne su desktop */
     @media(min-width:1120px){
       .mainGrid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
@@ -670,9 +674,9 @@
 
       <div class="row3">
         <div class="kpi">
-          <div class="lbl">Costo totale produzione</div>
+          <div class="lbl">Costo totale reale</div>
           <div class="val" id="kTotalCost">—</div>
-          <div class="note">Somma (costo base + extra) × quantità</div>
+          <div class="note">Produzione completa (incl. eventuali omaggi)</div>
         </div>
 
         <div class="kpi">
@@ -685,6 +689,20 @@
           <div class="lbl">Imponibile stimato</div>
           <div class="val" id="kNet">—</div>
           <div class="note">Totale netto (senza IVA)</div>
+        </div>
+      </div>
+
+      <div class="row2" style="margin-top:10px">
+        <div class="kpi">
+          <div class="lbl">Costo articoli fatturati</div>
+          <div class="val" id="kPaidCost">—</div>
+          <div class="note">Senza omaggi</div>
+        </div>
+
+        <div class="kpi">
+          <div class="lbl">Costo omaggi (assorbiti)</div>
+          <div class="val" id="kGiftCost">—</div>
+          <div class="note">Inclusi nel costo totale, non fatturati</div>
         </div>
       </div>
 
@@ -767,7 +785,7 @@ try {
   console.error("Supabase init error:", e);
 }
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v7";
+  if(buildTxt) buildTxt.textContent = "build v8";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -849,6 +867,8 @@ try {
   const kTarget = document.getElementById("kTarget");
 
   const kTotalCost = document.getElementById("kTotalCost");
+  const kGiftCost = document.getElementById("kGiftCost");
+  const kPaidCost = document.getElementById("kPaidCost");
   const kGross = document.getElementById("kGross");
   const kNet = document.getElementById("kNet");
   const kProfit = document.getElementById("kProfit");
@@ -920,7 +940,8 @@ const refreshSaved = () => {
       base,
       extra:0,
       qty:q,
-      costMode:"auto"
+      costMode:"auto",
+      isGift: false
     };
   };
 
@@ -944,10 +965,11 @@ const refreshSaved = () => {
       const optsL = LINES.map(l => `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`).join("");
       const costLabel = (it.line === "ALTRO") ? "Manuale" : (it.costMode === "auto" ? "Auto (rif.)" : "Manuale");
       const subtot = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
-      const subtotStr = subtot > 0 ? `Σ ${eur(subtot)}` : "—";
+      const subtotClass = (it.isGift && subtot > 0) ? "item-sub omaggio" : "item-sub";
+      const subtotStr = subtot > 0 ? `Σ ${eur(subtot)}${it.isGift ? " · omaggio" : ""}` : "—";
 
       html += `
-<tr>
+<tr${it.isGift ? ' style="background:rgba(255,170,0,.03)"' : ''}>
   <td class="tdWide">
     <label>Articolo</label>
     <select class="wide" data-act="article" data-id="${it.id}">${optsA}</select>
@@ -977,12 +999,13 @@ const refreshSaved = () => {
       <input data-act="qty" data-id="${it.id}" value="${it.qty}">
       <button class="qbtn" type="button" data-act="plus" data-id="${it.id}">+</button>
     </div>
-    <div class="item-sub">${subtotStr}</div>
+    <div class="${subtotClass}">${subtotStr}</div>
   </td>
 
   <td>
     <label>Azioni</label>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="secondary${it.isGift ? " omaggio-on" : ""}" type="button" data-act="gift" data-id="${it.id}">${it.isGift ? "Omaggio ✓" : "Omaggio"}</button>
       <button class="secondary" type="button" data-act="costMode" data-id="${it.id}">Costo: ${it.costMode}</button>
       <button class="secondary" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
       <button class="secondary" type="button" data-act="rm" data-id="${it.id}">Rimuovi</button>
@@ -1080,6 +1103,16 @@ const refreshSaved = () => {
         return;
       }
 
+      if(act === "gift"){
+        el.addEventListener("click", () => {
+          const it = find();
+          if(!it) return;
+          it.isGift = !it.isGift;
+          render();
+        });
+        return;
+      }
+
       if(act === "dup"){
         el.addEventListener("click", () => {
           const idx = items.findIndex(x => x.id === id);
@@ -1132,13 +1165,18 @@ const refreshSaved = () => {
     const buf = toNum(bufferPct.value) / 100;
 
     let totalCost = 0;
+    let giftCost = 0;
     let hasQty = false;
 
     items.forEach(it => {
       const qty = toNum(it.qty);
       if(qty > 0) hasQty = true;
-      totalCost += (toNum(it.base) + toNum(it.extra)) * qty;
+      const itemCost = (toNum(it.base) + toNum(it.extra)) * qty;
+      totalCost += itemCost;
+      if(it.isGift) giftCost += itemCost;
     });
+
+    const paidCost = totalCost - giftCost;
 
     const statusBar = document.getElementById("statusBar");
     const statusLabel = document.getElementById("statusLabel");
@@ -1151,6 +1189,8 @@ const refreshSaved = () => {
       kTarget.textContent = "Target: " + (m * 100).toFixed(0) + "%";
       kVatNote.textContent = "—";
       kTotalCost.textContent = "—";
+      kGiftCost.textContent = "—";
+      kPaidCost.textContent = "—";
       kGross.textContent = "—";
       kNet.textContent = "—";
       kProfit.textContent = "—";
@@ -1236,6 +1276,8 @@ const refreshSaved = () => {
     kVatNote.textContent = vatOn ? "IVA inclusa nel prezzo" : "Prezzi netti (no IVA)";
 
     kTotalCost.textContent = eur(totalCost);
+    kGiftCost.textContent = giftCost > 0 ? eur(giftCost) : "—";
+    kPaidCost.textContent = eur(paidCost);
     kGross.textContent = eur(invoiceTotal);
     kNet.textContent = eur(revenueNet);
     kProfit.textContent = eur(profit);
@@ -1365,11 +1407,14 @@ const refreshSaved = () => {
     lines.push(``);
     lines.push(`ARTICOLI:`);
     items.forEach(it => {
-      lines.push(`- ${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}`);
+      const giftMark = it.isGift ? " | OMAGGIO" : "";
+      lines.push(`- ${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
     });
     lines.push(``);
     lines.push(`RIEPILOGO:`);
-    lines.push(`Costo totale produzione: ${kTotalCost.textContent}`);
+    lines.push(`Costo totale reale: ${kTotalCost.textContent}`);
+    lines.push(`Costo articoli fatturati: ${kPaidCost.textContent}`);
+    lines.push(`Costo omaggi: ${kGiftCost.textContent}`);
     lines.push(`Totale fatturato: ${kGross.textContent}`);
     lines.push(`Imponibile: ${kNet.textContent}`);
     lines.push(`Utile: ${kProfit.textContent}`);
@@ -1415,15 +1460,18 @@ const refreshSaved = () => {
     const vatOn = !!applyVAT.checked;
     const usingOffer = !!useOffer.checked && toNum(offerPrice.value) > 0;
 
+    const giftCostPDF = items.reduce((a, it) => a + (it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0);
+    const paidCostPDF = items.reduce((a, it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0);
     const itemsRows = items.map(it => {
       const sub = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
-      return `<tr>
-        <td>${it.article}</td>
+      const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(200,150,0,.15);border:1px solid rgba(200,150,0,.40);color:#886600;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
+      return `<tr${it.isGift ? ' style="background:rgba(255,180,0,.04)"' : ''}>
+        <td>${it.article}${giftTag}</td>
         <td>${it.line}</td>
         <td>${eur(toNum(it.base))}</td>
         <td>${eur(toNum(it.extra))}</td>
         <td style="font-weight:700">${toNum(it.qty)}</td>
-        <td style="font-weight:800;color:#007799">${sub > 0 ? eur(sub) : "—"}</td>
+        <td style="font-weight:800;color:${it.isGift ? '#886600' : '#007799'}">${sub > 0 ? eur(sub) : "—"}</td>
       </tr>`;
     }).join("");
 
@@ -1526,7 +1574,9 @@ tr:last-child td{border-bottom:none}
 <div class="sec">
   <div class="sec-title">Riepilogo ordine</div>
   <div class="grid3">
-    <div class="kpi"><div class="lbl">Costo totale produzione</div><div class="val">${g("kTotalCost")}</div><div class="note">Somma (base+extra)×qtà</div></div>
+    <div class="kpi"><div class="lbl">Costo totale reale</div><div class="val">${g("kTotalCost")}</div><div class="note">Produzione completa (incl. omaggi)</div></div>
+    <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #AA8800;background:rgba(255,180,0,.04)':''}"><div class="lbl">Costo fatturato</div><div class="val">${eur(paidCostPDF)}</div><div class="note">Senza omaggi</div></div>
+    <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #AA8800;background:rgba(255,180,0,.04)':''}"><div class="lbl">Costo omaggi</div><div class="val" style="${giftCostPDF>0?'color:#AA8800':''}">${giftCostPDF>0?eur(giftCostPDF):"—"}</div><div class="note">Assorbiti nel margine</div></div>
     <div class="kpi"><div class="lbl">Totale fatturato</div><div class="val">${g("kGross")}</div></div>
     <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
     <div class="kpi"><div class="lbl">Utile totale</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
