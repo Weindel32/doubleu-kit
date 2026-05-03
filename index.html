@@ -1004,11 +1004,13 @@ const refreshSaved = () => {
 
   <td>
     <label>Azioni</label>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-      <button class="secondary${it.isGift ? " omaggio-on" : ""}" type="button" data-act="gift" data-id="${it.id}">${it.isGift ? "Omaggio ✓" : "Omaggio"}</button>
-      <button class="secondary" type="button" data-act="costMode" data-id="${it.id}">Costo: ${it.costMode}</button>
-      <button class="secondary" type="button" data-act="dup" data-id="${it.id}">Duplica</button>
-      <button class="secondary" type="button" data-act="rm" data-id="${it.id}">Rimuovi</button>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+      <button class="secondary${it.isGift ? " omaggio-on" : ""}" style="width:100%;text-align:center" type="button" data-act="gift" data-id="${it.id}">${it.isGift ? "Omaggio ✓" : "Omaggio"}</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+        <button class="secondary" type="button" data-act="costMode" data-id="${it.id}" style="font-size:11px;padding:7px 4px;text-align:center">${it.costMode === "auto" ? "Auto" : "Manuale"}</button>
+        <button class="secondary" type="button" data-act="dup" data-id="${it.id}" style="font-size:11px;padding:7px 4px;text-align:center">Duplica</button>
+        <button class="secondary" type="button" data-act="rm" data-id="${it.id}" style="font-size:11px;padding:7px 4px;text-align:center;color:#FF4466">Rimuovi</button>
+      </div>
     </div>
   </td>
 </tr>
