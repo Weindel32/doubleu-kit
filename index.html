@@ -577,6 +577,66 @@
     .pill.warn { background: var(--warn-bg); border: 1px solid var(--warn-bd); color: var(--warn); }
     .pill.bad  { background: var(--bad-bg);  border: 1px solid var(--bad-bd);  color: var(--bad);  }
 
+    /* ─── Step content visibility ─── */
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+
+    /* ─── Step bar: done state + pointer ─── */
+    .step-item { cursor: pointer; }
+    .step-item.done { color: var(--good); }
+    .step-item.done .step-num { background: var(--good); color: #fff; }
+
+    /* ─── Step Nav (Indietro / Avanti) ─── */
+    .step-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 16px; gap: 10px;
+    }
+    .step-nav-right { display: flex; gap: 8px; margin-left: auto; }
+
+    /* ─── Dashboard ─── */
+    .dash-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+    }
+    .dash-welcome { font-size: 22px; font-weight: 800; letter-spacing: -.4px; }
+    .dash-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .dash-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px; margin-bottom: 18px;
+    }
+
+    @media (max-width: 900px) { .dash-kpis { grid-template-columns: 1fr 1fr; } }
+
+    .dash-table { width: 100%; border-collapse: collapse; }
+    .dash-table th {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+      text-align: left; padding: 0 12px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dash-table td {
+      padding: 11px 12px; border-bottom: 1px solid var(--border);
+      font-size: 13px; vertical-align: middle;
+    }
+    .dash-table tr:last-child td { border-bottom: none; }
+    .dash-table tr:hover td { background: var(--surface-2); }
+    .dash-kit-name { font-weight: 700; color: var(--text); }
+    .dash-kit-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .dash-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 999px;
+      font-size: 11px; font-weight: 600;
+    }
+    .dash-badge.local { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+    .dash-badge.cloud { background: #EDF5FF; color: #2A5DAA; border: 1px solid #B8D4F5; }
+    .dash-empty {
+      text-align: center; padding: 40px 20px; color: var(--muted);
+    }
+    .dash-empty-icon { font-size: 36px; margin-bottom: 10px; }
+    .dash-empty-ttl { font-weight: 700; margin-bottom: 6px; color: var(--text-2); }
+
     /* ─── Bottom Zone ─── */
     .bottom-zone { margin-top: 18px; }
 
@@ -657,7 +717,7 @@
 
       <nav class="sb-nav">
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)" data-view="dashboard">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="2" y="2" width="7" height="7" rx="1.5"/>
             <rect x="11" y="2" width="7" height="7" rx="1.5"/>
@@ -667,7 +727,7 @@
           Dashboard
         </a>
 
-        <a class="nav-item active" href="#" onclick="return false">
+        <a class="nav-item active" href="javascript:void(0)" data-view="builder">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M3 5h14M3 10h14M3 15h9"/>
             <circle cx="16" cy="15" r="2.5"/>
@@ -676,14 +736,14 @@
           Kit builder
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <polyline points="3,14 7,9 10,12 13,7 17,5"/>
           </svg>
           Margini
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M10.5 3.5L17 10l-6.5 6.5L4 10l6.5-6.5z"/>
             <path d="M10 7v6M7.5 10h5"/>
@@ -691,7 +751,7 @@
           Prezzi
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="3" y="11" width="3" height="6" rx="1"/>
             <rect x="8.5" y="7" width="3" height="10" rx="1"/>
@@ -700,7 +760,7 @@
           KPI
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M4 6a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/>
             <path d="M8 10h4M8 13h2"/>
@@ -708,7 +768,7 @@
           Articoli
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M10 3v10M6.5 9.5L10 13l3.5-3.5"/>
             <path d="M4 16h12" stroke-linecap="round"/>
@@ -716,7 +776,7 @@
           Esportazioni
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <circle cx="10" cy="10" r="2.5"/>
             <path d="M10 3.5v2M10 14.5v2M3.5 10h2M14.5 10h2M5.4 5.4l1.4 1.4M13.2 13.2l1.4 1.4M5.4 14.6l1.4-1.4M13.2 6.8l1.4-1.4"/>
@@ -753,7 +813,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v12</span>
+            <span id="buildTxt">build v13</span>
           </div>
         </div>
       </div>
@@ -770,27 +830,92 @@
       <!-- Content -->
       <div class="content-area">
 
+        <!-- ── Dashboard View ── -->
+        <div id="dashboardView" style="display:none">
+          <div class="dash-header">
+            <div>
+              <div class="dash-welcome">Ciao Weindel 👋</div>
+              <div class="dash-sub">Panoramica dei tuoi kit e delle performance economiche.</div>
+            </div>
+            <button class="primary" id="btnNewKitDash">+ Nuovo kit</button>
+          </div>
+
+          <div class="dash-kpis">
+            <div class="kpi">
+              <div class="lbl">Kit salvati</div>
+              <div class="val" id="dkKits">—</div>
+              <div class="note">Totale preventivi</div>
+            </div>
+            <div class="kpi">
+              <div class="lbl">Articoli totali</div>
+              <div class="val" id="dkItems">—</div>
+              <div class="note">In tutti i kit</div>
+            </div>
+            <div class="kpi" id="dkMarginKpi">
+              <div class="lbl">Margine kit attivo</div>
+              <div class="val" id="dkMargin">—</div>
+              <div class="note">Margine reale corrente</div>
+            </div>
+            <div class="kpi">
+              <div class="lbl">Costo/atleta kit attivo</div>
+              <div class="val" id="dkCost">—</div>
+              <div class="note">Media su quantità stimata</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <div class="card-title" style="margin-bottom:0">I tuoi kit</div>
+            </div>
+
+            <div class="dash-empty" id="dashEmpty" style="display:none">
+              <div class="dash-empty-icon">📋</div>
+              <div class="dash-empty-ttl">Nessun kit salvato</div>
+              <div class="hint">Crea il tuo primo kit per iniziare.</div>
+            </div>
+
+            <table class="dash-table" id="dashTable" style="display:none">
+              <thead>
+                <tr>
+                  <th>Kit</th>
+                  <th>Articoli</th>
+                  <th>Salvato il</th>
+                  <th>Fonte</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="dashKits"></tbody>
+            </table>
+          </div>
+        </div><!-- /dashboardView -->
+
+        <!-- ── Builder View ── -->
+        <div id="builderView">
+
         <!-- Step Indicator -->
-        <div class="step-bar">
-          <div class="step-item active">
+        <div class="step-bar" id="stepBar">
+          <div class="step-item active" data-step="1">
             <span class="step-num">1</span>
             Articoli
           </div>
-          <div class="step-item">
+          <div class="step-item" data-step="2">
             <span class="step-num">2</span>
             Prezzi
           </div>
-          <div class="step-item">
+          <div class="step-item" data-step="3">
             <span class="step-num">3</span>
             Riepilogo
           </div>
         </div>
 
         <!-- Main Grid -->
-        <div class="main-grid">
+        <div class="main-grid" id="mainGrid">
 
           <!-- Left column -->
           <div>
+
+            <!-- Step 1: Articoli -->
+            <div class="step-content active" data-step="1">
 
             <!-- Cliente -->
             <div class="card" style="margin-bottom:14px">
@@ -852,6 +977,11 @@
                 <span class="art-total-val" id="kTotalCostBar">—</span>
               </div>
             </div>
+
+            </div><!-- /step-1 -->
+
+            <!-- Step 2: Prezzi -->
+            <div class="step-content" data-step="2">
 
             <!-- Prezzo & Margine -->
             <div class="card" style="margin-bottom:14px">
@@ -944,10 +1074,97 @@
 
             </div><!-- /Prezzo card -->
 
+            </div><!-- /step-2 -->
+
+            <!-- Step 3: Riepilogo -->
+            <div class="step-content" data-step="3">
+            <div class="card bottom-zone">
+              <div class="card-title">Riepilogo ordine</div>
+
+              <div class="row3">
+                <div class="kpi">
+                  <div class="lbl">Costo totale reale</div>
+                  <div class="val" id="kTotalCost">—</div>
+                  <div class="note">Produzione completa (incl. eventuali omaggi)</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Totale fatturato</div>
+                  <div class="val" id="kGross">—</div>
+                  <div class="note" id="kGrossNote">—</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Imponibile stimato</div>
+                  <div class="val" id="kNet">—</div>
+                  <div class="note">Totale netto (senza IVA)</div>
+                </div>
+              </div>
+
+              <div class="row2" style="margin-top:10px">
+                <div class="kpi">
+                  <div class="lbl">Costo articoli fatturati</div>
+                  <div class="val" id="kPaidCost">—</div>
+                  <div class="note">Senza omaggi</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Costo omaggi (assorbiti)</div>
+                  <div class="val" id="kGiftCost">—</div>
+                  <div class="note">Inclusi nel costo totale, non fatturati</div>
+                </div>
+              </div>
+
+              <div class="row3" style="margin-top:10px">
+                <div class="kpi">
+                  <div class="lbl">Utile totale (netto IVA)</div>
+                  <div class="val" id="kProfit">—</div>
+                  <div class="note">Utile su imponibile</div>
+                </div>
+                <div class="kpi" id="kpiMinPrice">
+                  <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
+                  <div class="val" id="kMinPrice">—</div>
+                  <div class="note">Sotto questa soglia scendi sotto margine target</div>
+                </div>
+                <div class="kpi" id="kpiDeposit">
+                  <div class="lbl">Acconto minimo sicuro</div>
+                  <div class="val" id="kMinDeposit">—</div>
+                  <div class="note" id="kDepNote">Produzione + buffer (sicurezza)</div>
+                </div>
+              </div>
+
+              <div class="drawer" style="margin-top:14px">
+                <div class="drawer-title">Salvataggio progetto</div>
+                <div class="drawer-row">
+                  <div>
+                    <label>Kit salvati</label>
+                    <select id="savedSelect">
+                      <option value="">— Seleziona un progetto —</option>
+                    </select>
+                    <div class="hint">Salvati nel browser (localStorage) e nel cloud Supabase.</div>
+                  </div>
+                  <div class="bottom-group">
+                    <button id="btnSave" class="secondary" type="button">Salva</button>
+                    <button id="btnLoad" class="secondary" type="button">Carica</button>
+                    <button id="btnDelete" class="ghost" type="button">Elimina</button>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /bottom-zone card -->
+            </div><!-- /step-3 -->
+
+            <!-- Step Navigation -->
+            <div class="step-nav" id="stepNav">
+              <div style="display:flex;gap:8px">
+                <button id="btnPrev" class="secondary" style="display:none">← Indietro</button>
+                <button id="btnResetStep" class="ghost" style="font-size:12px">Nuovo preventivo</button>
+              </div>
+              <div class="step-nav-right" id="stepNavRight">
+                <button id="btnNext" class="primary">Avanti: Prezzi →</button>
+              </div>
+            </div>
+
           </div><!-- /left col -->
 
           <!-- Right column: KPI Panel -->
-          <div>
+          <div id="kpiCol">
             <div class="kpi-panel">
               <div class="card">
                 <div class="card-title">Analisi live</div>
@@ -984,87 +1201,8 @@
 
         </div><!-- /main-grid -->
 
-        <!-- Bottom Zone: Riepilogo -->
-        <div class="card bottom-zone">
-          <div class="card-title">Riepilogo ordine</div>
 
-          <div class="row3">
-            <div class="kpi">
-              <div class="lbl">Costo totale reale</div>
-              <div class="val" id="kTotalCost">—</div>
-              <div class="note">Produzione completa (incl. eventuali omaggi)</div>
-            </div>
-            <div class="kpi">
-              <div class="lbl">Totale fatturato</div>
-              <div class="val" id="kGross">—</div>
-              <div class="note" id="kGrossNote">—</div>
-            </div>
-            <div class="kpi">
-              <div class="lbl">Imponibile stimato</div>
-              <div class="val" id="kNet">—</div>
-              <div class="note">Totale netto (senza IVA)</div>
-            </div>
-          </div>
-
-          <div class="row2" style="margin-top:10px">
-            <div class="kpi">
-              <div class="lbl">Costo articoli fatturati</div>
-              <div class="val" id="kPaidCost">—</div>
-              <div class="note">Senza omaggi</div>
-            </div>
-            <div class="kpi">
-              <div class="lbl">Costo omaggi (assorbiti)</div>
-              <div class="val" id="kGiftCost">—</div>
-              <div class="note">Inclusi nel costo totale, non fatturati</div>
-            </div>
-          </div>
-
-          <div class="row3" style="margin-top:10px">
-            <div class="kpi">
-              <div class="lbl">Utile totale (netto IVA)</div>
-              <div class="val" id="kProfit">—</div>
-              <div class="note">Utile su imponibile</div>
-            </div>
-            <div class="kpi" id="kpiMinPrice">
-              <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
-              <div class="val" id="kMinPrice">—</div>
-              <div class="note">Sotto questa soglia scendi sotto margine target</div>
-            </div>
-            <div class="kpi" id="kpiDeposit">
-              <div class="lbl">Acconto minimo sicuro</div>
-              <div class="val" id="kMinDeposit">—</div>
-              <div class="note" id="kDepNote">Produzione + buffer (sicurezza)</div>
-            </div>
-          </div>
-
-          <div class="bottom-actions">
-            <div class="bottom-group">
-              <button id="btnReset" class="secondary" type="button">Nuovo preventivo</button>
-              <button id="btnCopy" class="ghost" type="button">Copia riepilogo</button>
-              <button id="btnPrint" class="ghost" type="button">Stampa / PDF</button>
-            </div>
-            <span class="hint">Apri l'URL con <b>?v=1</b> per forzare cache refresh.</span>
-          </div>
-
-          <div class="drawer">
-            <div class="drawer-title">Salvataggio progetti</div>
-            <div class="drawer-row">
-              <div>
-                <label>Kit salvati</label>
-                <select id="savedSelect">
-                  <option value="">— Seleziona un progetto —</option>
-                </select>
-                <div class="hint">Salvati nel browser (localStorage) e nel cloud Supabase.</div>
-              </div>
-              <div class="bottom-group">
-                <button id="btnSave" class="secondary" type="button">Salva</button>
-                <button id="btnLoad" class="secondary" type="button">Carica</button>
-                <button id="btnDelete" class="ghost" type="button">Elimina</button>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /bottom-zone -->
+        </div><!-- /builderView -->
 
       </div><!-- /content-area -->
     </div><!-- /main-content -->
@@ -1076,7 +1214,7 @@
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v12 — redesign
+   build v13 — redesign
 ========================= */
 
 (async function(){
@@ -1096,7 +1234,7 @@
   }
 
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v12";
+  if(buildTxt) buildTxt.textContent = "build v13";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -1966,6 +2104,187 @@ tr:last-child td{border-bottom:none}
     sbSub.textContent  = cname || "Nuovo preventivo";
   };
 
+  /* ─── Step navigation ─── */
+  let currentStep = 1;
+
+  const STEP_LABELS = ["Avanti: Prezzi →", "Avanti: Riepilogo →"];
+
+  const updateStepUI = () => {
+    // Step bar
+    document.querySelectorAll(".step-item").forEach(el => {
+      const s   = parseInt(el.getAttribute("data-step"));
+      const num = el.querySelector(".step-num");
+      el.classList.toggle("active", s === currentStep);
+      el.classList.toggle("done",   s < currentStep);
+      num.textContent = s < currentStep ? "✓" : s;
+    });
+
+    // Step content
+    document.querySelectorAll(".step-content").forEach(el => {
+      const s = parseInt(el.getAttribute("data-step"));
+      el.classList.toggle("active", s === currentStep);
+    });
+
+    // KPI column: hide on step 3 (full-width riepilogo)
+    const kpiCol  = document.getElementById("kpiCol");
+    const mainGrid= document.getElementById("mainGrid");
+    if(kpiCol)   kpiCol.style.display   = currentStep === 3 ? "none" : "";
+    if(mainGrid) mainGrid.style.gridTemplateColumns = currentStep === 3 ? "1fr" : "";
+
+    // Prev button
+    const btnPrev = document.getElementById("btnPrev");
+    if(btnPrev) btnPrev.style.display = currentStep === 1 ? "none" : "";
+
+    // Next area
+    const navRight = document.getElementById("stepNavRight");
+    if(!navRight) return;
+
+    // Left: Nuovo preventivo (visible on all steps)
+    const btnPrevEl = document.getElementById("btnPrev");
+    if(btnPrevEl) {
+      btnPrevEl.style.display = currentStep === 1 ? "none" : "";
+    }
+    const resetBtn = document.getElementById("btnResetStep");
+    if(resetBtn) resetBtn.style.display = currentStep === 1 ? "" : "none";
+
+    if(currentStep < 3) {
+      navRight.innerHTML = `<button id="btnNext" class="primary">${STEP_LABELS[currentStep - 1]}</button>`;
+      document.getElementById("btnNext").addEventListener("click", () => goToStep(currentStep + 1));
+    } else {
+      navRight.innerHTML = `
+        <button id="btnCopyStep" class="ghost">Copia riepilogo</button>
+        <button id="btnPrintStep" class="ghost">Stampa / PDF</button>
+        <button id="btnSaveStep" class="primary">Salva progetto</button>`;
+      document.getElementById("btnCopyStep").addEventListener("click",  copySummary);
+      document.getElementById("btnPrintStep").addEventListener("click", printPDF);
+      document.getElementById("btnSaveStep").addEventListener("click",  saveProject);
+    }
+
+    // Scroll top
+    const mc = document.querySelector(".main-content");
+    if(mc) mc.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToStep = (n) => {
+    currentStep = Math.max(1, Math.min(3, n));
+    updateStepUI();
+  };
+
+  /* ─── View switching (dashboard / builder) ─── */
+  let currentView = "builder";
+
+  const showView = (view) => {
+    currentView = view;
+    document.getElementById("dashboardView").style.display = view === "dashboard" ? "" : "none";
+    document.getElementById("builderView").style.display   = view === "builder"   ? "" : "none";
+
+    // Sidebar active
+    document.querySelectorAll(".nav-item").forEach(el => {
+      el.classList.toggle("active", el.getAttribute("data-view") === view);
+    });
+
+    // Topbar title
+    const titleEl = document.querySelector(".topbar-title");
+    if(titleEl) titleEl.textContent = view === "dashboard" ? "Dashboard" : "Kit builder";
+
+    if(view === "dashboard") renderDashboard();
+  };
+
+  /* ─── Dashboard render ─── */
+  const renderDashboard = () => {
+    const store     = getStore();
+    const localKits = Object.entries(store)
+      .sort((a, b) => (b[1].savedAt || 0) - (a[1].savedAt || 0));
+
+    const localNames = new Set(localKits.map(([n]) => n));
+    const rows = [
+      ...localKits.map(([name, data]) => ({
+        name, source: "local",
+        savedAt:   data.savedAt,
+        payload:   data.payload,
+        itemCount: Array.isArray(data.payload?.items) ? data.payload.items.length : 0,
+      })),
+      ...cloudProjects
+        .filter(p => !localNames.has(p.name))
+        .map(p => ({
+          name:      p.name || "Progetto cloud",
+          source:    "cloud",
+          cloudId:   p.id,
+          savedAt:   p.created_at ? new Date(p.created_at).getTime() : 0,
+          payload:   p.data,
+          itemCount: Array.isArray(p.data?.items) ? p.data.items.length : 0,
+        })),
+    ];
+
+    // KPI cards
+    const dkKits  = document.getElementById("dkKits");
+    const dkItems = document.getElementById("dkItems");
+    const dkMargin= document.getElementById("dkMargin");
+    const dkCost  = document.getElementById("dkCost");
+    if(dkKits)  dkKits.textContent  = rows.length;
+    if(dkItems) dkItems.textContent = rows.reduce((s, k) => s + k.itemCount, 0);
+    const liveMargin = document.getElementById("kRealMargin")?.textContent;
+    const liveCost   = document.getElementById("kCostAthlete")?.textContent;
+    if(dkMargin && liveMargin && liveMargin !== "—") dkMargin.textContent = liveMargin;
+    if(dkCost   && liveCost   && liveCost   !== "—") dkCost.textContent   = liveCost;
+
+    // Table
+    const empty    = document.getElementById("dashEmpty");
+    const table    = document.getElementById("dashTable");
+    const tbody    = document.getElementById("dashKits");
+    if(!tbody) return;
+
+    if(rows.length === 0) {
+      if(empty) empty.style.display = "";
+      if(table) table.style.display = "none";
+      return;
+    }
+    if(empty) empty.style.display = "none";
+    if(table) table.style.display = "";
+
+    tbody.innerHTML = rows.map((kit, i) => {
+      const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
+      const client = kit.payload?.clientName?.trim() || "";
+      return `<tr>
+        <td>
+          <div class="dash-kit-name">${kit.name}</div>
+          ${client ? `<div class="dash-kit-sub">${client}</div>` : ""}
+        </td>
+        <td>${kit.itemCount}</td>
+        <td>${date}</td>
+        <td><span class="dash-badge ${kit.source}">${kit.source === "cloud" ? "☁ Cloud" : "💾 Locale"}</span></td>
+        <td><button class="secondary" style="font-size:12px;padding:5px 10px" data-row="${i}">Carica</button></td>
+      </tr>`;
+    }).join("");
+
+    tbody.querySelectorAll("[data-row]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const kit = rows[parseInt(btn.getAttribute("data-row"))];
+        if(kit.source === "cloud") {
+          const proj = cloudProjects.find(p => p.id === kit.cloudId);
+          if(proj) { applyPayload(proj.data); toast("Kit cloud caricato ☁", "ok"); }
+        } else {
+          applyPayload(kit.payload);
+          toast("Kit caricato ✓", "ok");
+        }
+        showView("builder");
+        goToStep(1);
+      });
+    });
+  };
+
+  /* ─── Nav listeners: registered outside try block so they always work ─── */
+  document.querySelectorAll(".nav-item[data-view]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      try { showView(el.dataset.view); } catch(err) { console.error("showView error:", err); }
+    });
+  });
+  const _btnNewKitDash = document.getElementById("btnNewKitDash");
+  if(_btnNewKitDash) _btnNewKitDash.addEventListener("click", () => {
+    try { resetAll(); showView("builder"); goToStep(1); } catch(err) { console.error(err); }
+  });
+
   try {
     btnAddItem.addEventListener("click",  addItem);
     btnApplyQty.addEventListener("click", applyQtyToRows);
@@ -1980,13 +2299,13 @@ tr:last-child td{border-bottom:none}
     bindCalc(bufferPct);
     bindCalc(applyVAT,          "change");
 
-    btnReset.addEventListener("click",  resetAll);
-    btnCopy.addEventListener("click",   copySummary);
-    btnPrint.addEventListener("click",  printPDF);
+    if(btnReset) btnReset.addEventListener("click", resetAll);
+    if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
+    if(btnPrint) btnPrint.addEventListener("click", printPDF);
 
-    btnSave.addEventListener("click",   saveProject);
-    btnLoad.addEventListener("click",   loadProject);
-    btnDelete.addEventListener("click", deleteProject);
+    if(btnSave)   btnSave.addEventListener("click",   saveProject);
+    if(btnLoad)   btnLoad.addEventListener("click",   loadProject);
+    if(btnDelete) btnDelete.addEventListener("click", deleteProject);
 
     clientName.addEventListener("input",  updateSidebarKit);
     projectName.addEventListener("input", updateSidebarKit);
@@ -1995,10 +2314,26 @@ tr:last-child td{border-bottom:none}
     const dateEl = document.getElementById("topbarDate");
     if(dateEl) dateEl.textContent = new Date().toLocaleDateString("it-IT", { day:"numeric", month:"long", year:"numeric" });
 
+    /* Step bar clicks */
+    document.querySelectorAll(".step-item[data-step]").forEach(el => {
+      el.addEventListener("click", () => goToStep(parseInt(el.getAttribute("data-step"))));
+    });
+
+    /* Prev button */
+    const _btnPrev = document.getElementById("btnPrev");
+    if(_btnPrev) _btnPrev.addEventListener("click", () => goToStep(currentStep - 1));
+
+    /* Reset step button */
+    const _btnResetStep = document.getElementById("btnResetStep");
+    if(_btnResetStep) _btnResetStep.addEventListener("click", () => { resetAll(); goToStep(1); });
+
     items = [newItem()];
     render();
     refreshSaved();
     await loadProjectsFromCloud();
+
+    /* Init step UI */
+    updateStepUI();
 
     setJS(true, "JS OK");
   } catch(err) {
