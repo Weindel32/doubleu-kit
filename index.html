@@ -717,7 +717,7 @@
 
       <nav class="sb-nav">
 
-        <a class="nav-item" href="#" data-view="dashboard" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)" data-view="dashboard">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="2" y="2" width="7" height="7" rx="1.5"/>
             <rect x="11" y="2" width="7" height="7" rx="1.5"/>
@@ -727,7 +727,7 @@
           Dashboard
         </a>
 
-        <a class="nav-item active" href="#" data-view="builder" onclick="return false">
+        <a class="nav-item active" href="javascript:void(0)" data-view="builder">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M3 5h14M3 10h14M3 15h9"/>
             <circle cx="16" cy="15" r="2.5"/>
@@ -736,14 +736,14 @@
           Kit builder
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <polyline points="3,14 7,9 10,12 13,7 17,5"/>
           </svg>
           Margini
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M10.5 3.5L17 10l-6.5 6.5L4 10l6.5-6.5z"/>
             <path d="M10 7v6M7.5 10h5"/>
@@ -751,7 +751,7 @@
           Prezzi
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="3" y="11" width="3" height="6" rx="1"/>
             <rect x="8.5" y="7" width="3" height="10" rx="1"/>
@@ -760,7 +760,7 @@
           KPI
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M4 6a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/>
             <path d="M8 10h4M8 13h2"/>
@@ -768,7 +768,7 @@
           Articoli
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M10 3v10M6.5 9.5L10 13l3.5-3.5"/>
             <path d="M4 16h12" stroke-linecap="round"/>
@@ -776,7 +776,7 @@
           Esportazioni
         </a>
 
-        <a class="nav-item" href="#" onclick="return false">
+        <a class="nav-item" href="javascript:void(0)">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <circle cx="10" cy="10" r="2.5"/>
             <path d="M10 3.5v2M10 14.5v2M3.5 10h2M14.5 10h2M5.4 5.4l1.4 1.4M13.2 13.2l1.4 1.4M5.4 14.6l1.4-1.4M13.2 6.8l1.4-1.4"/>
@@ -813,7 +813,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v12</span>
+            <span id="buildTxt">build v13</span>
           </div>
         </div>
       </div>
@@ -1214,7 +1214,7 @@
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v12 — redesign
+   build v13 — redesign
 ========================= */
 
 (async function(){
@@ -1234,7 +1234,7 @@
   }
 
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v12";
+  if(buildTxt) buildTxt.textContent = "build v13";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -2273,6 +2273,18 @@ tr:last-child td{border-bottom:none}
     });
   };
 
+  /* ─── Nav listeners: registered outside try block so they always work ─── */
+  document.querySelectorAll(".nav-item[data-view]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      try { showView(el.dataset.view); } catch(err) { console.error("showView error:", err); }
+    });
+  });
+  const _btnNewKitDash = document.getElementById("btnNewKitDash");
+  if(_btnNewKitDash) _btnNewKitDash.addEventListener("click", () => {
+    try { resetAll(); showView("builder"); goToStep(1); } catch(err) { console.error(err); }
+  });
+
   try {
     btnAddItem.addEventListener("click",  addItem);
     btnApplyQty.addEventListener("click", applyQtyToRows);
@@ -2291,9 +2303,9 @@ tr:last-child td{border-bottom:none}
     if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
     if(btnPrint) btnPrint.addEventListener("click", printPDF);
 
-    btnSave.addEventListener("click",   saveProject);
-    btnLoad.addEventListener("click",   loadProject);
-    btnDelete.addEventListener("click", deleteProject);
+    if(btnSave)   btnSave.addEventListener("click",   saveProject);
+    if(btnLoad)   btnLoad.addEventListener("click",   loadProject);
+    if(btnDelete) btnDelete.addEventListener("click", deleteProject);
 
     clientName.addEventListener("input",  updateSidebarKit);
     projectName.addEventListener("input", updateSidebarKit);
@@ -2308,22 +2320,12 @@ tr:last-child td{border-bottom:none}
     });
 
     /* Prev button */
-    document.getElementById("btnPrev").addEventListener("click", () => goToStep(currentStep - 1));
+    const _btnPrev = document.getElementById("btnPrev");
+    if(_btnPrev) _btnPrev.addEventListener("click", () => goToStep(currentStep - 1));
 
     /* Reset step button */
-    document.getElementById("btnResetStep").addEventListener("click", () => { resetAll(); goToStep(1); });
-
-    /* Nav view switching */
-    document.querySelectorAll(".nav-item[data-view]").forEach(el => {
-      el.addEventListener("click", () => showView(el.getAttribute("data-view")));
-    });
-
-    /* Dashboard: new kit button */
-    document.getElementById("btnNewKitDash").addEventListener("click", () => {
-      resetAll();
-      showView("builder");
-      goToStep(1);
-    });
+    const _btnResetStep = document.getElementById("btnResetStep");
+    if(_btnResetStep) _btnResetStep.addEventListener("click", () => { resetAll(); goToStep(1); });
 
     items = [newItem()];
     render();
