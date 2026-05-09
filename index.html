@@ -1152,7 +1152,10 @@
 
             <!-- Step Navigation -->
             <div class="step-nav" id="stepNav">
-              <button id="btnPrev" class="secondary" style="display:none">← Indietro</button>
+              <div style="display:flex;gap:8px">
+                <button id="btnPrev" class="secondary" style="display:none">← Indietro</button>
+                <button id="btnResetStep" class="ghost" style="font-size:12px">Nuovo preventivo</button>
+              </div>
               <div class="step-nav-right" id="stepNavRight">
                 <button id="btnNext" class="primary">Avanti: Prezzi →</button>
               </div>
@@ -2136,6 +2139,14 @@ tr:last-child td{border-bottom:none}
     const navRight = document.getElementById("stepNavRight");
     if(!navRight) return;
 
+    // Left: Nuovo preventivo (visible on all steps)
+    const btnPrevEl = document.getElementById("btnPrev");
+    if(btnPrevEl) {
+      btnPrevEl.style.display = currentStep === 1 ? "none" : "";
+    }
+    const resetBtn = document.getElementById("btnResetStep");
+    if(resetBtn) resetBtn.style.display = currentStep === 1 ? "" : "none";
+
     if(currentStep < 3) {
       navRight.innerHTML = `<button id="btnNext" class="primary">${STEP_LABELS[currentStep - 1]}</button>`;
       document.getElementById("btnNext").addEventListener("click", () => goToStep(currentStep + 1));
@@ -2276,9 +2287,9 @@ tr:last-child td{border-bottom:none}
     bindCalc(bufferPct);
     bindCalc(applyVAT,          "change");
 
-    btnReset.addEventListener("click",  resetAll);
-    btnCopy.addEventListener("click",   copySummary);
-    btnPrint.addEventListener("click",  printPDF);
+    if(btnReset) btnReset.addEventListener("click", resetAll);
+    if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
+    if(btnPrint) btnPrint.addEventListener("click", printPDF);
 
     btnSave.addEventListener("click",   saveProject);
     btnLoad.addEventListener("click",   loadProject);
@@ -2298,6 +2309,9 @@ tr:last-child td{border-bottom:none}
 
     /* Prev button */
     document.getElementById("btnPrev").addEventListener("click", () => goToStep(currentStep - 1));
+
+    /* Reset step button */
+    document.getElementById("btnResetStep").addEventListener("click", () => { resetAll(); goToStep(1); });
 
     /* Nav view switching */
     document.querySelectorAll(".nav-item[data-view]").forEach(el => {
