@@ -689,7 +689,9 @@
     .toast.t-err  { border-color: var(--bad-bd);  background: var(--bad-bg);  color: var(--bad);  }
 
     /* ─── Phase 3 Views ─── */
-    .text-right { text-align: right; }
+    .text-right,
+    .dash-table th.text-right,
+    .dash-table td.text-right { text-align: right; }
 
     /* Margin bars */
     .margin-bar-wrap { display: flex; flex-direction: column; gap: 10px; }
@@ -2448,6 +2450,7 @@ tr:last-child td{border-bottom:none}
     tbody.innerHTML = rows.map((kit, i) => {
       const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
       const client = kit.payload?.clientName?.trim() || "";
+      const canDel = kit.source === "local";
       return `<tr>
         <td>
           <div class="dash-kit-name">${kit.name}</div>
@@ -2456,11 +2459,14 @@ tr:last-child td{border-bottom:none}
         <td>${kit.itemCount}</td>
         <td>${date}</td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud" ? "☁ Cloud" : "💾 Locale"}</span></td>
-        <td><button class="secondary" style="font-size:12px;padding:5px 10px" data-row="${i}">Carica</button></td>
+        <td style="display:flex;gap:6px;align-items:center">
+          <button class="secondary" style="font-size:12px;padding:5px 10px" data-row="${i}" data-act="load">Carica</button>
+          ${canDel ? `<button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-row="${i}" data-act="del" title="Elimina kit">✕</button>` : ""}
+        </td>
       </tr>`;
     }).join("");
 
-    tbody.querySelectorAll("[data-row]").forEach(btn => {
+    tbody.querySelectorAll("[data-act='load']").forEach(btn => {
       btn.addEventListener("click", () => {
         const kit = rows[parseInt(btn.getAttribute("data-row"))];
         if(kit.source === "cloud") {
@@ -2472,6 +2478,19 @@ tr:last-child td{border-bottom:none}
         }
         showView("builder");
         goToStep(1);
+      });
+    });
+
+    tbody.querySelectorAll("[data-act='del']").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const kit = rows[parseInt(btn.getAttribute("data-row"))];
+        if(!confirm(`Eliminare "${kit.name}"?`)) return;
+        const store = getStore();
+        delete store[kit.name];
+        setStore(store);
+        refreshSaved();
+        toast("Kit eliminato ✓", "ok");
+        renderDashboard();
       });
     });
   };
