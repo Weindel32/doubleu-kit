@@ -2482,7 +2482,7 @@ tr:last-child td{border-bottom:none}
     tbody.innerHTML = rows.map((kit, i) => {
       const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
       const client = kit.payload?.clientName?.trim() || "";
-      const canDel = kit.source === "local";
+      const canDel = true;
       return `<tr>
         <td>
           <div class="dash-kit-name">${kit.name}</div>
@@ -2517,13 +2517,20 @@ tr:last-child td{border-bottom:none}
     });
 
     tbody.querySelectorAll("[data-act='del']").forEach(btn => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const kit = rows[parseInt(btn.getAttribute("data-row"))];
         if(!confirm(`Eliminare "${kit.name}"?`)) return;
-        const store = getStore();
-        delete store[kit.name];
-        setStore(store);
-        refreshSaved();
+        if(kit.source === "cloud" && supabase) {
+          const { error } = await supabase.from("projects").delete().eq("id", kit.cloudId);
+          if(error){ toast("Errore eliminazione cloud: " + error.message, "err"); return; }
+          if(activeCloudId === kit.cloudId) activeCloudId = null;
+          await loadProjectsFromCloud();
+        } else {
+          const store = getStore();
+          delete store[kit.name];
+          setStore(store);
+          refreshSaved();
+        }
         toast("Kit eliminato ✓", "ok");
         renderDashboard();
       });
