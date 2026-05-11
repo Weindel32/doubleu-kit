@@ -1204,23 +1204,6 @@
                 </div>
               </div>
 
-              <div class="drawer" style="margin-top:14px">
-                <div class="drawer-title">Salvataggio progetto</div>
-                <div class="drawer-row">
-                  <div>
-                    <label>Kit salvati</label>
-                    <select id="savedSelect">
-                      <option value="">— Seleziona un progetto —</option>
-                    </select>
-                    <div class="hint">Salvati nel browser (localStorage) e nel cloud Supabase.</div>
-                  </div>
-                  <div class="bottom-group">
-                    <button id="btnSave" class="secondary" type="button">Salva</button>
-                    <button id="btnLoad" class="secondary" type="button">Carica</button>
-                    <button id="btnDelete" class="ghost" type="button">Elimina</button>
-                  </div>
-                </div>
-              </div>
             </div><!-- /bottom-zone card -->
             </div><!-- /step-3 -->
 
@@ -1561,10 +1544,6 @@
 
   const STORE_KEY    = "doubleu_kits_v4";
   const CLOUD_PREFIX = "__cloud__::";
-  const savedSelect  = document.getElementById("savedSelect");
-  const btnSave      = document.getElementById("btnSave");
-  const btnLoad      = document.getElementById("btnLoad");
-  const btnDelete    = document.getElementById("btnDelete");
 
   let activeCloudId  = null;
 
@@ -2785,9 +2764,6 @@ tr:last-child td{border-bottom:none}
     if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
     if(btnPrint) btnPrint.addEventListener("click", printPDF);
 
-    if(btnSave)   btnSave.addEventListener("click",   saveProject);
-    if(btnLoad)   btnLoad.addEventListener("click",   loadProject);
-    if(btnDelete) btnDelete.addEventListener("click", deleteProject);
 
     clientName.addEventListener("input",  updateSidebarKit);
     projectName.addEventListener("input", updateSidebarKit);
