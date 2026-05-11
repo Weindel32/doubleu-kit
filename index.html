@@ -143,6 +143,10 @@
     }
 
     .sb-kit-lbl  { font-size: 9px; font-weight: 700; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 5px; }
+    .sb-kit-lbl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    .sb-kit-lbl-row .sb-kit-lbl { margin-bottom: 0; }
+    .sb-kit-reset { background: none; border: none; cursor: pointer; color: var(--sb-muted); font-size: 13px; padding: 0 2px; line-height: 1; display: none; }
+    .sb-kit-reset:hover { color: var(--sb-text); }
     .sb-kit-name { font-size: 12px; font-weight: 800; color: var(--sb-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sb-kit-sub  { font-size: 11px; color: var(--sb-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -861,7 +865,10 @@
       </nav>
 
       <div class="sb-kit">
-        <div class="sb-kit-lbl">Kit attivo</div>
+        <div class="sb-kit-lbl-row">
+          <div class="sb-kit-lbl">Kit attivo</div>
+          <button class="sb-kit-reset" id="sbKitReset" title="Nuovo preventivo">↺</button>
+        </div>
         <div class="sb-kit-name" id="sbKitName">—</div>
         <div class="sb-kit-sub" id="sbKitSub">Nuovo preventivo</div>
       </div>
@@ -1981,6 +1988,7 @@
     offerStatusBox.textContent = ""; offerStatusBox.style.color = "";
     setBox(kpiMargin,null); setBox(kpiPrice,null);
     setBox(kpiMinPrice,null); setBox(kpiTargetPrice,null); setBox(kpiDeposit,null);
+    updateSidebarKit();
     toast("Nuovo preventivo pronto ✓", "ok");
   };
 
@@ -2212,6 +2220,7 @@ tr:last-child td{border-bottom:none}
     applyVAT.checked  = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
     items = Array.isArray(p.items) && p.items.length ? p.items : [newItem()];
     render();
+    updateSidebarKit();
   };
 
   const loadProjectsFromCloud = async () => {
@@ -2264,13 +2273,15 @@ tr:last-child td{border-bottom:none}
 
   /* ─── Sidebar kit name sync ─── */
   const updateSidebarKit = () => {
-    const sbName = document.getElementById("sbKitName");
-    const sbSub  = document.getElementById("sbKitSub");
+    const sbName  = document.getElementById("sbKitName");
+    const sbSub   = document.getElementById("sbKitSub");
+    const sbReset = document.getElementById("sbKitReset");
     if(!sbName) return;
     const pname = projectName.value.trim();
     const cname = clientName.value.trim();
     sbName.textContent = pname || "—";
     sbSub.textContent  = cname || "Nuovo preventivo";
+    if(sbReset) sbReset.style.display = (pname || cname) ? "inline" : "none";
   };
 
   /* ─── Step navigation ─── */
@@ -2749,6 +2760,8 @@ tr:last-child td{border-bottom:none}
     if(btnReset) btnReset.addEventListener("click", resetAll);
     if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
     if(btnPrint) btnPrint.addEventListener("click", printPDF);
+    const sbKitReset = document.getElementById("sbKitReset");
+    if(sbKitReset) sbKitReset.addEventListener("click", () => { resetAll(); showView("builder"); goToStep(1); });
 
 
     clientName.addEventListener("input",  updateSidebarKit);
