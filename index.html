@@ -95,9 +95,9 @@
     .sb-mark {
       width: 38px; height: 38px;
       border-radius: 11px;
-      background: linear-gradient(135deg, #5C1C2C 0%, #280A14 100%);
+      background: linear-gradient(135deg, #0A4174 0%, #001D39 100%);
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 900; color: #E8D0C0;
+      font-size: 15px; font-weight: 900; color: #FFFFFF;
       flex-shrink: 0;
       box-shadow: 0 4px 14px rgba(0,0,0,.45);
       letter-spacing: -0.5px;
@@ -153,9 +153,9 @@
 
     .sb-avatar {
       width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, #4A1525, #280A10);
+      background: linear-gradient(135deg, #0A4174, #001D39);
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 800; color: #E8C8B8;
+      font-size: 13px; font-weight: 800; color: #FFFFFF;
       flex-shrink: 0;
     }
 
@@ -365,11 +365,11 @@
     button:active { transform: scale(.98); }
 
     button.primary {
-      background: var(--accent); color: #F0E0D0;
-      box-shadow: 0 2px 8px rgba(20,8,16,.25);
+      background: var(--accent); color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(0,29,57,.25);
     }
 
-    button.primary:hover { background: var(--accent-2); box-shadow: 0 4px 14px rgba(20,8,16,.30); }
+    button.primary:hover { background: var(--accent-2); box-shadow: 0 4px 14px rgba(0,29,57,.30); }
 
     button.secondary {
       background: var(--surface);
@@ -477,7 +477,7 @@
     }
 
     .filter-pill.active {
-      background: var(--accent); border-color: var(--accent); color: #F0E0D0;
+      background: var(--accent); border-color: var(--accent); color: #FFFFFF;
     }
 
     /* ─── Article Card ─── */
@@ -492,7 +492,7 @@
 
     .art-card:last-child { margin-bottom: 0; }
     .art-card:hover { box-shadow: var(--shadow-md); }
-    .art-card.is-gift { background: #FFFDF0; border-color: var(--warn-bd); }
+    .art-card.is-gift { background: #FEF3EA; border-color: var(--warn-bd); }
 
     .art-card-main {
       display: grid;
@@ -504,7 +504,7 @@
 
     .art-thumb {
       width: 44px; height: 44px; border-radius: 8px;
-      background: linear-gradient(135deg, #2C1020 0%, #140810 100%);
+      background: linear-gradient(135deg, #0A4174 0%, #001D39 100%);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
@@ -650,7 +650,7 @@
       font-size: 11px; font-weight: 600;
     }
     .dash-badge.local { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
-    .dash-badge.cloud { background: #EDF5FF; color: #2A5DAA; border: 1px solid #B8D4F5; }
+    .dash-badge.cloud { background: #EBF3FA; color: #0A4174; border: 1px solid #C8DFF0; }
     .dash-empty {
       text-align: center; padding: 40px 20px; color: var(--muted);
     }
@@ -1903,7 +1903,7 @@
         offerStatusColor = "#8A1A28";
       } else if(belowTarget){
         offerStatus = `🟡 SOSTENIBILE · Margine ${(realMargin*100).toFixed(1)}% (target ${(m*100).toFixed(0)}%)`;
-        offerStatusColor = "#8A6010";
+        offerStatusColor = "#E87C2B";
       } else {
         offerStatus = `🟢 OK · Margine ${(realMargin*100).toFixed(1)}%`;
         offerStatusColor = "#1A7A45";
@@ -2074,14 +2074,14 @@
     const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0);
     const itemsRows   = items.map(it => {
       const sub     = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
-      const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(200,150,0,.12);border:1px solid rgba(200,150,0,.35);color:#886600;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
-      return `<tr${it.isGift ? ' style="background:rgba(255,180,0,.04)"' : ''}>
+      const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
+      return `<tr${it.isGift ? ' style="background:rgba(232,124,43,.04)"' : ''}>
         <td>${it.article}${giftTag}</td>
         <td>${it.line}</td>
         <td>${eur(toNum(it.base))}</td>
         <td>${eur(toNum(it.extra))}</td>
         <td style="font-weight:700">${toNum(it.qty)}</td>
-        <td style="font-weight:800;color:${it.isGift ? '#886600' : '#1A5C7A'}">${sub > 0 ? eur(sub) : "—"}</td>
+        <td style="font-weight:800;color:${it.isGift ? '#E87C2B' : '#0A4174'}">${sub > 0 ? eur(sub) : "—"}</td>
       </tr>`;
     }).join("");
 
@@ -2097,34 +2097,34 @@
 <title>DOUBLEU — ${projectName.value || "Preventivo"}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;color:#18100C;background:#fff;padding:28px;font-size:13px;line-height:1.4}
-.header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1E0A10}
-.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#5C1C2C,#280A14);flex-shrink:0}
-.header h1{font-size:16px;font-weight:900;letter-spacing:-.2px;color:#18100C}
-.header .sub{font-size:10px;color:#7A6860;margin-top:2px}
-.meta{margin-left:auto;text-align:right;font-size:11px;color:#7A6860;line-height:1.7}
-.meta strong{color:#18100C;font-weight:800}
+body{font-family:system-ui,-apple-system,sans-serif;color:#001D39;background:#fff;padding:28px;font-size:13px;line-height:1.4}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #0A4174}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0A4174,#001D39);flex-shrink:0}
+.header h1{font-size:16px;font-weight:900;letter-spacing:-.2px;color:#001D39}
+.header .sub{font-size:10px;color:#49769F;margin-top:2px}
+.meta{margin-left:auto;text-align:right;font-size:11px;color:#49769F;line-height:1.7}
+.meta strong{color:#001D39;font-weight:800}
 .sec{margin-bottom:18px}
-.sec-title{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#AE9E96;font-weight:700;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E0D8D0}
+.sec-title{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#7BBDE8;font-weight:700;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #C8DFF0}
 .sbar{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:9px;margin-bottom:18px;font-size:12px;font-weight:800}
 .sbar.good{background:#EDF7F2;border:1px solid #A8D8BB;color:#1A7A45}
-.sbar.warn{background:#FDF6E8;border:1px solid #DFC070;color:#8A6010}
+.sbar.warn{background:#FEF3EA;border:1px solid #F4BF8A;color:#E87C2B}
 .sbar.bad {background:#FDF0F2;border:1px solid #E0A8B0;color:#8A1A28}
 .sdot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
-.sbar.good .sdot{background:#1A7A45}.sbar.warn .sdot{background:#8A6010}.sbar.bad .sdot{background:#8A1A28}
+.sbar.good .sdot{background:#1A7A45}.sbar.warn .sdot{background:#E87C2B}.sbar.bad .sdot{background:#8A1A28}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
-.kpi{background:#F6F2EE;border:1px solid #E0D8D0;border-radius:10px;padding:11px 12px;border-left:3px solid #E0D8D0}
+.kpi{background:#F0F7FC;border:1px solid #C8DFF0;border-radius:10px;padding:11px 12px;border-left:3px solid #C8DFF0}
 .kpi.good{border-left-color:#1A7A45;background:#EDF7F2}
-.kpi.warn{border-left-color:#8A6010;background:#FDF6E8}
+.kpi.warn{border-left-color:#E87C2B;background:#FEF3EA}
 .kpi.bad {border-left-color:#8A1A28;background:#FDF0F2}
-.kpi .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#AE9E96;font-weight:700}
-.kpi .val{font-size:18px;font-weight:900;letter-spacing:-.2px;margin-top:3px;color:#18100C}
-.kpi.good .val{color:#1A7A45}.kpi.warn .val{color:#8A6010}.kpi.bad .val{color:#8A1A28}
-.kpi .note{font-size:9px;color:#AE9E96;margin-top:3px}
+.kpi .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7BBDE8;font-weight:700}
+.kpi .val{font-size:18px;font-weight:900;letter-spacing:-.2px;margin-top:3px;color:#001D39}
+.kpi.good .val{color:#1A7A45}.kpi.warn .val{color:#E87C2B}.kpi.bad .val{color:#8A1A28}
+.kpi .note{font-size:9px;color:#7BBDE8;margin-top:3px}
 table{width:100%;border-collapse:collapse}
-th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#AE9E96;font-weight:700;text-align:left;padding:5px 8px;border-bottom:1.5px solid #E0D8D0}
-td{padding:7px 8px;font-size:12px;border-bottom:1px solid #F0EBE5;vertical-align:middle}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7BBDE8;font-weight:700;text-align:left;padding:5px 8px;border-bottom:1.5px solid #C8DFF0}
+td{padding:7px 8px;font-size:12px;border-bottom:1px solid #EBF3FA;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 .pills{display:flex;gap:7px;flex-wrap:wrap}
 .pill{padding:4px 11px;border-radius:999px;background:#F6F2EE;border:1px solid #E0D8D0;font-size:11px;font-weight:700;color:#18100C}
@@ -2183,8 +2183,8 @@ tr:last-child td{border-bottom:none}
   <div class="sec-title">Riepilogo ordine</div>
   <div class="grid3">
     <div class="kpi"><div class="lbl">Costo totale reale</div><div class="val">${g("kTotalCost")}</div><div class="note">Produzione completa (incl. omaggi)</div></div>
-    <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #8A6010;background:#FDF6E8':''}"><div class="lbl">Costo fatturato</div><div class="val">${eur(paidCostPDF)}</div><div class="note">Senza omaggi</div></div>
-    <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #8A6010;background:#FDF6E8':''}"><div class="lbl">Costo omaggi</div><div class="val" style="${giftCostPDF>0?'color:#8A6010':''}">${giftCostPDF>0?eur(giftCostPDF):"—"}</div><div class="note">Assorbiti nel margine</div></div>
+    <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #E87C2B;background:#FEF3EA':''}"><div class="lbl">Costo fatturato</div><div class="val">${eur(paidCostPDF)}</div><div class="note">Senza omaggi</div></div>
+    <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #E87C2B;background:#FEF3EA':''}"><div class="lbl">Costo omaggi</div><div class="val" style="${giftCostPDF>0?'color:#E87C2B':''}">${giftCostPDF>0?eur(giftCostPDF):"—"}</div><div class="note">Assorbiti nel margine</div></div>
     <div class="kpi"><div class="lbl">Totale fatturato</div><div class="val">${g("kGross")}</div></div>
     <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
     <div class="kpi"><div class="lbl">Utile totale</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
