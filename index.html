@@ -1553,6 +1553,8 @@
   const btnLoad      = document.getElementById("btnLoad");
   const btnDelete    = document.getElementById("btnDelete");
 
+  let activeCloudId  = null;
+
   const getStore = () => {
     try {
       const raw = localStorage.getItem(STORE_KEY);
@@ -1995,6 +1997,7 @@
   };
 
   const resetAll = () => {
+    activeCloudId = null;
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
     margin.value      = "0.50"; vat.value = "22"; discount.value = "0";
     offerPrice.value  = ""; useOffer.checked = false;
@@ -2254,11 +2257,22 @@ tr:last-child td{border-bottom:none}
   const saveProjectToCloud = async (projectPayload, projectLabel) => {
     if(!supabase) return;
     try {
-      const { error } = await supabase
-        .from("projects")
-        .insert([{ name: projectLabel || projectPayload.projectName || "Progetto", data: projectPayload }]);
-      if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); }
-      else { await loadProjectsFromCloud(); }
+      const label = projectLabel || projectPayload.projectName || "Progetto";
+      if(activeCloudId) {
+        const { error } = await supabase
+          .from("projects")
+          .update({ name: label, data: projectPayload })
+          .eq("id", activeCloudId);
+        if(error){ console.error("Cloud update error:", error); toast("Errore cloud: " + error.message, "err"); }
+        else { await loadProjectsFromCloud(); }
+      } else {
+        const { data, error } = await supabase
+          .from("projects")
+          .insert([{ name: label, data: projectPayload }])
+          .select("id");
+        if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); }
+        else { if(data?.[0]?.id) activeCloudId = data[0].id; await loadProjectsFromCloud(); }
+      }
     } catch(err) { console.error("Cloud save exception:", err); toast("Errore cloud: " + err.message, "err"); }
   };
 
@@ -2269,10 +2283,6 @@ tr:last-child td{border-bottom:none}
     const date    = new Date().toLocaleDateString("it-IT");
     const name    = `${client || "Cliente"} – ${project} – ${date}`;
     const p       = payload();
-    const store   = getStore();
-    store[name]   = { savedAt: Date.now(), payload: p };
-    setStore(store);
-    refreshSaved();
     await saveProjectToCloud(p, name);
     toast("Progetto salvato ✓", "ok");
   };
@@ -2495,8 +2505,9 @@ tr:last-child td{border-bottom:none}
         const kit = rows[parseInt(btn.getAttribute("data-row"))];
         if(kit.source === "cloud") {
           const proj = cloudProjects.find(p => p.id === kit.cloudId);
-          if(proj) { applyPayload(proj.data); toast("Kit cloud caricato ☁", "ok"); }
+          if(proj) { activeCloudId = proj.id; applyPayload(proj.data); toast("Kit cloud caricato ☁", "ok"); }
         } else {
+          activeCloudId = null;
           applyPayload(kit.payload);
           toast("Kit caricato ✓", "ok");
         }
