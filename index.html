@@ -640,6 +640,8 @@
       padding: 11px 12px; border-bottom: 1px solid var(--border);
       font-size: 13px; vertical-align: middle;
     }
+    .dash-table td:not(:first-child) { white-space: nowrap; }
+    .dash-table td:first-child { width: 100%; }
     .dash-table tr:last-child td { border-bottom: none; }
     .dash-table tr:hover td { background: var(--surface-2); }
     .dash-kit-name { font-weight: 700; color: var(--text); }
@@ -2479,9 +2481,11 @@ tr:last-child td{border-bottom:none}
         <td>${kit.itemCount}</td>
         <td>${date}</td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud" ? "☁ Cloud" : "💾 Locale"}</span></td>
-        <td style="display:flex;gap:6px;align-items:center">
-          <button class="secondary" style="font-size:12px;padding:5px 10px" data-row="${i}" data-act="load">Carica</button>
-          ${canDel ? `<button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-row="${i}" data-act="del" title="Elimina kit">✕</button>` : ""}
+        <td>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="secondary" style="font-size:12px;padding:5px 10px" data-row="${i}" data-act="load">Carica</button>
+            ${canDel ? `<button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-row="${i}" data-act="del" title="Elimina kit">✕</button>` : ""}
+          </div>
         </td>
       </tr>`;
     }).join("");
@@ -2603,6 +2607,13 @@ tr:last-child td{border-bottom:none}
   /* ─── KPI view render ─── */
   const renderKpiView = () => {
     const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+    const copyState = (srcId, dstId) => {
+      const src = document.getElementById(srcId);
+      const dst = document.getElementById(dstId);
+      if(!src || !dst) return;
+      dst.classList.remove("good","warn","bad");
+      ["good","warn","bad"].forEach(s => { if(src.classList.contains(s)) dst.classList.add(s); });
+    };
     set("kvMargin",      domVal("kRealMargin"));
     set("kvMarginNote",  domVal("kTarget"));
     set("kvPrice",       domVal("kPriceAthlete"));
@@ -2613,6 +2624,9 @@ tr:last-child td{border-bottom:none}
     const q = toNum(qtyEst.value) || 1;
     const m = parseFloat(margin.value) * 100 || 50;
     const realPct = parseFloat(domVal("kRealMargin")) || 0;
+
+    copyState("kpiMargin", "kpiV_margin");
+    copyState("kpiPrice",  "kpiV_price");
 
     const barsEl = document.getElementById("kpiVBars");
     if(barsEl) barsEl.innerHTML = [
