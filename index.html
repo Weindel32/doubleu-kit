@@ -652,7 +652,9 @@
       border-right: 1px solid var(--border);
       border-radius: 0 10px 10px 0;
     }
-    .dash-table td:not(:first-child) { white-space: nowrap; }
+    .dash-table td:not(:first-child) { white-space: nowrap; padding-left: 32px; padding-right: 32px; }
+    .dash-table td:nth-child(2) { text-align: center; }
+    .dash-table th:nth-child(2) { text-align: center; }
     .dash-table tr:hover td { background: var(--surface-2); }
     .dash-kit-name { font-weight: 700; font-size: 15px; color: var(--text); }
     .dash-kit-sub  { font-size: 12px; color: var(--muted); margin-top: 5px; }
