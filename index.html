@@ -926,14 +926,14 @@
               <div class="note">In tutti i kit</div>
             </div>
             <div class="kpi dk-orange" id="dkMarginKpi">
-              <div class="lbl">Margine kit attivo</div>
+              <div class="lbl">Margine medio</div>
               <div class="val" id="dkMargin">—</div>
-              <div class="note">Margine reale corrente</div>
+              <div class="note">Media su tutti i kit</div>
             </div>
             <div class="kpi dk-light">
-              <div class="lbl">Costo/atleta kit attivo</div>
+              <div class="lbl">Costo/atleta medio</div>
               <div class="val" id="dkCost">—</div>
-              <div class="note">Media su quantità stimata</div>
+              <div class="note">Media su tutti i kit</div>
             </div>
           </div>
 
@@ -2370,6 +2370,35 @@ tr:last-child td{border-bottom:none}
     if(renderFns[view]) renderFns[view]();
   };
 
+  /* ─── Calcola margine reale e costo/atleta da un payload salvato ─── */
+  const calcKitStats = (p) => {
+    if(!p || !Array.isArray(p.items) || !p.items.length) return null;
+    const qtyBase  = toNum(p.qtyEst) > 0 ? toNum(p.qtyEst) : 1;
+    const vatRate  = toNum(p.vat ?? 22) / 100;
+    const vatOn    = p.applyVAT !== false;
+    let totalCost  = 0;
+    p.items.forEach(it => {
+      totalCost += (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
+    });
+    if(totalCost <= 0) return null;
+    let invoiceTotal;
+    if(p.useOffer && toNum(p.offerPrice) > 0) {
+      let offer = toNum(p.offerPrice);
+      if(vatOn && !p.priceIncludesVAT) offer = offer * (1 + vatRate);
+      invoiceTotal = offer * qtyBase;
+    } else {
+      const m = parseFloat(p.margin ?? 0.5);
+      const revenueNetTarget = totalCost / (1 - m);
+      invoiceTotal = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
+    }
+    const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
+    const profit     = revenueNet - totalCost;
+    return {
+      margin:         revenueNet > 0 ? profit / revenueNet : 0,
+      costPerAthlete: totalCost / qtyBase,
+    };
+  };
+
   /* ─── Dashboard render ─── */
   const renderDashboard = () => {
     const store     = getStore();
@@ -2403,10 +2432,17 @@ tr:last-child td{border-bottom:none}
     const dkCost  = document.getElementById("dkCost");
     if(dkKits)  dkKits.textContent  = rows.length;
     if(dkItems) dkItems.textContent = rows.reduce((s, k) => s + k.itemCount, 0);
-    const liveMargin = document.getElementById("kRealMargin")?.textContent;
-    const liveCost   = document.getElementById("kCostAthlete")?.textContent;
-    if(dkMargin && liveMargin && liveMargin !== "—") dkMargin.textContent = liveMargin;
-    if(dkCost   && liveCost   && liveCost   !== "—") dkCost.textContent   = liveCost;
+
+    const stats = rows.map(k => calcKitStats(k.payload)).filter(Boolean);
+    if(stats.length) {
+      const avgMargin = stats.reduce((s, v) => s + v.margin, 0) / stats.length;
+      const avgCost   = stats.reduce((s, v) => s + v.costPerAthlete, 0) / stats.length;
+      if(dkMargin) dkMargin.textContent = (avgMargin * 100).toFixed(1) + "%";
+      if(dkCost)   dkCost.textContent   = eur(avgCost);
+    } else {
+      if(dkMargin) dkMargin.textContent = "—";
+      if(dkCost)   dkCost.textContent   = "—";
+    }
 
     // Table
     const empty    = document.getElementById("dashEmpty");
