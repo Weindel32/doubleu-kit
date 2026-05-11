@@ -411,6 +411,26 @@
     .kpi.warn { border-color: var(--warn-bd); background: var(--warn-bg); }
     .kpi.bad  { border-color: var(--bad-bd);  background: var(--bad-bg);  }
 
+    .kpi.dk-navy   { background: #0A4174; border-color: #001D39; }
+    .kpi.dk-mid    { background: #49769F; border-color: #0A4174; }
+    .kpi.dk-orange { background: #E87C2B; border-color: #C45E10; }
+    .kpi.dk-light  { background: #7BBDE8; border-color: #49769F; }
+
+    .kpi.dk-navy .lbl,
+    .kpi.dk-mid .lbl,
+    .kpi.dk-orange .lbl { color: rgba(255,255,255,.75); }
+    .kpi.dk-light .lbl  { color: rgba(0,29,57,.65); }
+
+    .kpi.dk-navy .val,
+    .kpi.dk-mid .val,
+    .kpi.dk-orange .val { color: #FFFFFF; }
+    .kpi.dk-light .val  { color: #001D39; }
+
+    .kpi.dk-navy .note,
+    .kpi.dk-mid .note,
+    .kpi.dk-orange .note { color: rgba(255,255,255,.6); }
+    .kpi.dk-light .note  { color: rgba(0,29,57,.55); }
+
     .kpi .lbl {
       font-size: 10px; font-weight: 700; color: var(--muted);
       text-transform: uppercase; letter-spacing: .06em;
@@ -880,22 +900,22 @@
           </div>
 
           <div class="dash-kpis">
-            <div class="kpi">
+            <div class="kpi dk-navy">
               <div class="lbl">Kit salvati</div>
               <div class="val" id="dkKits">—</div>
               <div class="note">Totale preventivi</div>
             </div>
-            <div class="kpi">
+            <div class="kpi dk-mid">
               <div class="lbl">Articoli totali</div>
               <div class="val" id="dkItems">—</div>
               <div class="note">In tutti i kit</div>
             </div>
-            <div class="kpi" id="dkMarginKpi">
+            <div class="kpi dk-orange" id="dkMarginKpi">
               <div class="lbl">Margine kit attivo</div>
               <div class="val" id="dkMargin">—</div>
               <div class="note">Margine reale corrente</div>
             </div>
-            <div class="kpi">
+            <div class="kpi dk-light">
               <div class="lbl">Costo/atleta kit attivo</div>
               <div class="val" id="dkCost">—</div>
               <div class="note">Media su quantità stimata</div>
