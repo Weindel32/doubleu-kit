@@ -1559,25 +1559,6 @@
 
   let cloudProjects = [];
 
-  const refreshSaved = () => {
-    const store = getStore();
-    const localKeys = Object.keys(store).sort((a, b) => a.localeCompare(b));
-    const localNames = new Set(localKeys);
-
-    const localOptions = localKeys.map(k =>
-      `<option value="${k}">${k}</option>`
-    ).join("");
-
-    const cloudOptions = cloudProjects
-      .filter(p => !localNames.has(p.name))
-      .map(p =>
-        `<option value="${CLOUD_PREFIX}${p.id}">☁ ${p.name || "Progetto cloud"}</option>`
-      ).join("");
-
-    savedSelect.innerHTML =
-      '<option value="">— Seleziona un progetto —</option>' +
-      localOptions + cloudOptions;
-  };
 
   let items = [];
 
@@ -2242,7 +2223,6 @@ tr:last-child td{border-bottom:none}
         .order("created_at", { ascending: false });
       if(error){ console.error("Cloud load error:", error); return; }
       cloudProjects = Array.isArray(data) ? data : [];
-      refreshSaved();
     } catch(err) { console.error("Cloud load exception:", err); }
   };
 
@@ -2279,35 +2259,6 @@ tr:last-child td{border-bottom:none}
     toast("Progetto salvato ✓", "ok");
   };
 
-  const loadProject = () => {
-    const key = savedSelect.value;
-    if(!key){ toast("Seleziona un progetto da caricare", "warn"); return; }
-    if(key.startsWith(CLOUD_PREFIX)){
-      const id      = key.replace(CLOUD_PREFIX, "");
-      const project = cloudProjects.find(p => p.id === id);
-      if(!project){ toast("Progetto cloud non trovato", "err"); return; }
-      applyPayload(project.data);
-      toast("Progetto cloud caricato ☁", "ok");
-      return;
-    }
-    const store = getStore();
-    if(!store[key]){ toast("Progetto non trovato", "err"); return; }
-    applyPayload(store[key].payload);
-    toast("Progetto caricato ✓", "ok");
-  };
-
-  const deleteProject = () => {
-    const key = savedSelect.value;
-    if(!key){ toast("Seleziona un progetto da eliminare", "warn"); return; }
-    if(key.startsWith(CLOUD_PREFIX)){ toast("Eliminazione cloud: rimuovi direttamente da Supabase", "warn"); return; }
-    const store = getStore();
-    if(!store[key]){ toast("Progetto non trovato", "err"); return; }
-    if(!confirm(`Eliminare "${key}"?`)) return;
-    delete store[key];
-    setStore(store);
-    refreshSaved();
-    toast("Progetto eliminato", "ok");
-  };
 
   const bindCalc = (el, ev="input") => el.addEventListener(ev, calc);
 
@@ -2521,7 +2472,6 @@ tr:last-child td{border-bottom:none}
           const store = getStore();
           delete store[kit.name];
           setStore(store);
-          refreshSaved();
         }
         toast("Kit eliminato ✓", "ok");
         renderDashboard();
@@ -2787,7 +2737,6 @@ tr:last-child td{border-bottom:none}
 
     items = [newItem()];
     render();
-    refreshSaved();
     await loadProjectsFromCloud();
 
     /* Init step UI */
