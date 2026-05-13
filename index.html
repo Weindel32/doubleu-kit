@@ -2291,16 +2291,17 @@ tr:last-child td{border-bottom:none}
   };
 
   const loadProjectsFromCloud = async () => {
-    if(!supabase){ return; }
+    if(!supabase){ toast("Supabase non disponibile", "err", 6000); return; }
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if(!session) { return; }
+      if(!session) { toast("Sessione scaduta — rieffettua il login", "warn", 6000); return; }
       const { data, error } = await supabase
         .from("projects")
         .select("id, name, data, created_at")
         .order("created_at", { ascending: false });
-      if(error){ toast("Errore cloud: " + error.message, "err", 6000); return; }
+      if(error){ toast("Errore query: " + error.message, "err", 6000); return; }
       cloudProjects = Array.isArray(data) ? data : [];
+      if(cloudProjects.length === 0) toast("Nessun progetto trovato nel cloud", "warn", 4000);
     } catch(err) { toast("Errore cloud: " + err.message, "err", 6000); }
   };
 
