@@ -1038,7 +1038,7 @@
         </div><!-- /dashboardView -->
 
         <!-- ── Builder View ── -->
-        <div id="builderView">
+        <div id="builderView" style="display:none">
 
         <!-- Step Indicator -->
         <div class="step-bar" id="stepBar">
@@ -2848,10 +2848,11 @@ tr:last-child td{border-bottom:none}
 
       items = [newItem()];
       render();
-      await loadProjectsFromCloud();
       updateStepUI();
       showView("dashboard");
       setJS(true, "JS OK");
+      await loadProjectsFromCloud();
+      renderDashboard();
     } catch(err) {
       console.error(err);
       setJS(false, "ERRORE JS");
