@@ -2932,9 +2932,11 @@ tr:last-child td{border-bottom:none}
 
   const btnLogout = document.getElementById("btnLogout");
   if(btnLogout) {
-    btnLogout.addEventListener("click", async () => {
+    btnLogout.addEventListener("click", async (e) => {
+      e.preventDefault();
       if(!supabase) return;
       await supabase.auth.signOut();
+      window.location.reload();
     });
   }
 
