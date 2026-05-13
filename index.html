@@ -775,13 +775,75 @@
       .art-pricing { flex-wrap: wrap; }
       .export-grid { grid-template-columns: 1fr; }
     }
+
+    /* ─── Auth Overlay ─── */
+    #authOverlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card {
+      width: 100%; max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-lg);
+    }
+    .auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    .auth-title { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -.4px; margin-bottom: 24px; }
+    .auth-field { margin-bottom: 16px; }
+    .auth-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+    .auth-field input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--input-bd); border-radius: var(--r-sm);
+      background: var(--input-bg); color: var(--text); font-size: 14px; outline: none;
+      font-family: inherit;
+    }
+    .auth-field input:focus { border-color: var(--input-focus); box-shadow: 0 0 0 3px rgba(10,65,116,.1); }
+    .auth-error {
+      background: var(--bad-bg); border: 1px solid var(--bad-bd);
+      color: var(--bad); border-radius: var(--r-sm);
+      padding: 10px 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
+    }
+    .sb-logout {
+      background: none; border: none; cursor: pointer;
+      color: var(--sb-muted); font-size: 18px; padding: 2px 4px; line-height: 1; flex-shrink: 0;
+      transition: color .15s;
+    }
+    .sb-logout:hover { color: var(--sb-text); }
   </style>
 </head>
 
 <body>
   <div id="toastWrap"></div>
 
-  <div class="app-shell">
+  <div id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="sb-mark">W</div>
+        <div>
+          <div class="sb-brand">doubleu kit</div>
+          <div class="sb-tag">Kit Builder</div>
+        </div>
+      </div>
+      <h2 class="auth-title">Accedi al tuo account</h2>
+      <form id="loginForm">
+        <div class="auth-field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="nome@esempio.com" required autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div id="loginError" style="display:none" class="auth-error">Credenziali non valide.</div>
+        <button type="submit" id="loginBtn" class="primary" style="width:100%;margin-top:4px">Accedi</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-shell" style="display:none">
 
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
@@ -874,11 +936,12 @@
       </div>
 
       <div class="sb-user">
-        <div class="sb-avatar">W</div>
-        <div>
-          <div class="sb-uname">Weindel</div>
-          <div class="sb-urole">Club Admin</div>
+        <div class="sb-avatar" id="sbAvatar">W</div>
+        <div style="flex:1;min-width:0">
+          <div class="sb-uname" id="sbUname">—</div>
+          <div class="sb-urole" id="sbUrole">Accesso in corso...</div>
         </div>
+        <button id="btnLogout" class="sb-logout" title="Esci">⏏</button>
       </div>
     </aside>
 
@@ -2700,7 +2763,7 @@ tr:last-child td{border-bottom:none}
     }
   };
 
-  /* ─── Nav listeners: registered outside try block so they always work ─── */
+  /* ─── Nav listeners ─── */
   document.querySelectorAll(".nav-item[data-view]").forEach(el => {
     el.addEventListener("click", (e) => {
       e.preventDefault();
@@ -2712,13 +2775,11 @@ tr:last-child td{border-bottom:none}
     try { resetAll(); showView("builder"); goToStep(1); } catch(err) { console.error(err); }
   });
 
-  /* "Go to builder" buttons in Prezzi / KPI views */
   ["btnPrezziGoBuilder","btnKpiGoBuilder"].forEach(id => {
     const btn = document.getElementById(id);
     if(btn) btn.addEventListener("click", () => showView("builder"));
   });
 
-  /* Esportazioni buttons */
   const _btnExportPDF = document.getElementById("btnExportPDF");
   if(_btnExportPDF) _btnExportPDF.addEventListener("click", () => printPDF());
 
@@ -2743,62 +2804,134 @@ tr:last-child td{border-bottom:none}
     toast("CSV scaricato ✓","ok");
   });
 
-  try {
-    btnAddItem.addEventListener("click",  addItem);
-    btnApplyQty.addEventListener("click", applyQtyToRows);
+  /* ─── App init (called after auth confirmed) ─── */
+  const initApp = async () => {
+    try {
+      btnAddItem.addEventListener("click",  addItem);
+      btnApplyQty.addEventListener("click", applyQtyToRows);
 
-    bindCalc(qtyEst);
-    bindCalc(margin, "change");
-    bindCalc(discount);
-    bindCalc(offerPrice);
-    bindCalc(useOffer,          "change");
-    bindCalc(priceIncludesVAT,  "change");
-    bindCalc(depositPct);
-    bindCalc(bufferPct);
-    bindCalc(applyVAT,          "change");
+      bindCalc(qtyEst);
+      bindCalc(margin, "change");
+      bindCalc(discount);
+      bindCalc(offerPrice);
+      bindCalc(useOffer,          "change");
+      bindCalc(priceIncludesVAT,  "change");
+      bindCalc(depositPct);
+      bindCalc(bufferPct);
+      bindCalc(applyVAT,          "change");
 
-    if(btnReset) btnReset.addEventListener("click", resetAll);
-    if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
-    if(btnPrint) btnPrint.addEventListener("click", printPDF);
-    const sbKitReset = document.getElementById("sbKitReset");
-    if(sbKitReset) sbKitReset.addEventListener("click", () => { resetAll(); showView("builder"); goToStep(1); });
+      if(btnReset) btnReset.addEventListener("click", resetAll);
+      if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
+      if(btnPrint) btnPrint.addEventListener("click", printPDF);
+      const sbKitReset = document.getElementById("sbKitReset");
+      if(sbKitReset) sbKitReset.addEventListener("click", () => { resetAll(); showView("builder"); goToStep(1); });
 
+      clientName.addEventListener("input",  updateSidebarKit);
+      projectName.addEventListener("input", updateSidebarKit);
 
-    clientName.addEventListener("input",  updateSidebarKit);
-    projectName.addEventListener("input", updateSidebarKit);
+      const dateEl = document.getElementById("topbarDate");
+      if(dateEl) dateEl.textContent = new Date().toLocaleDateString("it-IT", { day:"numeric", month:"long", year:"numeric" });
 
-    /* Topbar date */
-    const dateEl = document.getElementById("topbarDate");
-    if(dateEl) dateEl.textContent = new Date().toLocaleDateString("it-IT", { day:"numeric", month:"long", year:"numeric" });
+      document.querySelectorAll(".step-item[data-step]").forEach(el => {
+        el.addEventListener("click", () => goToStep(parseInt(el.getAttribute("data-step"))));
+      });
 
-    /* Step bar clicks */
-    document.querySelectorAll(".step-item[data-step]").forEach(el => {
-      el.addEventListener("click", () => goToStep(parseInt(el.getAttribute("data-step"))));
+      const _btnPrev = document.getElementById("btnPrev");
+      if(_btnPrev) _btnPrev.addEventListener("click", () => goToStep(currentStep - 1));
+
+      const _btnResetStep = document.getElementById("btnResetStep");
+      if(_btnResetStep) _btnResetStep.addEventListener("click", () => { resetAll(); goToStep(1); });
+
+      items = [newItem()];
+      render();
+      await loadProjectsFromCloud();
+      updateStepUI();
+      showView("dashboard");
+      setJS(true, "JS OK");
+    } catch(err) {
+      console.error(err);
+      setJS(false, "ERRORE JS");
+      alert("Errore JS: controlla che hai incollato TUTTO il file index.html.");
+    }
+  };
+
+  /* ─── Auth ─── */
+  const authOverlay = document.getElementById("authOverlay");
+  const appShell    = document.querySelector(".app-shell");
+  const loginForm   = document.getElementById("loginForm");
+  const loginEmail  = document.getElementById("loginEmail");
+  const loginPass   = document.getElementById("loginPassword");
+  const loginError  = document.getElementById("loginError");
+  const loginBtn    = document.getElementById("loginBtn");
+
+  const showAuthOverlay = () => {
+    if(authOverlay) authOverlay.style.display = "flex";
+    if(appShell)    appShell.style.display    = "none";
+  };
+  const hideAuthOverlay = () => {
+    if(authOverlay) authOverlay.style.display = "none";
+    if(appShell)    appShell.style.display    = "";
+  };
+
+  const updateSidebarUser = (user) => {
+    const email    = user?.email || "—";
+    const initials = email.slice(0, 2).toUpperCase();
+    const sbAvatar = document.getElementById("sbAvatar");
+    const sbUname  = document.getElementById("sbUname");
+    const sbUrole  = document.getElementById("sbUrole");
+    if(sbAvatar) sbAvatar.textContent = initials;
+    if(sbUname)  sbUname.textContent  = email;
+    if(sbUrole)  sbUrole.textContent  = "Utente autenticato";
+  };
+
+  let appInited = false;
+
+  if(supabase) {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if(session) {
+        hideAuthOverlay();
+        updateSidebarUser(session.user);
+        if(!appInited) {
+          appInited = true;
+          await initApp();
+        } else {
+          await loadProjectsFromCloud();
+          renderDashboard();
+        }
+      } else {
+        showAuthOverlay();
+      }
     });
+  } else {
+    hideAuthOverlay();
+    await initApp();
+  }
 
-    /* Prev button */
-    const _btnPrev = document.getElementById("btnPrev");
-    if(_btnPrev) _btnPrev.addEventListener("click", () => goToStep(currentStep - 1));
+  if(loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if(!supabase) return;
+      loginBtn.disabled    = true;
+      loginBtn.textContent = "Accesso in corso...";
+      if(loginError) loginError.style.display = "none";
+      const { error } = await supabase.auth.signInWithPassword({
+        email:    loginEmail.value.trim(),
+        password: loginPass.value,
+      });
+      if(error) {
+        if(loginError) { loginError.style.display = ""; }
+        loginBtn.disabled    = false;
+        loginBtn.textContent = "Accedi";
+      }
+    });
+  }
 
-    /* Reset step button */
-    const _btnResetStep = document.getElementById("btnResetStep");
-    if(_btnResetStep) _btnResetStep.addEventListener("click", () => { resetAll(); goToStep(1); });
-
-    items = [newItem()];
-    render();
-    await loadProjectsFromCloud();
-
-    /* Init step UI */
-    updateStepUI();
-
-    /* Start on Dashboard */
-    showView("dashboard");
-
-    setJS(true, "JS OK");
-  } catch(err) {
-    console.error(err);
-    setJS(false, "ERRORE JS");
-    alert("Errore JS: controlla che hai incollato TUTTO il file index.html.");
+  const btnLogout = document.getElementById("btnLogout");
+  if(btnLogout) {
+    btnLogout.addEventListener("click", async () => {
+      if(!supabase) return;
+      await supabase.auth.signOut();
+    });
   }
 
 })();
