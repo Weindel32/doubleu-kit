@@ -111,6 +111,7 @@
       padding: 10px 8px;
       overflow-y: auto;
       display: flex; flex-direction: column; gap: 1px;
+      min-height: 0;
     }
 
     .nav-item {
@@ -806,12 +807,6 @@
       color: var(--bad); border-radius: var(--r-sm);
       padding: 10px 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
     }
-    .sb-logout {
-      background: none; border: none; cursor: pointer;
-      color: var(--sb-muted); font-size: 18px; padding: 2px 4px; line-height: 1; flex-shrink: 0;
-      transition: color .15s;
-    }
-    .sb-logout:hover { color: var(--sb-text); }
   </style>
 </head>
 
@@ -924,6 +919,16 @@
           Impostazioni
         </a>
 
+        <div style="flex:1"></div>
+
+        <a class="nav-item" href="javascript:void(0)" id="btnLogout" style="color:var(--sb-muted);margin-top:4px">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M8 10h8M13 7l3 3-3 3"/>
+            <path d="M12 4H5a1 1 0 00-1 1v10a1 1 0 001 1h7"/>
+          </svg>
+          Esci
+        </a>
+
       </nav>
 
       <div class="sb-kit">
@@ -937,11 +942,10 @@
 
       <div class="sb-user">
         <div class="sb-avatar" id="sbAvatar">W</div>
-        <div style="flex:1;min-width:0">
+        <div style="min-width:0">
           <div class="sb-uname" id="sbUname">—</div>
           <div class="sb-urole" id="sbUrole">Accesso in corso...</div>
         </div>
-        <button id="btnLogout" class="sb-logout" title="Esci">⏏</button>
       </div>
     </aside>
 
