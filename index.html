@@ -2291,18 +2291,21 @@ tr:last-child td{border-bottom:none}
   };
 
   const loadProjectsFromCloud = async () => {
-    if(!supabase){ toast("Supabase non disponibile", "err", 6000); return; }
+    if(!supabase){ return; }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if(!session) { toast("Sessione scaduta — rieffettua il login", "warn", 6000); return; }
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, name, data, created_at")
-        .order("created_at", { ascending: false });
-      if(error){ toast("Errore query: " + error.message, "err", 6000); return; }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/projects?select=id,name,data,created_at&order=created_at.desc`, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      if(!res.ok) { const e = await res.json(); toast("Errore API: " + (e?.message || res.status), "err", 8000); return; }
+      const data = await res.json();
       cloudProjects = Array.isArray(data) ? data : [];
-      if(cloudProjects.length === 0) toast("Nessun progetto trovato nel cloud", "warn", 4000);
-    } catch(err) { toast("Errore cloud: " + err.message, "err", 6000); }
+    } catch(err) { toast("Errore rete: " + err.message, "err", 6000); }
   };
 
   const saveProjectToCloud = async (projectPayload, projectLabel) => {
