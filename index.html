@@ -2615,15 +2615,17 @@ tr:last-child td{border-bottom:none}
         if(errorEl)   errorEl.style.display   = "";
         if(refreshBtn) refreshBtn.style.display = "";
         if(loadingEl) loadingEl.style.display  = "none";
+        toast("Errore caricamento kit cloud", "err");
         return;
       }
       cloudProjects = Array.isArray(data) ? data : [];
-      if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit cloud caricati`, "ok");
-      else toast("☁ Nessun kit trovato nel cloud", "warn");
+      if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit caricati`, "ok");
+      else toast("☁ Nessun kit nel cloud", "warn");
     } catch(err) {
       console.error("Cloud load exception:", err);
       if(errorEl)   errorEl.style.display   = "";
       if(refreshBtn) refreshBtn.style.display = "";
+      toast("Errore connessione cloud", "err");
     } finally {
       if(loadingEl) loadingEl.style.display = "none";
     }
@@ -3490,6 +3492,12 @@ tr:last-child td{border-bottom:none}
 
   const doLogout = async () => {
     try { if(supabase) await supabase.auth.signOut(); } catch(_){}
+    // Svuota la sessione da localStorage anche se signOut fallisce per rete
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("sb-"))
+        .forEach(k => localStorage.removeItem(k));
+    } catch(_){}
     window.location.reload();
   };
 
