@@ -3505,9 +3505,10 @@ tr:last-child td{border-bottom:none}
     });
   }
 
-  const doLogout = async () => {
-    try { if(supabase) await supabase.auth.signOut(); } catch(_){}
-    // Svuota la sessione da localStorage anche se signOut fallisce per rete
+  const doLogout = () => {
+    // Non aspettiamo signOut (fa chiamata di rete che può bloccarsi)
+    if(supabase) supabase.auth.signOut().catch(() => {});
+    // Svuota la sessione da localStorage subito, senza attendere la rete
     try {
       Object.keys(localStorage)
         .filter(k => k.startsWith("sb-"))
@@ -3518,18 +3519,18 @@ tr:last-child td{border-bottom:none}
 
   const btnLogout = document.getElementById("btnLogout");
   if(btnLogout) {
-    btnLogout.addEventListener("click", async (e) => {
+    btnLogout.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      await doLogout();
+      doLogout();
     });
   }
 
   const btnLogoutMobile = document.getElementById("btnLogoutMobile");
   if(btnLogoutMobile) {
-    btnLogoutMobile.addEventListener("click", async (e) => {
+    btnLogoutMobile.addEventListener("click", (e) => {
       e.preventDefault();
-      await doLogout();
+      doLogout();
     });
   }
 
