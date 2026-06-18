@@ -1198,6 +1198,15 @@
           <div class="card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
               <div class="card-title" style="margin-bottom:0">I tuoi kit</div>
+              <button class="secondary" id="btnRefreshCloud" style="font-size:12px;padding:5px 10px;display:none">↻ Ricarica</button>
+            </div>
+
+            <div id="dashCloudLoading" style="display:none;padding:12px 0;color:var(--muted);font-size:13px">
+              <span style="opacity:.6">Caricamento dal cloud…</span>
+            </div>
+
+            <div id="dashCloudError" style="display:none;padding:10px 12px;background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:var(--r-sm);margin-bottom:12px;font-size:13px;color:var(--warn)">
+              Impossibile caricare i kit dal cloud. Controlla la connessione e premi ↻ Ricarica.
             </div>
 
             <div class="dash-empty" id="dashEmpty" style="display:none">
@@ -2575,14 +2584,31 @@ tr:last-child td{border-bottom:none}
 
   const loadProjectsFromCloud = async () => {
     if(!supabase) return;
+    const loadingEl = document.getElementById("dashCloudLoading");
+    const errorEl   = document.getElementById("dashCloudError");
+    const refreshBtn= document.getElementById("btnRefreshCloud");
+    if(loadingEl) loadingEl.style.display = "";
+    if(errorEl)   errorEl.style.display   = "none";
     try {
       const { data, error } = await supabase
         .from("projects")
         .select("id, name, data, created_at")
         .order("created_at", { ascending: false });
-      if(error){ console.error("Cloud load error:", error); return; }
+      if(error){
+        console.error("Cloud load error:", error);
+        if(errorEl)   errorEl.style.display   = "";
+        if(refreshBtn) refreshBtn.style.display = "";
+        if(loadingEl) loadingEl.style.display  = "none";
+        return;
+      }
       cloudProjects = Array.isArray(data) ? data : [];
-    } catch(err) { console.error("Cloud load exception:", err); }
+    } catch(err) {
+      console.error("Cloud load exception:", err);
+      if(errorEl)   errorEl.style.display   = "";
+      if(refreshBtn) refreshBtn.style.display = "";
+    } finally {
+      if(loadingEl) loadingEl.style.display = "none";
+    }
   };
 
   const saveProjectToCloud = async (projectPayload, projectLabel) => {
@@ -3238,6 +3264,12 @@ tr:last-child td{border-bottom:none}
       try { showView(el.dataset.view); } catch(err) { console.error("showView error:", err); }
     });
   });
+  const _btnRefreshCloud = document.getElementById("btnRefreshCloud");
+  if(_btnRefreshCloud) _btnRefreshCloud.addEventListener("click", async () => {
+    await loadProjectsFromCloud();
+    renderDashboard();
+  });
+
   const _btnNewKitDash = document.getElementById("btnNewKitDash");
   if(_btnNewKitDash) _btnNewKitDash.addEventListener("click", () => {
     try { resetAll(); showView("builder"); goToStep(1); } catch(err) { console.error(err); }
