@@ -811,6 +811,7 @@
       .topbar-title { font-size: 17px; }
       .topbar-date { display: none; }
       .topbar-badge { display: none; }
+      #btnLogoutMobile { display: block !important; }
 
       /* Status bar */
       .statusBar { margin: 10px 16px 0; padding: 8px 12px; font-size: 12px; }
@@ -1140,6 +1141,12 @@
             <span style="opacity:.35">|</span>
             <span id="buildTxt">build v14</span>
           </div>
+          <button id="btnLogoutMobile" title="Esci" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 10h8M13 7l3 3-3 3"/>
+              <path d="M12 4H5a1 1 0 00-1 1v10a1 1 0 001 1h7"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -3423,13 +3430,25 @@ tr:last-child td{border-bottom:none}
     });
   }
 
+  const doLogout = async () => {
+    try { if(supabase) await supabase.auth.signOut(); } catch(_){}
+    window.location.reload();
+  };
+
   const btnLogout = document.getElementById("btnLogout");
   if(btnLogout) {
     btnLogout.addEventListener("click", async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      try { if(supabase) await supabase.auth.signOut(); } catch(_){}
-      window.location.reload();
+      await doLogout();
+    });
+  }
+
+  const btnLogoutMobile = document.getElementById("btnLogoutMobile");
+  if(btnLogoutMobile) {
+    btnLogoutMobile.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await doLogout();
     });
   }
 
