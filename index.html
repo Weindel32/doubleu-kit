@@ -20,10 +20,10 @@
 
     /* ─── Design Tokens ─── */
     :root {
-      --bg:          #EBF3FA;
+      --bg:          #B8CFDF;
       --surface:     #FFFFFF;
-      --surface-2:   #F0F7FC;
-      --surface-3:   #EBF3FA;
+      --surface-2:   #E6F0F8;
+      --surface-3:   #D4E6F0;
       --border:      #C8DFF0;
       --border-2:    #A8C8E0;
 
@@ -865,7 +865,10 @@
       .tab-bar { margin-bottom: 12px; }
       .tab-btn { font-size: 12px; padding: 7px 8px; }
 
-      /* Dash table scroll */
+      /* Dash table hidden on mobile → card list takes over */
+      .dash-table-wrap { display: none; }
+      .dash-card-list  { display: flex; }
+
       .dash-table { font-size: 13px; }
       .dash-table td { padding: 12px 12px; }
       .dash-table td:not(:first-child) { padding-left: 14px; padding-right: 14px; }
@@ -879,6 +882,33 @@
       .tab-btn { font-size: 11px; padding: 6px 4px; }
       .step-item { padding: 9px 8px; font-size: 11px; }
     }
+
+    /* ─── Dashboard kit cards (mobile) ─── */
+    .dash-card-list { display: none; flex-direction: column; gap: 10px; }
+    .dash-kit-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .dash-kit-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    }
+    .dash-kit-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .dash-kit-card-actions { display: flex; gap: 8px; align-items: center; }
+
+    /* ─── Catalog item rows ─── */
+    .catalog-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .catalog-item:last-child { border-bottom: none; }
+    .catalog-item-info { flex: 1; min-width: 0; }
+    .catalog-item-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .catalog-item-prices { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .catalog-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
     /* ─── Auth Overlay ─── */
     #authOverlay {
@@ -1161,18 +1191,21 @@
               <div class="hint">Crea il tuo primo kit per iniziare.</div>
             </div>
 
-            <table class="dash-table" id="dashTable" style="display:none">
-              <thead>
-                <tr>
-                  <th>Kit</th>
-                  <th>Articoli</th>
-                  <th>Salvato il</th>
-                  <th>Fonte</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="dashKits"></tbody>
-            </table>
+            <div class="dash-table-wrap">
+              <table class="dash-table" id="dashTable" style="display:none">
+                <thead>
+                  <tr>
+                    <th>Kit</th>
+                    <th>Articoli</th>
+                    <th>Salvato il</th>
+                    <th>Fonte</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="dashKits"></tbody>
+              </table>
+            </div>
+            <div class="dash-card-list" id="dashCardList"></div>
           </div>
         </div><!-- /dashboardView -->
 
@@ -1557,28 +1590,44 @@
           <div class="dash-header">
             <div>
               <div class="dash-welcome">Catalogo Articoli</div>
-              <div class="dash-sub">Costi di riferimento per linea e tipo di capo.</div>
+              <div class="dash-sub">Gestisci il tuo catalogo personale. Aggiungi articoli al kit con un tap.</div>
+            </div>
+            <button class="primary" id="btnAddCatalogItem">+ Articolo</button>
+          </div>
+
+          <!-- Add/Edit form -->
+          <div class="card" id="catalogForm" style="display:none;margin-bottom:16px">
+            <div class="card-title" id="catalogFormTitle">Nuovo articolo</div>
+            <input type="hidden" id="catalogEditId">
+            <div class="field" style="margin-bottom:12px">
+              <label class="lbl">Nome articolo</label>
+              <input type="text" id="catalogName" placeholder="es. T-shirt, Polo, Pantalone…" autocomplete="off">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+              <div class="field">
+                <label class="lbl">Costo base €</label>
+                <input type="number" id="catalogBase" placeholder="0.00" min="0" step="0.01">
+              </div>
+              <div class="field">
+                <label class="lbl">Extra € <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
+                <input type="number" id="catalogExtra" placeholder="0.00" min="0" step="0.01">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="primary" id="btnSaveCatalogItem">Salva</button>
+              <button class="secondary" id="btnCancelCatalogItem">Annulla</button>
             </div>
           </div>
 
+          <!-- Catalog list -->
           <div class="card" style="margin-bottom:16px">
-            <div class="card-title">Costi di riferimento (€/unità)</div>
-            <div style="overflow-x:auto">
-              <table class="dash-table" id="articoliTable" style="display:table;min-width:520px">
-                <thead>
-                  <tr>
-                    <th>Articolo</th>
-                    <th class="text-right">Premium</th>
-                    <th class="text-right">Basic</th>
-                    <th class="text-right">Promotional</th>
-                  </tr>
-                </thead>
-                <tbody id="articoliBody"></tbody>
-              </table>
+            <div class="card-title">I miei articoli</div>
+            <div id="catalogList">
+              <div class="hint" id="catalogEmpty">Nessun articolo nel catalogo. Premi "+ Articolo" per aggiungerne uno.</div>
             </div>
-            <div class="hint" style="margin-top:10px">I costi "Altro" sono inseriti manualmente nel builder.</div>
           </div>
 
+          <!-- Current kit articles -->
           <div class="card">
             <div class="card-title">Articoli nel kit attivo</div>
             <div id="articoliKitAttivo">
@@ -2823,6 +2872,73 @@ tr:last-child td{border-bottom:none}
         renderDashboard();
       });
     });
+
+    // Mobile card list
+    const cardList = document.getElementById("dashCardList");
+    if(cardList) {
+      if(rows.length === 0) {
+        cardList.innerHTML = "";
+      } else {
+        cardList.innerHTML = rows.map((kit, i) => {
+          const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
+          const client = kit.payload?.clientName?.trim() || "";
+          const src    = kit.source === "cloud"
+            ? `<span class="dash-badge cloud"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 10.5A4 4 0 0011.5 7H11a5 5 0 00-4.9 4A3 3 0 107 17h8a3 3 0 000-6z"/></svg> Cloud</span>`
+            : `<span class="dash-badge local"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="16" height="11" rx="1.5"/><line x1="6" y1="17" x2="14" y2="17"/><line x1="10" y1="15" x2="10" y2="17"/></svg> Locale</span>`;
+          return `<div class="dash-kit-card">
+            <div class="dash-kit-card-top">
+              <div>
+                <div class="dash-kit-name">${kit.name}</div>
+                ${client ? `<div class="dash-kit-sub">${client}</div>` : ""}
+              </div>
+              ${src}
+            </div>
+            <div class="dash-kit-card-meta">
+              <span style="font-size:12px;color:var(--muted)">${kit.itemCount} articoli · ${date}</span>
+            </div>
+            <div class="dash-kit-card-actions">
+              <button class="secondary" style="font-size:13px;padding:7px 14px;flex:1" data-ci="${i}" data-ca="load">Carica</button>
+              <button class="ghost" style="font-size:13px;padding:7px 10px;color:var(--bad)" data-ci="${i}" data-ca="del">✕</button>
+            </div>
+          </div>`;
+        }).join("");
+
+        cardList.querySelectorAll("[data-ca='load']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const kit = rows[parseInt(btn.getAttribute("data-ci"))];
+            if(kit.source === "cloud") {
+              const proj = cloudProjects.find(p => p.id === kit.cloudId);
+              if(proj) { activeCloudId = proj.id; applyPayload(proj.data); toast("Kit cloud caricato ☁", "ok"); }
+            } else {
+              activeCloudId = null;
+              applyPayload(kit.payload);
+              toast("Kit caricato ✓", "ok");
+            }
+            showView("builder");
+            goToStep(1);
+          });
+        });
+
+        cardList.querySelectorAll("[data-ca='del']").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const kit = rows[parseInt(btn.getAttribute("data-ci"))];
+            if(!confirm(`Eliminare "${kit.name}"?`)) return;
+            if(kit.source === "cloud" && supabase) {
+              const { error } = await supabase.from("projects").delete().eq("id", kit.cloudId);
+              if(error){ toast("Errore eliminazione cloud: " + error.message, "err"); return; }
+              if(activeCloudId === kit.cloudId) activeCloudId = null;
+              await loadProjectsFromCloud();
+            } else {
+              const store = getStore();
+              delete store[kit.name];
+              setStore(store);
+            }
+            toast("Kit eliminato ✓", "ok");
+            renderDashboard();
+          });
+        });
+      }
+    }
   };
 
   /* ─── helper: read live DOM value ─── */
@@ -2955,26 +3071,79 @@ tr:last-child td{border-bottom:none}
     }
   };
 
+  /* ─── Custom catalog (localStorage) ─── */
+  const CATALOG_KEY = "doubleu_catalog_v1";
+  const getCatalog = () => {
+    try { const r = localStorage.getItem(CATALOG_KEY); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+  };
+  const setCatalog = (arr) => localStorage.setItem(CATALOG_KEY, JSON.stringify(arr));
+
   /* ─── Articoli render ─── */
   const renderArticoli = () => {
-    const tbody = document.getElementById("articoliBody");
-    if(tbody) {
-      const allArticles = [...new Set([
-        ...Object.keys(REF_COST.PREMIUM || {}),
-        ...Object.keys(REF_COST.BASIC || {}),
-        ...Object.keys(REF_COST.PROMOTIONAL || {}),
-      ])];
-      tbody.innerHTML = allArticles.map(art => {
-        const p = REF_COST.PREMIUM?.[art];
-        const b = REF_COST.BASIC?.[art];
-        const pr= REF_COST.PROMOTIONAL?.[art];
-        return `<tr>
-          <td>${art}</td>
-          <td class="text-right">${p != null ? eur(p) : "—"}</td>
-          <td class="text-right">${b != null ? eur(b) : "—"}</td>
-          <td class="text-right">${pr != null ? eur(pr) : "—"}</td>
-        </tr>`;
-      }).join("");
+    const catalog = getCatalog();
+    const listEl  = document.getElementById("catalogList");
+    const emptyEl = document.getElementById("catalogEmpty");
+
+    if(listEl) {
+      listEl.querySelectorAll(".catalog-item").forEach(el => el.remove());
+      if(catalog.length === 0) {
+        if(emptyEl) emptyEl.style.display = "";
+      } else {
+        if(emptyEl) emptyEl.style.display = "none";
+        catalog.forEach(art => {
+          const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+          const row = document.createElement("div");
+          row.className = "catalog-item";
+          row.innerHTML = `
+            <div class="catalog-item-info">
+              <div class="catalog-item-name">${art.name}</div>
+              <div class="catalog-item-prices">${priceStr}</div>
+            </div>
+            <div class="catalog-item-actions">
+              <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cact="add">+ Kit</button>
+              <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="edit">Modifica</button>
+              <button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-cid="${art.id}" data-cact="del">✕</button>
+            </div>`;
+          listEl.appendChild(row);
+        });
+
+        listEl.querySelectorAll("[data-cact='add']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+            if(!art) return;
+            items.push({ id: uid(), article: art.name, line: "ALTRO", base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
+            render();
+            showView("builder");
+            goToStep(1);
+            toast(`"${art.name}" aggiunto al kit ✓`, "ok");
+          });
+        });
+
+        listEl.querySelectorAll("[data-cact='edit']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+            if(!art) return;
+            document.getElementById("catalogEditId").value = art.id;
+            document.getElementById("catalogName").value   = art.name;
+            document.getElementById("catalogBase").value   = art.base || "";
+            document.getElementById("catalogExtra").value  = art.extra || "";
+            document.getElementById("catalogFormTitle").textContent = "Modifica articolo";
+            document.getElementById("catalogForm").style.display = "";
+            document.getElementById("catalogName").focus();
+          });
+        });
+
+        listEl.querySelectorAll("[data-cact='del']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+            if(!art) return;
+            if(!confirm(`Eliminare "${art.name}" dal catalogo?`)) return;
+            setCatalog(getCatalog().filter(a => a.id !== art.id));
+            renderArticoli();
+            toast("Articolo eliminato ✓", "ok");
+          });
+        });
+      }
     }
 
     const kitEl = document.getElementById("articoliKitAttivo");
@@ -2998,6 +3167,44 @@ tr:last-child td{border-bottom:none}
       }
     }
   };
+
+  /* ─── Catalog form listeners ─── */
+  const _btnAddCatalogItem = document.getElementById("btnAddCatalogItem");
+  if(_btnAddCatalogItem) _btnAddCatalogItem.addEventListener("click", () => {
+    document.getElementById("catalogEditId").value = "";
+    document.getElementById("catalogName").value   = "";
+    document.getElementById("catalogBase").value   = "";
+    document.getElementById("catalogExtra").value  = "";
+    document.getElementById("catalogFormTitle").textContent = "Nuovo articolo";
+    const form = document.getElementById("catalogForm");
+    form.style.display = form.style.display === "none" ? "" : "none";
+    if(form.style.display !== "none") document.getElementById("catalogName").focus();
+  });
+
+  const _btnSaveCatalogItem = document.getElementById("btnSaveCatalogItem");
+  if(_btnSaveCatalogItem) _btnSaveCatalogItem.addEventListener("click", () => {
+    const name  = document.getElementById("catalogName").value.trim();
+    if(!name){ toast("Inserisci un nome per l'articolo", "warn"); return; }
+    const base  = parseFloat(document.getElementById("catalogBase").value)  || 0;
+    const extra = parseFloat(document.getElementById("catalogExtra").value) || 0;
+    const editId = document.getElementById("catalogEditId").value;
+    const catalog = getCatalog();
+    if(editId) {
+      const idx = catalog.findIndex(a => a.id === editId);
+      if(idx >= 0) catalog[idx] = { ...catalog[idx], name, base, extra };
+    } else {
+      catalog.push({ id: uid(), name, base, extra });
+    }
+    setCatalog(catalog);
+    document.getElementById("catalogForm").style.display = "none";
+    renderArticoli();
+    toast(editId ? "Articolo aggiornato ✓" : "Articolo aggiunto ✓", "ok");
+  });
+
+  const _btnCancelCatalogItem = document.getElementById("btnCancelCatalogItem");
+  if(_btnCancelCatalogItem) _btnCancelCatalogItem.addEventListener("click", () => {
+    document.getElementById("catalogForm").style.display = "none";
+  });
 
   /* ─── Nav listeners ─── */
   document.querySelectorAll(".nav-item[data-view]").forEach(el => {
