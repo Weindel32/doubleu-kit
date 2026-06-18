@@ -807,6 +807,49 @@
       color: var(--bad); border-radius: var(--r-sm);
       padding: 10px 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
     }
+
+    /* ─── Sidebar toggle ─── */
+    .sidebar-toggle {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; font-size: 18px; padding: 0;
+      flex-shrink: 0; display: none; align-items: center; justify-content: center;
+      box-shadow: none; transition: background .13s, color .13s;
+    }
+    .sidebar-toggle:hover { background: var(--surface-2); color: var(--text); }
+    .sidebar-toggle:active { transform: scale(.96); }
+    @media (min-width: 861px) { .sidebar-toggle { display: flex; } }
+
+    .sidebar { transition: width .2s ease; }
+    .app-shell.sb-collapsed .sidebar {
+      width: 0; overflow: hidden; border-right: none;
+    }
+
+    /* ─── Analisi Tabs ─── */
+    .tab-bar {
+      display: flex; gap: 3px;
+      margin-bottom: 18px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-btn {
+      flex: 1; padding: 7px 14px; border-radius: 7px;
+      border: none; background: transparent;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: background .13s, color .13s; box-shadow: none;
+    }
+    .tab-btn:active { transform: none; }
+    .tab-btn.active { background: var(--accent); color: #FFFFFF; box-shadow: 0 2px 6px rgba(0,29,57,.2); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ─── Step bar hover ─── */
+    .step-item:hover:not(.active) { background: var(--accent-light); color: var(--text); }
+
+    /* ─── Card secondary actions ─── */
+    .art-actions-secondary { display: none; gap: 5px; }
+    .art-actions-secondary.open { display: contents; }
   </style>
 </head>
 
@@ -871,28 +914,13 @@
           Kit builder
         </a>
 
-        <a class="nav-item" href="javascript:void(0)" data-view="margini">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-            <polyline points="3,14 7,9 10,12 13,7 17,5"/>
-          </svg>
-          Margini
-        </a>
-
-        <a class="nav-item" href="javascript:void(0)" data-view="prezzi">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-            <path d="M10.5 3.5L17 10l-6.5 6.5L4 10l6.5-6.5z"/>
-            <path d="M10 7v6M7.5 10h5"/>
-          </svg>
-          Prezzi
-        </a>
-
-        <a class="nav-item" href="javascript:void(0)" data-view="kpi">
+        <a class="nav-item" href="javascript:void(0)" data-view="analisi">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="3" y="11" width="3" height="6" rx="1"/>
             <rect x="8.5" y="7" width="3" height="10" rx="1"/>
             <rect x="14" y="3" width="3" height="14" rx="1"/>
           </svg>
-          KPI
+          Analisi
         </a>
 
         <a class="nav-item" href="javascript:void(0)" data-view="articoli">
@@ -954,6 +982,7 @@
 
       <!-- Topbar -->
       <div class="topbar">
+        <button class="sidebar-toggle" id="sidebarToggle" title="Mostra/Nascondi menu">☰</button>
         <div class="topbar-title">Kit builder</div>
         <div class="topbar-right">
           <span class="topbar-date" id="topbarDate"></span>
@@ -1335,94 +1364,83 @@
 
         </div><!-- /builderView -->
 
-        <!-- ── Margini View ── -->
-        <div id="marginiView" style="display:none">
+        <!-- ── Analisi View (Margini + Prezzi + KPI con tabs) ── -->
+        <div id="analisiView" style="display:none">
           <div class="dash-header">
             <div>
-              <div class="dash-welcome">Analisi Margini</div>
-              <div class="dash-sub">Confronto margini tra i kit salvati e breakdown del kit attivo.</div>
+              <div class="dash-welcome">Analisi</div>
+              <div class="dash-sub">Margini, prezzi e KPI del kit attivo.</div>
             </div>
+            <button class="secondary" id="btnAnalisiGoBuilder">Apri Kit Builder →</button>
           </div>
 
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-title">Kit attivo — breakdown margine</div>
-            <div id="marginiKitAttivo">
-              <div class="hint">Apri un kit nel builder per vedere il dettaglio.</div>
-            </div>
+          <!-- Tab bar -->
+          <div class="tab-bar">
+            <button class="tab-btn active" data-analisi-tab="margini">Margini</button>
+            <button class="tab-btn"        data-analisi-tab="prezzi">Prezzi</button>
+            <button class="tab-btn"        data-analisi-tab="kpi">KPI</button>
           </div>
 
-          <div class="card">
-            <div class="card-title">Storico kit salvati</div>
-            <div id="marginiStorico">
-              <div class="hint">Nessun kit salvato.</div>
-            </div>
-          </div>
-        </div><!-- /marginiView -->
-
-        <!-- ── Prezzi View ── -->
-        <div id="prezziView" style="display:none">
-          <div class="dash-header">
-            <div>
-              <div class="dash-welcome">Analisi Prezzi</div>
-              <div class="dash-sub">Prezzi e soglie del kit attivo nel builder.</div>
-            </div>
-            <button class="secondary" id="btnPrezziGoBuilder">Apri Kit Builder →</button>
-          </div>
-
-          <div class="dash-kpis" id="prezziKpis" style="margin-bottom:16px">
-            <div class="kpi"><div class="lbl">Prezzo/atleta</div><div class="val" id="pvPriceAthlete">—</div><div class="note">Prezzo offerto</div></div>
-            <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val" id="pvCostAthlete">—</div><div class="note">Costo produzione</div></div>
-            <div class="kpi"><div class="lbl">Margine reale</div><div class="val" id="pvMargin">—</div><div class="note">Sul prezzo netto</div></div>
-            <div class="kpi"><div class="lbl">Utile totale</div><div class="val" id="pvProfit">—</div><div class="note">Ricavo − costo</div></div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div class="card">
-              <div class="card-title">Soglie prezzi</div>
-              <table class="dash-table" style="display:table">
-                <tbody id="prezziSoglie"></tbody>
-              </table>
+          <!-- Margini tab -->
+          <div class="tab-content active" data-analisi-tab="margini">
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-title">Kit attivo — breakdown margine</div>
+              <div id="marginiKitAttivo">
+                <div class="hint">Apri un kit nel builder per vedere il dettaglio.</div>
+              </div>
             </div>
             <div class="card">
-              <div class="card-title">Riepilogo fatturazione</div>
-              <table class="dash-table" style="display:table">
-                <tbody id="prezziRiepilogo"></tbody>
-              </table>
+              <div class="card-title">Storico kit salvati</div>
+              <div id="marginiStorico">
+                <div class="hint">Nessun kit salvato.</div>
+              </div>
             </div>
-          </div>
-        </div><!-- /prezziView -->
-
-        <!-- ── KPI View ── -->
-        <div id="kpiView" style="display:none">
-          <div class="dash-header">
-            <div>
-              <div class="dash-welcome">KPI del kit attivo</div>
-              <div class="dash-sub">Indicatori chiave di performance economica.</div>
-            </div>
-            <button class="secondary" id="btnKpiGoBuilder">Apri Kit Builder →</button>
           </div>
 
-          <div class="dash-kpis" style="margin-bottom:16px">
-            <div class="kpi" id="kpiV_margin"><div class="lbl">Margine reale</div><div class="val" id="kvMargin">—</div><div class="note" id="kvMarginNote">—</div></div>
-            <div class="kpi" id="kpiV_price"><div class="lbl">Prezzo/atleta</div><div class="val" id="kvPrice">—</div><div class="note">Prezzo proposto</div></div>
-            <div class="kpi"><div class="lbl">Costo totale</div><div class="val" id="kvCost">—</div><div class="note" id="kvCostNote">—</div></div>
-            <div class="kpi"><div class="lbl">Utile netto</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
+          <!-- Prezzi tab -->
+          <div class="tab-content" data-analisi-tab="prezzi">
+            <div class="dash-kpis" id="prezziKpis" style="margin-bottom:16px">
+              <div class="kpi"><div class="lbl">Prezzo/atleta</div><div class="val" id="pvPriceAthlete">—</div><div class="note">Prezzo offerto</div></div>
+              <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val" id="pvCostAthlete">—</div><div class="note">Costo produzione</div></div>
+              <div class="kpi"><div class="lbl">Margine reale</div><div class="val" id="pvMargin">—</div><div class="note">Sul prezzo netto</div></div>
+              <div class="kpi"><div class="lbl">Utile totale</div><div class="val" id="pvProfit">—</div><div class="note">Ricavo − costo</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="card">
+                <div class="card-title">Soglie prezzi</div>
+                <table class="dash-table" style="display:table"><tbody id="prezziSoglie"></tbody></table>
+              </div>
+              <div class="card">
+                <div class="card-title">Riepilogo fatturazione</div>
+                <table class="dash-table" style="display:table"><tbody id="prezziRiepilogo"></tbody></table>
+              </div>
+            </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div class="card">
-              <div class="card-title">Obiettivi margine</div>
-              <div id="kpiVBars" style="display:flex;flex-direction:column;gap:14px;margin-top:4px"></div>
+          <!-- KPI tab -->
+          <div class="tab-content" data-analisi-tab="kpi">
+            <div class="dash-kpis" style="margin-bottom:16px">
+              <div class="kpi" id="kpiV_margin"><div class="lbl">Margine reale</div><div class="val" id="kvMargin">—</div><div class="note" id="kvMarginNote">—</div></div>
+              <div class="kpi" id="kpiV_price"><div class="lbl">Prezzo/atleta</div><div class="val" id="kvPrice">—</div><div class="note">Prezzo proposto</div></div>
+              <div class="kpi"><div class="lbl">Costo totale</div><div class="val" id="kvCost">—</div><div class="note" id="kvCostNote">—</div></div>
+              <div class="kpi"><div class="lbl">Utile netto</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
             </div>
-            <div class="card">
-              <div class="card-title">Articoli nel kit</div>
-              <table class="dash-table" style="display:table">
-                <thead><tr><th>Articolo</th><th>Linea</th><th>Qtà</th><th>Costo tot.</th></tr></thead>
-                <tbody id="kpiVItems"></tbody>
-              </table>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="card">
+                <div class="card-title">Obiettivi margine</div>
+                <div id="kpiVBars" style="display:flex;flex-direction:column;gap:14px;margin-top:4px"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Articoli nel kit</div>
+                <table class="dash-table" style="display:table">
+                  <thead><tr><th>Articolo</th><th>Linea</th><th>Qtà</th><th>Costo tot.</th></tr></thead>
+                  <tbody id="kpiVItems"></tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div><!-- /kpiView -->
+
+        </div><!-- /analisiView -->
 
         <!-- ── Articoli View ── -->
         <div id="articoliView" style="display:none">
@@ -1617,6 +1635,7 @@
   const kpiDeposit     = document.getElementById("kpiDeposit");
 
   const STORE_KEY    = "doubleu_kits_v4";
+  const DRAFT_KEY    = "doubleu_kits_v4__draft__";
   const CLOUD_PREFIX = "__cloud__::";
 
   let activeCloudId  = null;
@@ -1630,6 +1649,10 @@
   };
 
   const setStore = (obj) => localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+
+  const saveDraft = () => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(payload())); } catch(e) {}
+  };
 
   let cloudProjects = [];
 
@@ -1727,10 +1750,13 @@
 
   <div class="art-actions">
     <span class="art-badge${giftClass}">${subtotStr}</span>
-    <button class="secondary${it.isGift ? " omaggio-on" : ""}" type="button" data-act="gift"     data-id="${it.id}">${it.isGift ? "Omaggio ✓" : "Omaggio"}</button>
-    <button class="secondary" type="button" data-act="costMode" data-id="${it.id}">${it.costMode === "auto" ? "Auto" : "Manuale"}</button>
-    <button class="secondary" type="button" data-act="dup"      data-id="${it.id}">Duplica</button>
-    <button class="danger"    type="button" data-act="rm"       data-id="${it.id}">Rimuovi</button>
+    <div class="art-actions-secondary${it.isGift ? " open" : ""}" id="art-sec-${it.id}">
+      <button class="secondary${it.isGift ? " omaggio-on" : ""}" type="button" data-act="gift"     data-id="${it.id}" style="font-size:11px;padding:4px 9px">${it.isGift ? "Omaggio ✓" : "Omaggio"}</button>
+      <button class="secondary" type="button" data-act="costMode" data-id="${it.id}" style="font-size:11px;padding:4px 9px">${it.costMode === "auto" ? "Auto" : "Manuale"}</button>
+    </div>
+    <button class="ghost" type="button" data-act="more" data-id="${it.id}" title="Altre opzioni" style="font-size:15px;padding:4px 9px;letter-spacing:2px">···</button>
+    <button class="secondary" type="button" data-act="dup" data-id="${it.id}" style="font-size:11px;padding:4px 9px">Duplica</button>
+    <button class="danger"    type="button" data-act="rm"  data-id="${it.id}" style="font-size:11px;padding:4px 9px">Rimuovi</button>
   </div>
 </div>`;
     });
@@ -1810,6 +1836,14 @@
             if(r !== null) it.base = r;
           }
           render();
+        });
+        return;
+      }
+
+      if(act === "more"){
+        el.addEventListener("click", () => {
+          const sec = document.getElementById("art-sec-" + id);
+          if(sec) sec.classList.toggle("open");
         });
         return;
       }
@@ -2033,6 +2067,7 @@
     }
 
     showAlerts(alerts);
+    saveDraft();
   };
 
   const addItem = () => { items.push(newItem()); render(); };
@@ -2044,6 +2079,8 @@
   };
 
   const resetAll = () => {
+    const hasData = (clientName.value.trim() || projectName.value.trim() || items.some(it => toNum(it.qty) > 0));
+    if(hasData && !confirm("Creare un nuovo preventivo? I dati non salvati andranno persi.")) return;
     activeCloudId = null;
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
     margin.value      = "0.50"; vat.value = "22"; discount.value = "0";
@@ -2056,6 +2093,7 @@
     setBox(kpiMargin,null); setBox(kpiPrice,null);
     setBox(kpiMinPrice,null); setBox(kpiTargetPrice,null); setBox(kpiDeposit,null);
     updateSidebarKit();
+    try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
     toast("Nuovo preventivo pronto ✓", "ok");
   };
 
@@ -2422,8 +2460,7 @@ tr:last-child td{border-bottom:none}
 
   const VIEW_TITLES = {
     dashboard:"Dashboard", builder:"Kit builder",
-    margini:"Margini", prezzi:"Prezzi",
-    kpi:"KPI", articoli:"Articoli", esportazioni:"Esportazioni"
+    analisi:"Analisi", articoli:"Articoli", esportazioni:"Esportazioni"
   };
   const ALL_VIEWS = Object.keys(VIEW_TITLES);
 
@@ -2440,13 +2477,28 @@ tr:last-child td{border-bottom:none}
     if(titleEl) titleEl.textContent = VIEW_TITLES[view] || view;
     const renderFns = {
       dashboard: renderDashboard,
-      margini:   renderMargini,
-      prezzi:    renderPrezzi,
-      kpi:       renderKpiView,
+      analisi:   renderAnalisi,
       articoli:  renderArticoli,
     };
     if(renderFns[view]) renderFns[view]();
   };
+
+  /* ─── Analisi tab state ─── */
+  let currentAnalisiTab = "margini";
+
+  const switchAnalisiTab = (tab) => {
+    currentAnalisiTab = tab;
+    document.querySelectorAll("[data-analisi-tab]").forEach(el => {
+      const t = el.getAttribute("data-analisi-tab");
+      if(el.classList.contains("tab-btn"))     el.classList.toggle("active", t === tab);
+      if(el.classList.contains("tab-content")) el.classList.toggle("active", t === tab);
+    });
+    if(tab === "margini") renderMargini();
+    else if(tab === "prezzi") renderPrezzi();
+    else if(tab === "kpi") renderKpiView();
+  };
+
+  const renderAnalisi = () => switchAnalisiTab(currentAnalisiTab);
 
   /* ─── Calcola margine reale e costo/atleta da un payload salvato ─── */
   const calcKitStats = (p) => {
@@ -2779,10 +2831,8 @@ tr:last-child td{border-bottom:none}
     try { resetAll(); showView("builder"); goToStep(1); } catch(err) { console.error(err); }
   });
 
-  ["btnPrezziGoBuilder","btnKpiGoBuilder"].forEach(id => {
-    const btn = document.getElementById(id);
-    if(btn) btn.addEventListener("click", () => showView("builder"));
-  });
+  const _btnAnalisiGoBuilder = document.getElementById("btnAnalisiGoBuilder");
+  if(_btnAnalisiGoBuilder) _btnAnalisiGoBuilder.addEventListener("click", () => showView("builder"));
 
   const _btnExportPDF = document.getElementById("btnExportPDF");
   if(_btnExportPDF) _btnExportPDF.addEventListener("click", () => printPDF());
@@ -2846,8 +2896,37 @@ tr:last-child td{border-bottom:none}
       const _btnResetStep = document.getElementById("btnResetStep");
       if(_btnResetStep) _btnResetStep.addEventListener("click", () => { resetAll(); goToStep(1); });
 
-      items = [newItem()];
-      render();
+      // Ripristina bozza se presente
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if(raw) {
+          const draft = JSON.parse(raw);
+          if(draft && Array.isArray(draft.items) && draft.items.length) {
+            applyPayload(draft);
+            toast("Bozza ripristinata ✓", "ok");
+          } else {
+            items = [newItem()]; render();
+          }
+        } else {
+          items = [newItem()]; render();
+        }
+      } catch(e) {
+        items = [newItem()]; render();
+      }
+
+      // Sidebar toggle
+      const _sidebarToggle = document.getElementById("sidebarToggle");
+      if(_sidebarToggle) {
+        _sidebarToggle.addEventListener("click", () => {
+          document.querySelector(".app-shell").classList.toggle("sb-collapsed");
+        });
+      }
+
+      // Analisi tab buttons
+      document.querySelectorAll(".tab-btn[data-analisi-tab]").forEach(btn => {
+        btn.addEventListener("click", () => switchAnalisiTab(btn.getAttribute("data-analisi-tab")));
+      });
+
       updateStepUI();
       showView("dashboard");
       setJS(true, "JS OK");
