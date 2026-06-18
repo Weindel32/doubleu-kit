@@ -1,8 +1,8 @@
 {
   "name": "DOUBLEU Kit Builder",
   "short_name": "DOUBLEU Kit",
-  "start_url": "/doubleu-kit/",
-  "scope": "/doubleu-kit/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#001D39",
   "theme_color": "#001D39",
