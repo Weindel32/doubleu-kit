@@ -3506,15 +3506,18 @@ tr:last-child td{border-bottom:none}
   }
 
   const doLogout = () => {
-    // Non aspettiamo signOut (fa chiamata di rete che può bloccarsi)
-    if(supabase) supabase.auth.signOut().catch(() => {});
-    // Svuota la sessione da localStorage subito, senza attendere la rete
+    // Mostra subito il form di login — nessun reload che potrebbe ripristinare la sessione
+    showAuthOverlay();
+    appInited = false;
+    cloudProjects = [];
+    // Pulisce tutti i possibili token di sessione da localStorage
     try {
       Object.keys(localStorage)
-        .filter(k => k.startsWith("sb-"))
+        .filter(k => k.startsWith("sb-") || k === "supabase.auth.token" || k.includes("-auth-token"))
         .forEach(k => localStorage.removeItem(k));
     } catch(_){}
-    window.location.reload();
+    // Revoca il token sul server in background (fire and forget)
+    if(supabase) supabase.auth.signOut().catch(() => {});
   };
 
   const btnLogout = document.getElementById("btnLogout");
