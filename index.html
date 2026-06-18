@@ -910,6 +910,21 @@
     .catalog-item-prices { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .catalog-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+    /* ─── Kit attivo article rows (articoli view) ─── */
+    .kit-art-cards { display: flex; flex-direction: column; gap: 0; }
+    .kit-art-row {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .kit-art-row:last-child { border-bottom: none; }
+    .kit-art-row-main { display: flex; align-items: baseline; gap: 8px; }
+    .kit-art-row-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .kit-art-row-line { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--accent-light); padding: 2px 7px; border-radius: 999px; }
+    .kit-art-row-nums { display: flex; align-items: center; justify-content: space-between; }
+    .kit-art-row-detail { font-size: 12px; color: var(--muted); }
+    .kit-art-row-subtot { font-size: 14px; font-weight: 800; color: var(--text); }
+
     /* ─── Auth Overlay ─── */
     #authOverlay {
       position: fixed; inset: 0; z-index: 1000;
@@ -3151,19 +3166,22 @@ tr:last-child td{border-bottom:none}
       if(!items.length || items.every(it => !it.article)) {
         kitEl.innerHTML = '<div class="hint">Nessun articolo nel kit corrente. Apri il Kit Builder.</div>';
       } else {
-        kitEl.innerHTML = `<table class="dash-table" style="display:table">
-          <thead><tr><th>Articolo</th><th>Linea</th><th>Base €</th><th>Extra €</th><th>Qtà</th><th class="text-right">Subtotale</th></tr></thead>
-          <tbody>${items.map(it => {
-            const cost = toNum(it.base) + toNum(it.extra);
+        const activeItems = items.filter(it => it.article);
+        kitEl.innerHTML =
+          `<div class="kit-art-cards">${activeItems.map(it => {
+            const cost   = toNum(it.base) + toNum(it.extra);
             const subtot = cost * toNum(it.qty);
-            return `<tr>
-              <td>${it.article}</td><td>${it.line}</td>
-              <td>${eur(toNum(it.base))}</td><td>${eur(toNum(it.extra))}</td>
-              <td>${it.qty || "—"}</td>
-              <td class="text-right">${subtot > 0 ? eur(subtot) : "—"}</td>
-            </tr>`;
-          }).join("")}</tbody>
-        </table>`;
+            return `<div class="kit-art-row">
+              <div class="kit-art-row-main">
+                <span class="kit-art-row-name">${it.article}</span>
+                <span class="kit-art-row-line">${it.line}</span>
+              </div>
+              <div class="kit-art-row-nums">
+                <span class="kit-art-row-detail">Base ${eur(toNum(it.base))}${toNum(it.extra)>0?` + ${eur(toNum(it.extra))}`:""}  ×  ${it.qty||"—"}</span>
+                <span class="kit-art-row-subtot">${subtot > 0 ? eur(subtot) : "—"}</span>
+              </div>
+            </div>`;
+          }).join("")}</div>`;
       }
     }
   };
