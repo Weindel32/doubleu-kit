@@ -910,6 +910,7 @@
     .catalog-item-name { font-size: 14px; font-weight: 700; color: var(--text); }
     .catalog-item-prices { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .catalog-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .cat-badge { display:inline-block; font-size:10px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--accent); color:#fff; margin-left:6px; vertical-align:middle; letter-spacing:.3px; }
 
     /* ─── Kit attivo article rows (articoli view) ─── */
     .kit-art-cards { display: flex; flex-direction: column; gap: 0; }
@@ -1634,6 +1635,15 @@
               <label class="lbl">Nome articolo</label>
               <input type="text" id="catalogName" placeholder="es. T-shirt, Polo, Pantalone…" autocomplete="off">
             </div>
+            <div class="field" style="margin-bottom:12px">
+              <label class="lbl">Categoria</label>
+              <select id="catalogCategoria">
+                <option value="PREMIUM">Premium</option>
+                <option value="BASIC">Basic</option>
+                <option value="LS24">LS24</option>
+                <option value="ALTRO">Altro</option>
+              </select>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
               <div class="field">
                 <label class="lbl">Costo base €</label>
@@ -1843,16 +1853,16 @@
 
   const ARTICLES = ["T-shirt","T-Shirt Cot.","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
   const LINES = [
-    { value:"PREMIUM",     label:"Premium" },
-    { value:"BASIC",       label:"Basic" },
-    { value:"PROMOTIONAL", label:"Promotional" },
-    { value:"ALTRO",       label:"Altro" }
+    { value:"PREMIUM", label:"Premium" },
+    { value:"BASIC",   label:"Basic" },
+    { value:"LS24",    label:"LS24" },
+    { value:"ALTRO",   label:"Altro" }
   ];
 
   const REF_COST = {
-    PREMIUM:     {"T-shirt":15,"T-Shirt Cot.":12,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
-    BASIC:       {"T-shirt":9,"Polo":11,"Pantaloncino":10.5,"Gonnellino":11,"Dress":14,"Sweatshirt":19,"Hoodie":22,"Zip Hoodie":24,"Pantalone":18},
-    PROMOTIONAL: {"T-shirt":8,"T-Shirt Cot.":3,"Polo":10,"Pantaloncino":9,"Gonnellino":10,"Dress":13,"Sweatshirt":16,"Hoodie":18,"Zip Hoodie":20,"Pantalone":15}
+    PREMIUM: {"T-shirt":15,"T-Shirt Cot.":12,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
+    BASIC:   {"T-shirt":9,"Polo":11,"Pantaloncino":10.5,"Gonnellino":11,"Dress":14,"Sweatshirt":19,"Hoodie":22,"Zip Hoodie":24,"Pantalone":18},
+    LS24:    {"T-shirt":8,"T-Shirt Cot.":3,"Polo":10,"Pantaloncino":9,"Gonnellino":10,"Dress":13,"Sweatshirt":16,"Hoodie":18,"Zip Hoodie":20,"Pantalone":15}
   };
 
   const clientName  = document.getElementById("clientName");
@@ -3160,11 +3170,12 @@ tr:last-child td{border-bottom:none}
         if(emptyEl) emptyEl.style.display = "none";
         catalog.forEach(art => {
           const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+          const catLabel = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" }[art.categoria] || art.categoria || "—";
           const row = document.createElement("div");
           row.className = "catalog-item";
           row.innerHTML = `
             <div class="catalog-item-info">
-              <div class="catalog-item-name">${art.name}</div>
+              <div class="catalog-item-name">${art.name} <span class="cat-badge">${catLabel}</span></div>
               <div class="catalog-item-prices">${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
@@ -3179,7 +3190,8 @@ tr:last-child td{border-bottom:none}
           btn.addEventListener("click", () => {
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
-            items.push({ id: uid(), article: art.name, line: "ALTRO", base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
+            const line = art.categoria && LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
+            items.push({ id: uid(), article: art.name, line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
             render();
             showView("builder");
             goToStep(1);
@@ -3191,10 +3203,11 @@ tr:last-child td{border-bottom:none}
           btn.addEventListener("click", () => {
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
-            document.getElementById("catalogEditId").value = art.id;
-            document.getElementById("catalogName").value   = art.name;
-            document.getElementById("catalogBase").value   = art.base || "";
-            document.getElementById("catalogExtra").value  = art.extra || "";
+            document.getElementById("catalogEditId").value    = art.id;
+            document.getElementById("catalogName").value      = art.name;
+            document.getElementById("catalogCategoria").value = art.categoria || "ALTRO";
+            document.getElementById("catalogBase").value      = art.base || "";
+            document.getElementById("catalogExtra").value     = art.extra || "";
             document.getElementById("catalogFormTitle").textContent = "Modifica articolo";
             document.getElementById("catalogForm").style.display = "";
             document.getElementById("catalogName").focus();
@@ -3242,10 +3255,11 @@ tr:last-child td{border-bottom:none}
   /* ─── Catalog form listeners ─── */
   const _btnAddCatalogItem = document.getElementById("btnAddCatalogItem");
   if(_btnAddCatalogItem) _btnAddCatalogItem.addEventListener("click", () => {
-    document.getElementById("catalogEditId").value = "";
-    document.getElementById("catalogName").value   = "";
-    document.getElementById("catalogBase").value   = "";
-    document.getElementById("catalogExtra").value  = "";
+    document.getElementById("catalogEditId").value    = "";
+    document.getElementById("catalogName").value      = "";
+    document.getElementById("catalogCategoria").value = "ALTRO";
+    document.getElementById("catalogBase").value      = "";
+    document.getElementById("catalogExtra").value     = "";
     document.getElementById("catalogFormTitle").textContent = "Nuovo articolo";
     const form = document.getElementById("catalogForm");
     form.style.display = form.style.display === "none" ? "" : "none";
@@ -3254,17 +3268,18 @@ tr:last-child td{border-bottom:none}
 
   const _btnSaveCatalogItem = document.getElementById("btnSaveCatalogItem");
   if(_btnSaveCatalogItem) _btnSaveCatalogItem.addEventListener("click", () => {
-    const name  = document.getElementById("catalogName").value.trim();
+    const name      = document.getElementById("catalogName").value.trim();
     if(!name){ toast("Inserisci un nome per l'articolo", "warn"); return; }
-    const base  = parseFloat(document.getElementById("catalogBase").value)  || 0;
-    const extra = parseFloat(document.getElementById("catalogExtra").value) || 0;
-    const editId = document.getElementById("catalogEditId").value;
-    const catalog = getCatalog();
+    const categoria = document.getElementById("catalogCategoria").value || "ALTRO";
+    const base      = parseFloat(document.getElementById("catalogBase").value)  || 0;
+    const extra     = parseFloat(document.getElementById("catalogExtra").value) || 0;
+    const editId    = document.getElementById("catalogEditId").value;
+    const catalog   = getCatalog();
     if(editId) {
       const idx = catalog.findIndex(a => a.id === editId);
-      if(idx >= 0) catalog[idx] = { ...catalog[idx], name, base, extra };
+      if(idx >= 0) catalog[idx] = { ...catalog[idx], name, categoria, base, extra };
     } else {
-      catalog.push({ id: uid(), name, base, extra });
+      catalog.push({ id: uid(), name, categoria, base, extra });
     }
     setCatalog(catalog);
     document.getElementById("catalogForm").style.display = "none";
