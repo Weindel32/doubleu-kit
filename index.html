@@ -2618,6 +2618,8 @@ tr:last-child td{border-bottom:none}
         return;
       }
       cloudProjects = Array.isArray(data) ? data : [];
+      if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit cloud caricati`, "ok");
+      else toast("☁ Nessun kit trovato nel cloud", "warn");
     } catch(err) {
       console.error("Cloud load exception:", err);
       if(errorEl)   errorEl.style.display   = "";
