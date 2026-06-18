@@ -1766,12 +1766,10 @@
 
   </div><!-- /app-shell -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v14 — phase 3
+   build v15 — phase 3
 ========================= */
 
 (async function(){
@@ -1780,18 +1778,36 @@
 
   let supabase = null;
 
+  // Carica Supabase JS dinamicamente con fallback su CDN alternativo
+  await new Promise((resolve) => {
+    const urls = [
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js",
+      "https://unpkg.com/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"
+    ];
+    let idx = 0;
+    const tryNext = () => {
+      if(idx >= urls.length) { resolve(); return; }
+      const s = document.createElement("script");
+      s.src = urls[idx++];
+      s.onload  = resolve;
+      s.onerror = tryNext;
+      document.head.appendChild(s);
+    };
+    tryNext();
+  });
+
   try {
     if (window.supabase && typeof window.supabase.createClient === "function") {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
-      console.warn("Supabase non disponibile");
+      console.warn("Supabase non disponibile — controlla la connessione o l'ad-blocker");
     }
   } catch (e) {
     console.error("Supabase init error:", e);
   }
 
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v14";
+  if(buildTxt) buildTxt.textContent = "build v15";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -3439,8 +3455,16 @@ tr:last-child td{border-bottom:none}
       }
     });
   } else {
-    hideAuthOverlay();
-    await initApp();
+    // Supabase non disponibile — mostra schermata di login con avviso
+    const loginSubtitle = document.querySelector(".auth-title");
+    if(loginSubtitle) {
+      const warn = document.createElement("div");
+      warn.style.cssText = "margin-bottom:16px;padding:10px 12px;background:#FEF3EA;border:1px solid #F4BF8A;border-radius:8px;font-size:13px;color:#E87C2B;line-height:1.4";
+      warn.textContent = "Connessione al cloud non disponibile. Controlla la connessione o disattiva l'ad-blocker, poi ricarica la pagina.";
+      loginSubtitle.parentNode.insertBefore(warn, loginSubtitle.nextSibling);
+    }
+    if(loginBtn) { loginBtn.disabled = true; loginBtn.textContent = "Non disponibile"; }
+    showAuthOverlay();
   }
 
   if(loginForm) {
