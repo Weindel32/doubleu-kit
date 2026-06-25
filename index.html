@@ -1810,7 +1810,7 @@
   }
 
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v15";
+  if(buildTxt) buildTxt.textContent = "build v16";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -3435,20 +3435,26 @@ tr:last-child td{border-bottom:none}
   let appInited = false;
 
   if(supabase) {
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if(session) {
-        hideAuthOverlay();
-        updateSidebarUser(session.user);
-        if(!appInited) {
-          appInited = true;
-          await initApp();
+    supabase.auth.onAuthStateChange((event, session) => {
+      // IMPORTANTE: non fare await su chiamate Supabase direttamente qui dentro.
+      // La callback gira mentre la libreria tiene il lock sulla sessione: una query
+      // al DB proverebbe ad acquisire lo stesso lock → deadlock (i kit non si caricano).
+      // Differiamo tutto fuori dalla callback con setTimeout(…, 0).
+      setTimeout(async () => {
+        if(session) {
+          hideAuthOverlay();
+          updateSidebarUser(session.user);
+          if(!appInited) {
+            appInited = true;
+            await initApp();
+          } else {
+            await loadProjectsFromCloud();
+            renderDashboard();
+          }
         } else {
-          await loadProjectsFromCloud();
-          renderDashboard();
+          showAuthOverlay();
         }
-      } else {
-        showAuthOverlay();
-      }
+      }, 0);
     });
   } else {
     // Supabase non disponibile — mostra schermata di login con avviso
