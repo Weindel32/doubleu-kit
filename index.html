@@ -1668,13 +1668,6 @@
             </div>
           </div>
 
-          <!-- Current kit articles -->
-          <div class="card">
-            <div class="card-title">Articoli nel kit attivo</div>
-            <div id="articoliKitAttivo">
-              <div class="hint">Nessun articolo nel kit corrente. Apri il Kit Builder.</div>
-            </div>
-          </div>
         </div><!-- /articoliView -->
 
         <!-- ── Esportazioni View ── -->
@@ -2670,6 +2663,9 @@ tr:last-child td{border-bottom:none}
     const date    = new Date().toLocaleDateString("it-IT");
     const name    = `${client || "Cliente"} – ${project} – ${date}`;
     const p       = payload();
+    const store   = getStore();
+    store[name]   = { payload: p, savedAt: Date.now() };
+    setStore(store);
     await saveProjectToCloud(p, name);
     toast("Progetto salvato ✓", "ok");
   };
@@ -2779,6 +2775,8 @@ tr:last-child td{border-bottom:none}
     });
     const titleEl = document.querySelector(".topbar-title");
     if(titleEl) titleEl.textContent = VIEW_TITLES[view] || view;
+    const statusBarEl = document.getElementById("statusBar");
+    if(statusBarEl) statusBarEl.style.display = view === "builder" ? "" : "none";
     const renderFns = {
       dashboard: renderDashboard,
       analisi:   renderAnalisi,
@@ -3209,7 +3207,9 @@ tr:last-child td{border-bottom:none}
             document.getElementById("catalogBase").value      = art.base || "";
             document.getElementById("catalogExtra").value     = art.extra || "";
             document.getElementById("catalogFormTitle").textContent = "Modifica articolo";
-            document.getElementById("catalogForm").style.display = "";
+            const form = document.getElementById("catalogForm");
+            form.style.display = "";
+            form.scrollIntoView({ behavior: "smooth", block: "start" });
             document.getElementById("catalogName").focus();
           });
         });
@@ -3227,29 +3227,6 @@ tr:last-child td{border-bottom:none}
       }
     }
 
-    const kitEl = document.getElementById("articoliKitAttivo");
-    if(kitEl) {
-      if(!items.length || items.every(it => !it.article)) {
-        kitEl.innerHTML = '<div class="hint">Nessun articolo nel kit corrente. Apri il Kit Builder.</div>';
-      } else {
-        const activeItems = items.filter(it => it.article);
-        kitEl.innerHTML =
-          `<div class="kit-art-cards">${activeItems.map(it => {
-            const cost   = toNum(it.base) + toNum(it.extra);
-            const subtot = cost * toNum(it.qty);
-            return `<div class="kit-art-row">
-              <div class="kit-art-row-main">
-                <span class="kit-art-row-name">${it.article}</span>
-                <span class="kit-art-row-line">${it.line}</span>
-              </div>
-              <div class="kit-art-row-nums">
-                <span class="kit-art-row-detail">Base ${eur(toNum(it.base))}${toNum(it.extra)>0?` + ${eur(toNum(it.extra))}`:""}  ×  ${it.qty||"—"}</span>
-                <span class="kit-art-row-subtot">${subtot > 0 ? eur(subtot) : "—"}</span>
-              </div>
-            </div>`;
-          }).join("")}</div>`;
-      }
-    }
   };
 
   /* ─── Catalog form listeners ─── */
