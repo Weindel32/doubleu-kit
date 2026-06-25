@@ -3169,11 +3169,13 @@ tr:last-child td{border-bottom:none}
         catalog.forEach(art => {
           const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
           const catLabel = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" }[art.categoria] || art.categoria || "—";
+          const inKit = items.filter(it => it.article === art.name).length;
+          const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--ok,#16a34a);color:#fff">nel kit ×${inKit}</span>` : "";
           const row = document.createElement("div");
           row.className = "catalog-item";
           row.innerHTML = `
             <div class="catalog-item-info">
-              <div class="catalog-item-name">${art.name} <span class="cat-badge">${catLabel}</span></div>
+              <div class="catalog-item-name">${art.name} <span class="cat-badge">${catLabel}</span>${inKitBadge}</div>
               <div class="catalog-item-prices">${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
@@ -3191,8 +3193,8 @@ tr:last-child td{border-bottom:none}
             const line = art.categoria && LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
             items.push({ id: uid(), article: art.name, line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
             render();
-            showView("builder");
-            goToStep(1);
+            // Resta nell'archivio così si possono aggiungere più articoli di seguito
+            renderArticoli();
             toast(`"${art.name}" aggiunto al kit ✓`, "ok");
           });
         });
