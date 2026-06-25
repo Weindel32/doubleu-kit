@@ -1471,9 +1471,14 @@
 
               <div class="row3" style="margin-top:10px">
                 <div class="kpi">
-                  <div class="lbl">Utile totale (netto IVA)</div>
+                  <div class="lbl">Margine dell'ordine</div>
                   <div class="val" id="kProfit">—</div>
-                  <div class="note">Utile su imponibile</div>
+                  <div class="note">Margine su imponibile</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Margine per atleta</div>
+                  <div class="val" id="kProfitAthlete">—</div>
+                  <div class="note">Margine dell'ordine ÷ atleti fatturati</div>
                 </div>
                 <div class="kpi" id="kpiMinPrice">
                   <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
@@ -1583,7 +1588,7 @@
               <div class="kpi"><div class="lbl">Prezzo/atleta</div><div class="val" id="pvPriceAthlete">—</div><div class="note">Prezzo offerto</div></div>
               <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val" id="pvCostAthlete">—</div><div class="note">Costo produzione</div></div>
               <div class="kpi"><div class="lbl">Margine reale</div><div class="val" id="pvMargin">—</div><div class="note">Sul prezzo netto</div></div>
-              <div class="kpi"><div class="lbl">Utile totale</div><div class="val" id="pvProfit">—</div><div class="note">Ricavo − costo</div></div>
+              <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="pvProfit">—</div><div class="note">Ricavo − costo</div></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
               <div class="card">
@@ -1603,7 +1608,7 @@
               <div class="kpi" id="kpiV_margin"><div class="lbl">Margine reale</div><div class="val" id="kvMargin">—</div><div class="note" id="kvMarginNote">—</div></div>
               <div class="kpi" id="kpiV_price"><div class="lbl">Prezzo/atleta</div><div class="val" id="kvPrice">—</div><div class="note">Prezzo proposto</div></div>
               <div class="kpi"><div class="lbl">Costo totale</div><div class="val" id="kvCost">—</div><div class="note" id="kvCostNote">—</div></div>
-              <div class="kpi"><div class="lbl">Utile netto</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
+              <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
               <div class="card">
@@ -2283,12 +2288,16 @@
     kTarget.textContent         = "Target: " + (m * 100).toFixed(0) + "%";
     kVatNote.textContent        = vatOn ? "IVA inclusa nel prezzo" : "Prezzi netti (no IVA)";
 
+    const profitPerAthlete = qtyBase > 0 ? profit / qtyBase : 0;
+
     kTotalCost.textContent      = eur(totalCost);
     kGiftCost.textContent       = giftCost > 0 ? eur(giftCost) : "—";
     kPaidCost.textContent       = eur(paidCost);
     kGross.textContent          = eur(invoiceTotal);
     kNet.textContent            = eur(revenueNet);
     kProfit.textContent         = eur(profit);
+    const kProfitAthleteEl = document.getElementById("kProfitAthlete");
+    if(kProfitAthleteEl) kProfitAthleteEl.textContent = eur(profitPerAthlete);
     kMinSustainable.textContent = eur(minSustainableDisplay);
     kTargetPrice.textContent    = eur(targetPricePerAthlete);
     kMinPrice.textContent       = eur(minAcceptablePerAthlete);
@@ -2334,10 +2343,9 @@
     statusBar.className  = "statusBar " + overallState;
     statusLabel.textContent = stateLabels[overallState];
     statusStats.innerHTML = `
-      <span>Margine: <strong>${(realMargin*100).toFixed(1)}%</strong></span>
+      <span>Margine: <strong>${eur(profit)} · ${(realMargin*100).toFixed(1)}%</strong></span>
       <span>Costo/atleta: <strong>${eur(costPerAthlete)}</strong></span>
-      <span>Prezzo/atleta: <strong>${eur(pricePerAthlete)}</strong></span>
-      <span>Utile: <strong>${eur(profit)}</strong></span>`;
+      <span>Prezzo/atleta: <strong>${eur(pricePerAthlete)}</strong></span>`;
 
     if(offerStatusBox){
       offerStatusBox.textContent = offerStatus;
@@ -2401,7 +2409,8 @@
     lines.push(`Costo omaggi: ${kGiftCost.textContent}`);
     lines.push(`Totale fatturato: ${kGross.textContent}`);
     lines.push(`Imponibile: ${kNet.textContent}`);
-    lines.push(`Utile: ${kProfit.textContent}`);
+    lines.push(`Margine dell'ordine: ${kProfit.textContent}`);
+    lines.push(`Margine per atleta: ${document.getElementById("kProfitAthlete")?.textContent || "—"}`);
     lines.push(`Costo per atleta: ${kCostAthlete.textContent}`);
     lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${vatOn ? "IVA incl." : "netto"})`);
     lines.push(`Margine reale: ${kRealMargin.textContent}`);
@@ -2556,7 +2565,8 @@ tr:last-child td{border-bottom:none}
     <div class="kpi" style="${giftCostPDF>0?'border-left:3px solid #E87C2B;background:#FEF3EA':''}"><div class="lbl">Costo omaggi</div><div class="val" style="${giftCostPDF>0?'color:#E87C2B':''}">${giftCostPDF>0?eur(giftCostPDF):"—"}</div><div class="note">Assorbiti nel margine</div></div>
     <div class="kpi"><div class="lbl">Totale fatturato</div><div class="val">${g("kGross")}</div></div>
     <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
-    <div class="kpi"><div class="lbl">Utile totale</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
+    <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
+    <div class="kpi"><div class="lbl">Margine per atleta</div><div class="val">${g("kProfitAthlete")}</div><div class="note">Margine ÷ atleti fatturati</div></div>
     <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo</div><div class="val">${g("kMinPrice")}</div><div class="note">Sotto = fuori margine</div></div>
     <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Copre produzione + buffer</div></div>
   </div>
@@ -3059,7 +3069,7 @@ tr:last-child td{border-bottom:none}
             <div class="kpi"><div class="lbl">Margine reale</div><div class="val">${rawMargin}</div></div>
             <div class="kpi"><div class="lbl">Margine target</div><div class="val">${targetPct.toFixed(0)}%</div></div>
             <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val">${costAthl}</div></div>
-            <div class="kpi"><div class="lbl">Utile</div><div class="val">${profit}</div></div>
+            <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${profit}</div></div>
           </div>`;
       }
     }
@@ -3102,7 +3112,7 @@ tr:last-child td{border-bottom:none}
       ["Ricavo lordo",   domVal("kGross")],
       ["Ricavo netto",   domVal("kNet")],
       ["Costo totale",   domVal("kTotalCost")],
-      ["Utile netto",    domVal("kProfit")],
+      ["Margine dell'ordine", domVal("kProfit")],
       ["Acconto minimo", domVal("kMinDeposit")],
     ].map(([l,v]) => `<tr class="soglia-row"><td>${l}</td><td>${v}</td></tr>`).join("");
   };
