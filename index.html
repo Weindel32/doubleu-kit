@@ -2968,21 +2968,25 @@ tr:last-child td{border-bottom:none}
     tbody.querySelectorAll("[data-act='sync']").forEach(btn => {
       btn.addEventListener("click", async () => {
         const kit = rows[parseInt(btn.getAttribute("data-row"))];
+        const fail = (msg) => { toast(msg, "err", 6000); btn.disabled = false; btn.textContent = "✕ Riprova"; btn.style.color = "var(--bad)"; };
         btn.disabled = true;
         btn.textContent = "☁ …";
+        btn.style.color = "";
         try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if(!sessionData?.session){ fail("Sessione scaduta — effettua di nuovo il login"); return; }
           const { data, error } = await supabase
             .from("projects")
             .insert([{ name: kit.name, data: kit.payload }])
             .select("id");
-          if(error){ toast("Errore sync cloud: " + error.message, "err"); btn.disabled = false; btn.textContent = "☁ Sync"; return; }
+          if(error){ fail("Errore sync: " + error.message); return; }
           const store = getStore();
           delete store[kit.name];
           setStore(store);
           await loadProjectsFromCloud();
           toast("Kit sincronizzato sul cloud ☁", "ok");
           renderDashboard();
-        } catch(e){ toast("Errore sync: " + e.message, "err"); btn.disabled = false; btn.textContent = "☁ Sync"; }
+        } catch(e){ fail("Errore sync: " + e.message); }
       });
     });
 
@@ -3055,21 +3059,25 @@ tr:last-child td{border-bottom:none}
         cardList.querySelectorAll("[data-ca='sync']").forEach(btn => {
           btn.addEventListener("click", async () => {
             const kit = rows[parseInt(btn.getAttribute("data-ci"))];
+            const fail = (msg) => { toast(msg, "err", 6000); btn.disabled = false; btn.textContent = "✕"; btn.style.color = "var(--bad)"; };
             btn.disabled = true;
             btn.textContent = "…";
+            btn.style.color = "";
             try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              if(!sessionData?.session){ fail("Sessione scaduta — effettua di nuovo il login"); return; }
               const { data, error } = await supabase
                 .from("projects")
                 .insert([{ name: kit.name, data: kit.payload }])
                 .select("id");
-              if(error){ toast("Errore sync cloud: " + error.message, "err"); btn.disabled = false; btn.textContent = "☁"; return; }
+              if(error){ fail("Errore sync: " + error.message); return; }
               const store = getStore();
               delete store[kit.name];
               setStore(store);
               await loadProjectsFromCloud();
               toast("Kit sincronizzato sul cloud ☁", "ok");
               renderDashboard();
-            } catch(e){ toast("Errore sync: " + e.message, "err"); btn.disabled = false; btn.textContent = "☁"; }
+            } catch(e){ fail("Errore sync: " + e.message); }
           });
         });
       }
