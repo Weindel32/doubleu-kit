@@ -2923,6 +2923,7 @@ tr:last-child td{border-bottom:none}
         <td>
           <div style="display:flex;gap:6px;align-items:center">
             <button class="secondary" style="font-size:12px;padding:5px 10px" data-row="${i}" data-act="load">Carica</button>
+            ${kit.source === "local" && supabase ? `<button class="secondary" style="font-size:12px;padding:5px 10px;color:var(--accent)" data-row="${i}" data-act="sync" title="Carica su cloud">☁ Sync</button>` : ""}
             ${canDel ? `<button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-row="${i}" data-act="del" title="Elimina kit">✕</button>` : ""}
           </div>
         </td>
@@ -2964,6 +2965,27 @@ tr:last-child td{border-bottom:none}
       });
     });
 
+    tbody.querySelectorAll("[data-act='sync']").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const kit = rows[parseInt(btn.getAttribute("data-row"))];
+        btn.disabled = true;
+        btn.textContent = "☁ …";
+        try {
+          const { data, error } = await supabase
+            .from("projects")
+            .insert([{ name: kit.name, data: kit.payload }])
+            .select("id");
+          if(error){ toast("Errore sync cloud: " + error.message, "err"); btn.disabled = false; btn.textContent = "☁ Sync"; return; }
+          const store = getStore();
+          delete store[kit.name];
+          setStore(store);
+          await loadProjectsFromCloud();
+          toast("Kit sincronizzato sul cloud ☁", "ok");
+          renderDashboard();
+        } catch(e){ toast("Errore sync: " + e.message, "err"); btn.disabled = false; btn.textContent = "☁ Sync"; }
+      });
+    });
+
     // Mobile card list
     const cardList = document.getElementById("dashCardList");
     if(cardList) {
@@ -2989,6 +3011,7 @@ tr:last-child td{border-bottom:none}
             </div>
             <div class="dash-kit-card-actions">
               <button class="secondary" style="font-size:13px;padding:7px 14px;flex:1" data-ci="${i}" data-ca="load">Carica</button>
+              ${kit.source === "local" && supabase ? `<button class="secondary" style="font-size:13px;padding:7px 10px;color:var(--accent)" data-ci="${i}" data-ca="sync" title="Carica su cloud">☁</button>` : ""}
               <button class="ghost" style="font-size:13px;padding:7px 10px;color:var(--bad)" data-ci="${i}" data-ca="del">✕</button>
             </div>
           </div>`;
@@ -3026,6 +3049,27 @@ tr:last-child td{border-bottom:none}
             }
             toast("Kit eliminato ✓", "ok");
             renderDashboard();
+          });
+        });
+
+        cardList.querySelectorAll("[data-ca='sync']").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const kit = rows[parseInt(btn.getAttribute("data-ci"))];
+            btn.disabled = true;
+            btn.textContent = "…";
+            try {
+              const { data, error } = await supabase
+                .from("projects")
+                .insert([{ name: kit.name, data: kit.payload }])
+                .select("id");
+              if(error){ toast("Errore sync cloud: " + error.message, "err"); btn.disabled = false; btn.textContent = "☁"; return; }
+              const store = getStore();
+              delete store[kit.name];
+              setStore(store);
+              await loadProjectsFromCloud();
+              toast("Kit sincronizzato sul cloud ☁", "ok");
+              renderDashboard();
+            } catch(e){ toast("Errore sync: " + e.message, "err"); btn.disabled = false; btn.textContent = "☁"; }
           });
         });
       }
