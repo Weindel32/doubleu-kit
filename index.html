@@ -48,15 +48,18 @@
       --sb-active:   #0A4174;
       --sb-active-bd:#7BBDE8;
 
-      --good:        #17703F;
-      --good-bg:     #E2F4EA;
-      --good-bd:     #8FCCA8;
-      --warn:        #D96F1E;
-      --warn-bg:     #FDEEDD;
-      --warn-bd:     #EFA95F;
-      --bad:         #8A1A28;
-      --bad-bg:      #FAE6EA;
-      --bad-bd:      #D6919D;
+      /* Palette semantica colorblind-safe (Okabe–Ito): distinguibile
+         anche con daltonismo rosso-verde. Buono = verde-acqua (freddo),
+         Attenzione = ambra/giallo, Critico = vermiglio (caldo). */
+      --good:        #0A6E4E;
+      --good-bg:     #E1F1EB;
+      --good-bd:     #8CC7B2;
+      --warn:        #9A6600;
+      --warn-bg:     #FAEED3;
+      --warn-bd:     #E4BB6A;
+      --bad:         #BC431B;
+      --bad-bg:      #FBE6DA;
+      --bad-bd:      #ECA688;
 
       --input-bg:    #FAFCFF;
       --input-bd:    #C8DFF0;
@@ -462,6 +465,18 @@
     .kpi.bad  .val { color: var(--bad);  }
 
     .kpi .note { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+    /* Chip di stato: icona + parola, così il significato NON dipende dal solo colore */
+    .kpi-flag {
+      display: inline-flex; align-items: center; gap: 5px; margin-top: 9px;
+      font-size: 11px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+      padding: 3px 9px 3px 7px; border-radius: 999px;
+      background: var(--surface); border: 1px solid;
+    }
+    .kpi-flag-ico { font-size: 12px; line-height: 1; font-weight: 900; }
+    .kpi-flag.good { color: var(--good); border-color: var(--good-bd); }
+    .kpi-flag.warn { color: var(--warn); border-color: var(--warn-bd); }
+    .kpi-flag.bad  { color: var(--bad);  border-color: var(--bad-bd);  }
 
     /* ─── KPI Panel ─── */
     .kpi-panel { position: sticky; top: 18px; }
@@ -1963,10 +1978,25 @@
 
   const ensureOne = () => { if(!items.length) items = [newItem()]; };
 
+  // Etichette di stato: icona + parola (accessibilità daltonismo — il colore da solo non basta)
+  const STATE_FLAG = {
+    good: { icon: "✓", txt: "OK" },
+    warn: { icon: "⚠", txt: "Attenzione" },
+    bad:  { icon: "✕", txt: "Sotto soglia" },
+  };
   const setBox = (el, state) => {
     if(!el) return;
     el.classList.remove("good","warn","bad");
-    if(state) el.classList.add(state);
+    let flag = el.querySelector(".kpi-flag");
+    if(state){
+      el.classList.add(state);
+      if(!flag){ flag = document.createElement("div"); el.appendChild(flag); }
+      const f = STATE_FLAG[state] || STATE_FLAG.good;
+      flag.className = "kpi-flag " + state;
+      flag.innerHTML = `<span class="kpi-flag-ico">${f.icon}</span>${f.txt}`;
+    } else if(flag){
+      flag.remove();
+    }
   };
 
   /* ─── Article card icon by type ─── */
@@ -2309,13 +2339,13 @@
       const belowTarget      = realMargin < m;
       if(belowSustainable){
         offerStatus = `✕ NON SOSTENIBILE · Minimo ${eur(minSustainableDisplay)}`;
-        offerStatusColor = "#8A1A28";
+        offerStatusColor = "#BC431B";
       } else if(belowTarget){
         offerStatus = `⚠ SOSTENIBILE · Margine ${(realMargin*100).toFixed(1)}% (target ${(m*100).toFixed(0)}%)`;
-        offerStatusColor = "#E87C2B";
+        offerStatusColor = "#9A6600";
       } else {
         offerStatus = `✓ OK · Margine ${(realMargin*100).toFixed(1)}%`;
-        offerStatusColor = "#1A7A45";
+        offerStatusColor = "#0A6E4E";
       }
     }
 
@@ -2407,7 +2437,7 @@
 
     const overallState   = (realMargin + 1e-9 < m || pricePerAthlete + 1e-9 < minAcceptablePerAthlete) ? "bad"
       : (depositNet + 1e-9 < secureNeed || alerts.some(a => a.level === "warn" || a.level === "bad")) ? "warn" : "good";
-    const stateLabels    = { good:"Preventivo OK — margine raggiunto", warn:"Attenzione: controlla gli avvisi", bad:"Problema: margine o prezzo sotto soglia" };
+    const stateLabels    = { good:"✓ Preventivo OK — margine raggiunto", warn:"⚠ Attenzione: controlla gli avvisi", bad:"✕ Problema: margine o prezzo sotto soglia" };
     statusBar.className  = "statusBar " + overallState;
     statusLabel.textContent = stateLabels[overallState];
     statusStats.innerHTML = `
@@ -2553,21 +2583,21 @@ body{font-family:system-ui,-apple-system,sans-serif;color:#001D39;background:#ff
 .sec{margin-bottom:18px}
 .sec-title{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#7BBDE8;font-weight:700;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #C8DFF0}
 .sbar{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:9px;margin-bottom:18px;font-size:12px;font-weight:800}
-.sbar.good{background:#EDF7F2;border:1px solid #A8D8BB;color:#1A7A45}
-.sbar.warn{background:#FEF3EA;border:1px solid #F4BF8A;color:#E87C2B}
-.sbar.bad {background:#FDF0F2;border:1px solid #E0A8B0;color:#8A1A28}
+.sbar.good{background:#E1F1EB;border:1px solid #8CC7B2;color:#0A6E4E}
+.sbar.warn{background:#FAEED3;border:1px solid #E4BB6A;color:#9A6600}
+.sbar.bad {background:#FBE6DA;border:1px solid #ECA688;color:#BC431B}
 .sdot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
-.sbar.good .sdot{background:#1A7A45}.sbar.warn .sdot{background:#E87C2B}.sbar.bad .sdot{background:#8A1A28}
+.sbar.good .sdot{background:#0A6E4E}.sbar.warn .sdot{background:#9A6600}.sbar.bad .sdot{background:#BC431B}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
 .kpi{background:#F0F7FC;border:1px solid #C8DFF0;border-radius:10px;padding:11px 12px;border-left:3px solid #C8DFF0}
-.kpi.good{border-left-color:#1A7A45;background:#EDF7F2}
-.kpi.warn{border-left-color:#E87C2B;background:#FEF3EA}
-.kpi.bad {border-left-color:#8A1A28;background:#FDF0F2}
-.kpi .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7BBDE8;font-weight:700}
+.kpi.good{border-left-color:#0A6E4E;background:#E1F1EB}
+.kpi.warn{border-left-color:#9A6600;background:#FAEED3}
+.kpi.bad {border-left-color:#BC431B;background:#FBE6DA}
+.kpi .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#3E6A95;font-weight:700}
 .kpi .val{font-size:18px;font-weight:900;letter-spacing:-.2px;margin-top:3px;color:#001D39}
-.kpi.good .val{color:#1A7A45}.kpi.warn .val{color:#E87C2B}.kpi.bad .val{color:#8A1A28}
-.kpi .note{font-size:9px;color:#7BBDE8;margin-top:3px}
+.kpi.good .val{color:#0A6E4E}.kpi.warn .val{color:#9A6600}.kpi.bad .val{color:#BC431B}
+.kpi .note{font-size:9px;color:#3E6A95;margin-top:3px}
 table{width:100%;border-collapse:collapse}
 th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7BBDE8;font-weight:700;text-align:left;padding:5px 8px;border-bottom:1.5px solid #C8DFF0}
 td{padding:7px 8px;font-size:12px;border-bottom:1px solid #EBF3FA;vertical-align:middle}
