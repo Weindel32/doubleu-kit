@@ -34,7 +34,7 @@
 
       --text:        #001D39;
       --text-2:      #0A4174;
-      --muted:       #49769F;
+      --muted:       #3E6A95;
       --muted-2:     #7BBDE8;
 
       --accent:      #0A4174;
@@ -76,12 +76,13 @@
       background: var(--bg);
       color: var(--text);
       height: 100vh;
+      height: 100dvh; /* iPad/iOS: usa l'altezza reale visibile, non tagliata dalla barra Safari */
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
     /* ─── App Shell ─── */
-    .app-shell { display: flex; height: 100vh; }
+    .app-shell { display: flex; height: 100vh; height: 100dvh; }
 
     /* ─── Sidebar ─── */
     .sidebar {
@@ -319,7 +320,7 @@
       color: var(--muted); letter-spacing: .03em; margin-bottom: 4px;
     }
 
-    .hint { font-size: 11px; color: var(--muted-2); margin-top: 4px; line-height: 1.4; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
     /* ─── Inputs ─── */
     input, select, textarea {
@@ -460,7 +461,7 @@
     .kpi.warn .val { color: var(--warn); }
     .kpi.bad  .val { color: var(--bad);  }
 
-    .kpi .note { font-size: 11px; color: var(--muted-2); margin-top: 4px; line-height: 1.4; }
+    .kpi .note { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
     /* ─── KPI Panel ─── */
     .kpi-panel { position: sticky; top: 18px; }
@@ -2716,8 +2717,9 @@ tr:last-child td{border-bottom:none}
     }
   };
 
+  // Ritorna true se il progetto è stato salvato sul cloud (durevole), false altrimenti.
   const saveProjectToCloud = async (projectPayload, projectLabel) => {
-    if(!supabase) return;
+    if(!supabase) return false;
     try {
       const label = projectLabel || projectPayload.projectName || "Progetto";
       if(activeCloudId) {
@@ -2726,8 +2728,8 @@ tr:last-child td{border-bottom:none}
           .update({ name: label, data: projectPayload })
           .eq("id", activeCloudId)
           .select("id");
-        if(error){ console.error("Cloud update error:", error); toast("Errore cloud: " + error.message, "err"); return; }
-        if(data && data.length){ await loadProjectsFromCloud(); return; }
+        if(error){ console.error("Cloud update error:", error); toast("Errore cloud: " + error.message, "err"); return false; }
+        if(data && data.length){ await loadProjectsFromCloud(); return true; }
         // La riga cloud non esiste più (eliminata altrove): ricrea invece di "salvare nel vuoto"
         activeCloudId = null;
       }
@@ -2735,9 +2737,11 @@ tr:last-child td{border-bottom:none}
         .from("projects")
         .insert([{ name: label, data: projectPayload }])
         .select("id");
-      if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); }
-      else { if(data?.[0]?.id) activeCloudId = data[0].id; await loadProjectsFromCloud(); }
-    } catch(err) { console.error("Cloud save exception:", err); toast("Errore cloud: " + err.message, "err"); }
+      if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); return false; }
+      if(data?.[0]?.id) activeCloudId = data[0].id;
+      await loadProjectsFromCloud();
+      return true;
+    } catch(err) { console.error("Cloud save exception:", err); toast("Errore cloud: " + err.message, "err"); return false; }
   };
 
   const saveProject = async () => {
@@ -2750,8 +2754,15 @@ tr:last-child td{border-bottom:none}
     const store   = getStore();
     store[name]   = { payload: p, savedAt: Date.now() };
     setStore(store);
-    await saveProjectToCloud(p, name);
-    toast("Progetto salvato ✓", "ok");
+    const cloudOk = await saveProjectToCloud(p, name);
+    if(cloudOk) {
+      toast("Progetto salvato sul cloud ✓", "ok");
+    } else if(supabase) {
+      // Il cloud ha già mostrato l'errore specifico: chiariamo che resta solo la copia locale
+      toast("Salvato solo su questo dispositivo — riprova per salvarlo sul cloud", "warn", 6000);
+    } else {
+      toast("Salvato solo su questo dispositivo (cloud non disponibile)", "warn", 6000);
+    }
   };
 
 
