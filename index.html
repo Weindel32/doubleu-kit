@@ -763,13 +763,38 @@
     .dash-table td.text-right { text-align: right; }
 
     /* Margin bars */
-    .margin-bar-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .margin-bar-wrap { display: flex; flex-direction: column; gap: 12px; }
     .margin-bar-row { display: flex; flex-direction: column; gap: 4px; }
-    .margin-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); font-weight: 600; }
-    .margin-bar-track { height: 10px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+    .margin-bar-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); font-weight: 600; }
+    .margin-bar-label > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .margin-bar-track { position: relative; height: 10px; background: var(--surface-2); border-radius: 99px; }
     .margin-bar-fill { height: 100%; border-radius: 99px; transition: width .4s; background: var(--good); }
     .margin-bar-fill.warn { background: var(--warn); }
     .margin-bar-fill.bad  { background: var(--bad); }
+    .margin-bar-fill.neutral { background: var(--accent); }
+    .margin-bar-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-2); border-radius: 2px; z-index: 1; }
+
+    /* Chip di stato nelle barre (icona+testo, accessibile daltonismo) */
+    .mb-chip { flex-shrink: 0; font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums;
+               padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); background: var(--surface); }
+    .mb-chip.good { color: var(--good); border-color: var(--good-bd); }
+    .mb-chip.warn { color: var(--warn); border-color: var(--warn-bd); }
+    .mb-chip.bad  { color: var(--bad);  border-color: var(--bad-bd);  }
+
+    /* Scala prezzi (Analisi → Prezzi) */
+    .ps-wrap { position: relative; margin: 34px 6px 8px; }
+    .ps-track { position: relative; height: 14px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
+    .ps-zone { position: absolute; top: 0; bottom: 0; }
+    .ps-zone.bad  { background: var(--bad-bg); }
+    .ps-zone.warn { background: var(--warn-bg); }
+    .ps-zone.good { background: var(--good-bg); }
+    .ps-tick { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--border-2); border-radius: 2px; }
+    .ps-tick.target { background: var(--good); width: 3px; }
+    .ps-marker { position: absolute; top: -30px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 2; }
+    .ps-flag { font-size: 12px; font-weight: 800; background: var(--accent-2); color: #fff; padding: 2px 9px; border-radius: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .ps-arrow { width: 0; height: 0; border: 5px solid transparent; border-top-color: var(--accent-2); }
+    .ps-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); margin-top: 12px; }
+    .ps-legend strong { color: var(--text); font-variant-numeric: tabular-nums; }
 
     /* Export cards */
     .export-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -1121,7 +1146,7 @@
           Esportazioni
         </a>
 
-        <a class="nav-item" href="javascript:void(0)">
+        <a class="nav-item" href="javascript:void(0)" data-view="impostazioni">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <circle cx="10" cy="10" r="2.5"/>
             <path d="M10 3.5v2M10 14.5v2M3.5 10h2M14.5 10h2M5.4 5.4l1.4 1.4M13.2 13.2l1.4 1.4M5.4 14.6l1.4-1.4M13.2 6.8l1.4-1.4"/>
@@ -1618,6 +1643,10 @@
               <div class="kpi"><div class="lbl">Margine reale</div><div class="val" id="pvMargin">—</div><div class="note">Sul prezzo netto</div></div>
               <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="pvProfit">—</div><div class="note">Ricavo − costo</div></div>
             </div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-title">Scala prezzi per atleta</div>
+              <div id="prezziScala"><div class="hint">Inserisci i dati nel Kit Builder per vedere la scala.</div></div>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
               <div class="card">
                 <div class="card-title">Soglie prezzi</div>
@@ -1662,7 +1691,10 @@
               <div class="dash-welcome">Catalogo Articoli</div>
               <div class="dash-sub">Gestisci il tuo catalogo personale. Aggiungi articoli al kit con un tap.</div>
             </div>
-            <button class="primary" id="btnAddCatalogItem">+ Articolo</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="secondary" id="btnRecoverCatalog" title="Ricrea il catalogo dagli articoli dei kit salvati">↺ Recupera dai kit</button>
+              <button class="primary" id="btnAddCatalogItem">+ Articolo</button>
+            </div>
           </div>
 
           <!-- Add/Edit form -->
@@ -1702,7 +1734,7 @@
           <div class="card" style="margin-bottom:16px">
             <div class="card-title">I miei articoli</div>
             <div id="catalogList">
-              <div class="hint" id="catalogEmpty">Nessun articolo nel catalogo. Premi "+ Articolo" per aggiungerne uno.</div>
+              <div class="hint" id="catalogEmpty">Nessun articolo nel catalogo. Premi "+ Articolo" per aggiungerne uno, oppure "↺ Recupera dai kit" per ricostruirlo dagli articoli usati nei kit salvati.</div>
             </div>
           </div>
 
@@ -1758,6 +1790,77 @@
             </div>
           </div>
         </div><!-- /esportazioniView -->
+
+        <!-- ── Impostazioni View ── -->
+        <div id="impostazioniView" style="display:none">
+          <div class="dash-header">
+            <div>
+              <div class="dash-welcome">Impostazioni</div>
+              <div class="dash-sub">Valori predefiniti per i nuovi preventivi, backup dei dati e stato account.</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Predefiniti nuovi preventivi</div>
+            <div class="hint" style="margin-bottom:14px">Questi valori vengono applicati ogni volta che crei un nuovo preventivo. Il singolo preventivo può sempre modificarli.</div>
+            <div class="row2" style="margin-bottom:12px">
+              <div>
+                <label>Margine target</label>
+                <select id="setMargin">
+                  <option value="0.30">Promotional 30%</option>
+                  <option value="0.35">Promotional 35%</option>
+                  <option value="0.40">Promotional 40%</option>
+                  <option value="0.45">Club entry 45%</option>
+                  <option value="0.50">Club standard 50%</option>
+                  <option value="0.58">Club recommended 58%</option>
+                  <option value="0.65">Online 65%</option>
+                  <option value="0.72">Limited 72%</option>
+                  <option value="0.75">Limited Drop 75%</option>
+                </select>
+              </div>
+              <div>
+                <label>Sconto trattativa %</label>
+                <input id="setDiscount" inputmode="decimal">
+              </div>
+            </div>
+            <div class="row3" style="margin-bottom:16px">
+              <div>
+                <label>Acconto %</label>
+                <input id="setDeposit" inputmode="decimal">
+              </div>
+              <div>
+                <label>Buffer sicurezza %</label>
+                <input id="setBuffer" inputmode="decimal">
+              </div>
+              <div>
+                <label>IVA predefinita</label>
+                <div class="toggle">
+                  <input type="checkbox" id="setApplyVAT">
+                  <div>
+                    <div class="toggle-lbl">IVA 22% — Italia</div>
+                    <div class="hint" style="margin:0">OFF → Estero / Reverse charge</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="primary" id="btnSaveSettings">Salva predefiniti</button>
+          </div>
+
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Dati &amp; backup</div>
+            <div class="hint" style="margin-bottom:14px">Il backup include kit locali, catalogo articoli e impostazioni. I kit sul cloud sono già al sicuro nel tuo account.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="secondary" id="btnExportBackup">⬇ Esporta backup</button>
+              <button class="secondary" id="btnImportBackup">⬆ Importa backup</button>
+              <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none">
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Account &amp; stato</div>
+            <table class="dash-table" style="display:table"><tbody id="settingsInfo"></tbody></table>
+          </div>
+        </div><!-- /impostazioniView -->
 
       </div><!-- /content-area -->
     </div><!-- /main-content -->
@@ -2475,11 +2578,12 @@
     const hasData = (clientName.value.trim() || projectName.value.trim() || items.some(it => toNum(it.qty) > 0));
     if(hasData && !confirm("Creare un nuovo preventivo? I dati non salvati andranno persi.")) return;
     activeCloudId = null;
+    const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
-    margin.value      = "0.50"; vat.value = "22"; discount.value = "0";
+    margin.value      = defs.margin; vat.value = "22"; discount.value = defs.discount;
     offerPrice.value  = ""; useOffer.checked = false;
     priceIncludesVAT.checked = true;
-    depositPct.value  = "60"; bufferPct.value = "5"; applyVAT.checked = true;
+    depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
     items = [newItem()];
     render(); showAlerts([]);
     offerStatusBox.textContent = ""; offerStatusBox.style.color = "";
@@ -2743,7 +2847,13 @@ tr:last-child td{border-bottom:none}
         toast("Errore caricamento kit cloud", "err");
         return;
       }
-      cloudProjects = Array.isArray(data) ? data : [];
+      const all = Array.isArray(data) ? data : [];
+      // Righe speciali (catalogo, impostazioni): non sono kit, vanno separate
+      cloudCatalogRow  = all.find(p => p.name === CLOUD_CATALOG_NAME)  || cloudCatalogRow;
+      cloudSettingsRow = all.find(p => p.name === CLOUD_SETTINGS_NAME) || cloudSettingsRow;
+      cloudProjects = all.filter(p => !SPECIAL_ROW_NAMES.includes(p.name));
+      mergeCatalogFromCloud();
+      applyCloudSettings();
       if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit caricati`, "ok");
       else toast("☁ Nessun kit nel cloud", "warn");
     } catch(err) {
@@ -2804,6 +2914,155 @@ tr:last-child td{border-bottom:none}
     }
   };
 
+
+  /* ─── Righe speciali cloud (catalogo articoli, impostazioni) ───
+     Riusano la tabella "projects" con nomi riservati, così catalogo e
+     impostazioni sopravvivono anche se iOS azzera lo storage locale. */
+  const CLOUD_CATALOG_NAME  = "__catalog__";
+  const CLOUD_SETTINGS_NAME = "__settings__";
+  const SPECIAL_ROW_NAMES   = [CLOUD_CATALOG_NAME, CLOUD_SETTINGS_NAME];
+  let cloudCatalogRow  = null;
+  let cloudSettingsRow = null;
+
+  const saveSpecialRow = async (rowName, payloadObj, cachedRow) => {
+    if(!supabase) return null;
+    try {
+      if(cachedRow?.id){
+        const { data, error } = await supabase
+          .from("projects")
+          .update({ data: payloadObj })
+          .eq("id", cachedRow.id)
+          .select("id");
+        if(error){ console.error("Special row update:", error); return null; }
+        if(data && data.length) return { ...cachedRow, data: payloadObj };
+        // riga eliminata altrove: ricrea
+      }
+      const { data, error } = await supabase
+        .from("projects")
+        .insert([{ name: rowName, data: payloadObj }])
+        .select("id");
+      if(error){ console.error("Special row insert:", error); return null; }
+      return { id: data?.[0]?.id, name: rowName, data: payloadObj };
+    } catch(e){ console.error("Special row exception:", e); return null; }
+  };
+
+  const syncCatalogToCloud = async () => {
+    const row = await saveSpecialRow(CLOUD_CATALOG_NAME,
+      { type:"catalog", items: getCatalog(), updatedAt: Date.now() }, cloudCatalogRow);
+    if(row) cloudCatalogRow = row;
+  };
+
+  // Unione catalogo cloud + locale per nome (il locale, se presente, vince)
+  const mergeCatalogFromCloud = () => {
+    const cloudItems = Array.isArray(cloudCatalogRow?.data?.items) ? cloudCatalogRow.data.items : [];
+    const local = getCatalog();
+    if(!cloudItems.length){
+      if(local.length) syncCatalogToCloud();
+      return;
+    }
+    const byName = new Map();
+    cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
+    local.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
+    const merged = [...byName.values()];
+    try { localStorage.setItem(CATALOG_KEY, JSON.stringify(merged)); } catch(e) {}
+    if(merged.length !== cloudItems.length) syncCatalogToCloud();
+  };
+
+  /* ─── Impostazioni (predefiniti nuovi preventivi) ─── */
+  const SETTINGS_KEY = "doubleu_settings_v1";
+  const DEFAULT_SETTINGS = { margin:"0.50", discount:"0", depositPct:"60", bufferPct:"5", applyVAT:true };
+
+  const getSettings = () => {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      return { ...DEFAULT_SETTINGS, ...(raw ? JSON.parse(raw) : {}) };
+    } catch(e){ return { ...DEFAULT_SETTINGS }; }
+  };
+
+  const syncSettingsToCloud = async () => {
+    const row = await saveSpecialRow(CLOUD_SETTINGS_NAME,
+      { type:"settings", values: getSettings(), updatedAt: Date.now() }, cloudSettingsRow);
+    if(row) cloudSettingsRow = row;
+  };
+
+  const saveSettings = (s) => {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+    syncSettingsToCloud();
+  };
+
+  // Al login: se in locale non c'è nulla (es. storage azzerato da iOS), usa il cloud
+  const applyCloudSettings = () => {
+    const v = cloudSettingsRow?.data?.values;
+    if(!v) return;
+    let hasLocal = false;
+    try { hasLocal = !!localStorage.getItem(SETTINGS_KEY); } catch(e) {}
+    if(!hasLocal){
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(v)); } catch(e) {}
+    }
+  };
+
+  const renderImpostazioni = () => {
+    const s = getSettings();
+    const el = (id) => document.getElementById(id);
+    if(el("setMargin"))   el("setMargin").value      = s.margin;
+    if(el("setDiscount")) el("setDiscount").value    = s.discount;
+    if(el("setDeposit"))  el("setDeposit").value     = s.depositPct;
+    if(el("setBuffer"))   el("setBuffer").value      = s.bufferPct;
+    if(el("setApplyVAT")) el("setApplyVAT").checked  = !!s.applyVAT;
+    const info = el("settingsInfo");
+    if(info){
+      const email = document.getElementById("sbUname")?.textContent || "—";
+      const localKits = Object.keys(getStore()).length;
+      info.innerHTML = [
+        ["Account", esc(email)],
+        ["Kit sul cloud", cloudProjects.length],
+        ["Kit solo locali", localKits],
+        ["Articoli in catalogo", getCatalog().length],
+        ["Connessione cloud", supabase ? "✓ Attiva" : "✕ Non disponibile"],
+        ["Versione app", document.getElementById("buildTxt")?.textContent || "—"],
+      ].map(([l,v]) => `<tr class="soglia-row"><td>${l}</td><td>${v}</td></tr>`).join("");
+    }
+  };
+
+  /* ─── Backup: esporta/importa dati locali ─── */
+  const exportBackup = () => {
+    const payload = {
+      type: "doubleu-kit-backup", version: 1, exportedAt: new Date().toISOString(),
+      kits: getStore(), catalog: getCatalog(), settings: getSettings(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `doubleu-kit-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast("Backup esportato ⬇", "ok");
+  };
+
+  const importBackup = (file) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const b = JSON.parse(reader.result);
+        if(b?.type !== "doubleu-kit-backup") { toast("File non valido: non è un backup DOUBLEU", "err"); return; }
+        if(b.kits && typeof b.kits === "object"){
+          const store = getStore();
+          Object.entries(b.kits).forEach(([name, data]) => { if(!store[name]) store[name] = data; });
+          setStore(store);
+        }
+        if(Array.isArray(b.catalog) && b.catalog.length){
+          const catalog = getCatalog();
+          const have = new Set(catalog.map(a => (a.name||"").toLowerCase()));
+          b.catalog.forEach(a => { if(a?.name && !have.has(a.name.toLowerCase())) catalog.push(a); });
+          setCatalog(catalog);
+        }
+        if(b.settings) saveSettings({ ...getSettings(), ...b.settings });
+        renderImpostazioni();
+        toast("Backup importato ✓", "ok");
+      } catch(e){ toast("Errore lettura backup: " + e.message, "err"); }
+    };
+    reader.readAsText(file);
+  };
 
   const bindCalc = (el, ev="input") => el.addEventListener(ev, calc);
 
@@ -2891,7 +3150,8 @@ tr:last-child td{border-bottom:none}
 
   const VIEW_TITLES = {
     dashboard:"Dashboard", builder:"Kit builder",
-    analisi:"Analisi", articoli:"Articoli", esportazioni:"Esportazioni"
+    analisi:"Analisi", articoli:"Articoli", esportazioni:"Esportazioni",
+    impostazioni:"Impostazioni"
   };
   const ALL_VIEWS = Object.keys(VIEW_TITLES);
 
@@ -2912,9 +3172,10 @@ tr:last-child td{border-bottom:none}
     const statusBarEl = document.getElementById("statusBar");
     if(statusBarEl) statusBarEl.style.display = view === "builder" ? "" : "none";
     const renderFns = {
-      dashboard: renderDashboard,
-      analisi:   renderAnalisi,
-      articoli:  renderArticoli,
+      dashboard:    renderDashboard,
+      analisi:      renderAnalisi,
+      articoli:     renderArticoli,
+      impostazioni: renderImpostazioni,
     };
     if(renderFns[view]) renderFns[view]();
   };
@@ -3207,13 +3468,27 @@ tr:last-child td{border-bottom:none}
   /* ─── helper: read live DOM value ─── */
   const domVal = (id) => document.getElementById(id)?.textContent?.trim() || "—";
 
-  /* ─── helper: build a margin bar ─── */
+  /* ─── helper: build a margin bar (tick = target, chip = stato con icona) ─── */
   const marginBar = (label, pct, targetPct) => {
     const w    = Math.min(100, Math.max(0, pct)).toFixed(1);
-    const cls  = pct >= targetPct ? "" : (pct >= targetPct * 0.8 ? "warn" : "bad");
+    const hasT = Number.isFinite(targetPct) && targetPct > 0;
+    const state = hasT ? (pct >= targetPct - 1e-9 ? "good" : (pct >= targetPct * 0.8 ? "warn" : "bad")) : "";
+    const icon  = { good:"✓", warn:"⚠", bad:"✕" }[state] || "";
+    const chip  = `<span class="mb-chip ${state}">${icon ? icon + " " : ""}${pct.toFixed(1)}%</span>`;
+    const tick  = hasT ? `<div class="margin-bar-tick" style="left:${Math.min(100, targetPct).toFixed(1)}%" title="Target ${targetPct.toFixed(0)}%"></div>` : "";
+    const fill  = state || "neutral";
     return `<div class="margin-bar-row">
-      <div class="margin-bar-label"><span>${esc(label)}</span><span>${pct.toFixed(1)}%</span></div>
-      <div class="margin-bar-track"><div class="margin-bar-fill ${cls}" style="width:${w}%"></div></div>
+      <div class="margin-bar-label"><span>${esc(label)}</span>${chip}</div>
+      <div class="margin-bar-track">${tick}<div class="margin-bar-fill ${fill}" style="width:${w}%"></div></div>
+    </div>`;
+  };
+
+  /* ─── helper: barra composizione (quota neutra, senza stato) ─── */
+  const shareBar = (label, valueTxt, sharePct) => {
+    const w = Math.min(100, Math.max(0, sharePct)).toFixed(1);
+    return `<div class="margin-bar-row">
+      <div class="margin-bar-label"><span>${esc(label)}</span><span class="mb-chip">${valueTxt}</span></div>
+      <div class="margin-bar-track"><div class="margin-bar-fill neutral" style="width:${w}%"></div></div>
     </div>`;
   };
 
@@ -3221,46 +3496,57 @@ tr:last-child td{border-bottom:none}
   const renderMargini = () => {
     const targetPct = parseFloat(margin.value) * 100 || 50;
 
-    // Kit attivo
+    // Kit attivo: margine vs target + composizione del costo per articolo
     const attivoEl = document.getElementById("marginiKitAttivo");
     if(attivoEl) {
       const rawMargin = domVal("kRealMargin");
       if(rawMargin === "—") {
         attivoEl.innerHTML = '<div class="hint">Inserisci i dati nel Kit Builder per vedere il margine.</div>';
       } else {
-        const realPct    = parseFloat(rawMargin) || 0;
-        const costAthl   = domVal("kCostAthlete");
-        const priceAthl  = domVal("kPriceAthlete");
-        const profit     = domVal("kProfit");
+        const realPct = parseFloat(rawMargin.replace(",", ".")) || 0;
+        const totCost = items.reduce((s, it) => s + (toNum(it.base) + toNum(it.extra)) * toNum(it.qty), 0);
+        const compo = totCost > 0 ? items
+          .map(it => ({ label: it.article + (it.isGift ? " (omaggio)" : ""), cost: (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) }))
+          .filter(r => r.cost > 0)
+          .sort((a, b) => b.cost - a.cost)
+          .map(r => shareBar(r.label, `${eur(r.cost)} · ${(r.cost / totCost * 100).toFixed(0)}%`, r.cost / totCost * 100)).join("") : "";
         attivoEl.innerHTML = `
-          <div class="margin-bar-wrap" style="margin-bottom:16px">
-            ${marginBar("Margine reale", realPct, targetPct)}
-            ${marginBar("Margine target", targetPct, targetPct)}
+          <div class="margin-bar-wrap" style="margin-bottom:18px">
+            ${marginBar(`Margine reale (target ${targetPct.toFixed(0)}%)`, realPct, targetPct)}
           </div>
-          <div class="dash-kpis" style="grid-template-columns:repeat(4,1fr)">
+          <div class="dash-kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:${compo ? "18px" : "0"}">
             <div class="kpi"><div class="lbl">Margine reale</div><div class="val">${rawMargin}</div></div>
             <div class="kpi"><div class="lbl">Margine target</div><div class="val">${targetPct.toFixed(0)}%</div></div>
-            <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val">${costAthl}</div></div>
-            <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${profit}</div></div>
-          </div>`;
+            <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val">${domVal("kCostAthlete")}</div></div>
+            <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${domVal("kProfit")}</div></div>
+          </div>
+          ${compo ? `<div class="section-lbl" style="margin-bottom:10px">Composizione costo per articolo</div><div class="margin-bar-wrap">${compo}</div>` : ""}`;
       }
     }
 
-    // Storico
+    // Storico: margine REALE di ogni kit salvato, valutato contro il SUO target
     const storicoEl = document.getElementById("marginiStorico");
     if(!storicoEl) return;
     const store = getStore();
     const allKits = [
-      ...Object.entries(store).map(([name, d]) => ({ name, margin: parseFloat(d.payload?.margin || 0) * 100, source:"locale" })),
-      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Cloud", margin: parseFloat(p.data?.margin || 0) * 100, source:"cloud" })),
+      ...Object.entries(store).map(([name, d]) => ({ name, payload: d.payload, source:"locale" })),
+      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Cloud", payload: p.data, source:"cloud" })),
     ];
-    if(!allKits.length) {
-      storicoEl.innerHTML = '<div class="hint">Nessun kit salvato.</div>';
-      return;
-    }
-    storicoEl.innerHTML = `<div class="margin-bar-wrap">
-      ${allKits.map(k => marginBar((k.source === "cloud" ? "☁ " : "") + k.name, k.margin, 0)).join("")}
-    </div>`;
+    const rows = allKits.map(k => {
+      const stats = calcKitStats(k.payload);
+      if(!stats) return null;
+      const kitTarget = (parseFloat(k.payload?.margin) || 0.5) * 100;
+      return marginBar((k.source === "cloud" ? "☁ " : "") + k.name, stats.margin * 100, kitTarget);
+    }).filter(Boolean);
+    storicoEl.innerHTML = rows.length
+      ? `<div class="hint" style="margin-bottom:10px">Margine reale di ogni kit; la tacca indica il suo target. ✓ raggiunto · ⚠ vicino · ✕ sotto.</div><div class="margin-bar-wrap">${rows.join("")}</div>`
+      : '<div class="hint">Nessun kit salvato con dati sufficienti.</div>';
+  };
+
+  /* ─── helper: parse "1.234,56 €" → 1234.56 ─── */
+  const parseEur = (s) => {
+    if(!s || s === "—") return NaN;
+    return parseFloat(String(s).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."));
   };
 
   /* ─── Prezzi render ─── */
@@ -3270,6 +3556,44 @@ tr:last-child td{border-bottom:none}
     set("pvCostAthlete",  domVal("kCostAthlete"));
     set("pvMargin",       domVal("kRealMargin"));
     set("pvProfit",       domVal("kProfit"));
+
+    // Scala prezzi: dove si colloca il prezzo attuale rispetto alle soglie
+    const scalaEl = document.getElementById("prezziScala");
+    if(scalaEl){
+      const minSost  = parseEur(domVal("kMinSustainable"));
+      const minTratt = parseEur(domVal("kMinPrice"));
+      const target   = parseEur(domVal("kTargetPrice"));
+      const price    = parseEur(domVal("kPriceAthlete"));
+      if([minSost, minTratt, target, price].some(v => !Number.isFinite(v))){
+        scalaEl.innerHTML = '<div class="hint">Inserisci i dati nel Kit Builder per vedere la scala.</div>';
+      } else {
+        const maxV = Math.max(target, price, minTratt) * 1.12;
+        const pc   = (v) => Math.min(100, Math.max(0, v / maxV * 100));
+        const state = price < minSost ? "bad" : (price < minTratt ? "warn" : "good");
+        const stateTxt = { good:"✓ Prezzo nella zona sicura", warn:"⚠ Sotto il minimo trattativa", bad:"✕ Sotto il minimo sostenibile" }[state];
+        scalaEl.innerHTML = `
+          <div class="ps-wrap">
+            <div class="ps-track">
+              <div class="ps-zone bad"  style="left:0%;width:${pc(minSost)}%"></div>
+              <div class="ps-zone warn" style="left:${pc(minSost)}%;width:${(pc(minTratt)-pc(minSost)).toFixed(2)}%"></div>
+              <div class="ps-zone good" style="left:${pc(minTratt)}%;width:${(100-pc(minTratt)).toFixed(2)}%"></div>
+            </div>
+            <div class="ps-tick"        style="left:${pc(minSost)}%"  title="Minimo sostenibile"></div>
+            <div class="ps-tick"        style="left:${pc(minTratt)}%" title="Minimo trattativa"></div>
+            <div class="ps-tick target" style="left:${pc(target)}%"   title="Prezzo target"></div>
+            <div class="ps-marker" style="left:${pc(price)}%">
+              <div class="ps-flag">${eur(price)}</div>
+              <div class="ps-arrow"></div>
+            </div>
+          </div>
+          <div class="ps-legend">
+            <span>✕ Min. sostenibile <strong>${eur(minSost)}</strong></span>
+            <span>⚠ Min. trattativa <strong>${eur(minTratt)}</strong></span>
+            <span>✓ Target <strong>${eur(target)}</strong></span>
+          </div>
+          <div class="mb-chip ${state}" style="display:inline-block;margin-top:12px">${stateTxt}</div>`;
+      }
+    }
 
     const soglie = document.getElementById("prezziSoglie");
     if(soglie) soglie.innerHTML = [
@@ -3314,11 +3638,9 @@ tr:last-child td{border-bottom:none}
     copyState("kpiPrice",  "kpiV_price");
 
     const barsEl = document.getElementById("kpiVBars");
-    if(barsEl) barsEl.innerHTML = [
-      ["Margine reale",  realPct,        m],
-      ["Margine target", m,              m],
-      ["Acconto %", toNum(depositPct.value), 50],
-    ].map(([l, p, t]) => marginBar(l, p, t)).join("");
+    if(barsEl) barsEl.innerHTML =
+      marginBar(`Margine reale (target ${m.toFixed(0)}%)`, realPct, m) +
+      shareBar("Acconto richiesto", toNum(depositPct.value).toFixed(0) + "%", toNum(depositPct.value));
 
     const itemsEl = document.getElementById("kpiVItems");
     if(itemsEl) {
@@ -3334,12 +3656,41 @@ tr:last-child td{border-bottom:none}
     }
   };
 
-  /* ─── Custom catalog (localStorage) ─── */
+  /* ─── Custom catalog (localStorage + cloud) ─── */
   const CATALOG_KEY = "doubleu_catalog_v1";
   const getCatalog = () => {
     try { const r = localStorage.getItem(CATALOG_KEY); return r ? JSON.parse(r) : []; } catch(e) { return []; }
   };
-  const setCatalog = (arr) => localStorage.setItem(CATALOG_KEY, JSON.stringify(arr));
+  const setCatalog = (arr) => {
+    try { localStorage.setItem(CATALOG_KEY, JSON.stringify(arr)); } catch(e) {}
+    syncCatalogToCloud(); // fire-and-forget: il catalogo sopravvive ai wipe di iOS
+  };
+
+  // Ricostruisce il catalogo dagli articoli presenti nei kit salvati (cloud + locali)
+  const recoverCatalogFromKits = () => {
+    const store   = getStore();
+    const sources = [
+      ...Object.values(store).map(d => d.payload),
+      ...cloudProjects.map(p => p.data),
+    ];
+    const found = new Map();
+    sources.forEach(p => (p?.items || []).forEach(it => {
+      if(!it?.article) return;
+      const k = it.article.toLowerCase();
+      if(!found.has(k)) found.set(k, {
+        id: uid(), name: it.article,
+        categoria: ["PREMIUM","BASIC","LS24"].includes(it.line) ? it.line : "ALTRO",
+        base: toNum(it.base), extra: toNum(it.extra),
+      });
+    }));
+    const catalog = getCatalog();
+    const have    = new Set(catalog.map(a => (a.name || "").toLowerCase()));
+    const added   = [...found.values()].filter(a => !have.has(a.name.toLowerCase()));
+    if(!added.length){ toast("Nessun nuovo articolo trovato nei kit salvati", "warn"); return; }
+    setCatalog([...catalog, ...added]);
+    renderArticoli();
+    toast(`${added.length} articoli recuperati dai kit salvati ✓`, "ok");
+  };
 
   /* ─── Articoli render ─── */
   const renderArticoli = () => {
@@ -3457,6 +3808,35 @@ tr:last-child td{border-bottom:none}
   if(_btnCancelCatalogItem) _btnCancelCatalogItem.addEventListener("click", () => {
     document.getElementById("catalogForm").style.display = "none";
   });
+
+  const _btnRecoverCatalog = document.getElementById("btnRecoverCatalog");
+  if(_btnRecoverCatalog) _btnRecoverCatalog.addEventListener("click", recoverCatalogFromKits);
+
+  /* ─── Impostazioni listeners ─── */
+  const _btnSaveSettings = document.getElementById("btnSaveSettings");
+  if(_btnSaveSettings) _btnSaveSettings.addEventListener("click", () => {
+    saveSettings({
+      margin:     document.getElementById("setMargin").value  || "0.50",
+      discount:   document.getElementById("setDiscount").value || "0",
+      depositPct: document.getElementById("setDeposit").value  || "60",
+      bufferPct:  document.getElementById("setBuffer").value   || "5",
+      applyVAT:   !!document.getElementById("setApplyVAT").checked,
+    });
+    toast("Predefiniti salvati ✓ — verranno usati per i nuovi preventivi", "ok");
+  });
+
+  const _btnExportBackup = document.getElementById("btnExportBackup");
+  if(_btnExportBackup) _btnExportBackup.addEventListener("click", exportBackup);
+
+  const _btnImportBackup = document.getElementById("btnImportBackup");
+  const _backupFileInput = document.getElementById("backupFileInput");
+  if(_btnImportBackup && _backupFileInput){
+    _btnImportBackup.addEventListener("click", () => _backupFileInput.click());
+    _backupFileInput.addEventListener("change", () => {
+      if(_backupFileInput.files?.[0]) importBackup(_backupFileInput.files[0]);
+      _backupFileInput.value = "";
+    });
+  }
 
   /* ─── Nav listeners ─── */
   document.querySelectorAll(".nav-item[data-view]").forEach(el => {
