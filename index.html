@@ -25,10 +25,10 @@
 
     /* ─── Design Tokens ─── */
     :root {
-      --bg:          #B8CFDF;
+      --bg:          #EEF3F7;
       --surface:     #FFFFFF;
-      --surface-2:   #E6F0F8;
-      --surface-3:   #D4E6F0;
+      --surface-2:   #E9F1F8;
+      --surface-3:   #DCE9F2;
       --border:      #C8DFF0;
       --border-2:    #A8C8E0;
 
@@ -48,15 +48,15 @@
       --sb-active:   #0A4174;
       --sb-active-bd:#7BBDE8;
 
-      --good:        #1A7A45;
-      --good-bg:     #EDF7F2;
-      --good-bd:     #A8D8BB;
-      --warn:        #E87C2B;
-      --warn-bg:     #FEF3EA;
-      --warn-bd:     #F4BF8A;
+      --good:        #17703F;
+      --good-bg:     #E2F4EA;
+      --good-bd:     #8FCCA8;
+      --warn:        #D96F1E;
+      --warn-bg:     #FDEEDD;
+      --warn-bd:     #EFA95F;
       --bad:         #8A1A28;
-      --bad-bg:      #FDF0F2;
-      --bad-bd:      #E0A8B0;
+      --bad-bg:      #FAE6EA;
+      --bad-bd:      #D6919D;
 
       --input-bg:    #FAFCFF;
       --input-bd:    #C8DFF0;
@@ -337,7 +337,7 @@
 
     input:focus, select:focus, textarea:focus {
       border-color: var(--input-focus);
-      box-shadow: 0 0 0 3px rgba(60,21,32,.08);
+      box-shadow: 0 0 0 3px rgba(10,65,116,.12);
     }
 
     textarea { min-height: 42px; resize: vertical; }
@@ -487,9 +487,11 @@
       border: 1px solid var(--border-2);
       background: var(--surface);
       font-size: 12px; font-weight: 600; color: var(--muted);
-      cursor: default;
+      cursor: pointer;
       transition: background .13s, border-color .13s, color .13s;
     }
+
+    .filter-pill:hover:not(.active) { background: var(--surface-2); color: var(--text); }
 
     .filter-pill.active {
       background: var(--accent); border-color: var(--accent); color: #FFFFFF;
@@ -507,7 +509,7 @@
 
     .art-card:last-child { margin-bottom: 0; }
     .art-card:hover { box-shadow: var(--shadow-md); }
-    .art-card.is-gift { background: #FEF3EA; border-color: var(--warn-bd); }
+    .art-card.is-gift { background: var(--warn-bg); border-color: var(--warn-bd); }
 
     .art-card-main {
       display: grid;
@@ -1145,7 +1147,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v14</span>
+            <span id="buildTxt">build v16</span>
           </div>
           <button id="btnLogoutMobile" title="Esci" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1307,13 +1309,14 @@
                     <circle cx="9" cy="9" r="6"/>
                     <path d="M15 15l3 3"/>
                   </svg>
-                  <input placeholder="Cerca articolo…" style="background:var(--surface-2)">
+                  <input id="artSearch" placeholder="Cerca articolo…" style="background:var(--surface-2)">
                 </div>
-                <div class="art-filters">
-                  <span class="filter-pill active">Tutti</span>
-                  <span class="filter-pill">Abbigliamento</span>
-                  <span class="filter-pill">Accessori</span>
-                  <span class="filter-pill">Altro</span>
+                <div class="art-filters" id="artFilters">
+                  <span class="filter-pill active" data-line="ALL">Tutti</span>
+                  <span class="filter-pill" data-line="PREMIUM">Premium</span>
+                  <span class="filter-pill" data-line="BASIC">Basic</span>
+                  <span class="filter-pill" data-line="LS24">LS24</span>
+                  <span class="filter-pill" data-line="ALTRO">Altro</span>
                 </div>
                 <button class="primary" id="btnAddItem" type="button">+ Aggiungi</button>
               </div>
@@ -1478,17 +1481,17 @@
                 <div class="kpi">
                   <div class="lbl">Margine per atleta</div>
                   <div class="val" id="kProfitAthlete">—</div>
-                  <div class="note">Margine dell'ordine ÷ atleti fatturati</div>
+                  <div class="note">Margine dell'ordine ÷ quantità stimata</div>
                 </div>
                 <div class="kpi" id="kpiMinPrice">
-                  <div class="lbl">Prezzo minimo accettabile (per atleta)</div>
+                  <div class="lbl">Prezzo minimo trattativa (per atleta)</div>
                   <div class="val" id="kMinPrice">—</div>
-                  <div class="note">Sotto questa soglia scendi sotto margine target</div>
+                  <div class="note">Prezzo target meno lo sconto trattativa massimo. Sotto il prezzo target il margine scende sotto il target.</div>
                 </div>
                 <div class="kpi" id="kpiDeposit">
-                  <div class="lbl">Acconto minimo sicuro</div>
+                  <div class="lbl">Acconto minimo sicuro (da richiedere)</div>
                   <div class="val" id="kMinDeposit">—</div>
-                  <div class="note" id="kDepNote">Produzione + buffer (sicurezza)</div>
+                  <div class="note" id="kDepNote">Al netto IVA copre produzione + buffer</div>
                 </div>
               </div>
 
@@ -1782,7 +1785,7 @@
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v15 — phase 3
+   build v16
 ========================= */
 
 (async function(){
@@ -1820,7 +1823,7 @@
   }
 
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v15";
+  if(buildTxt) buildTxt.textContent = "build v16";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -1853,6 +1856,10 @@
   };
 
   const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+  // Escaping per valori inseriti in innerHTML (nomi kit, cliente, articoli)
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 
   const ARTICLES = ["T-shirt","T-Shirt Cot.","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone"];
   const LINES = [
@@ -1971,6 +1978,36 @@
     return ico[article] || "👕";
   };
 
+  /* ─── Filtro articoli (ricerca + linea) ─── */
+  let artFilterLine = "ALL";
+  let artFilterText = "";
+
+  const applyArtFilter = () => {
+    const txt = artFilterText.trim().toLowerCase();
+    itemsBody.querySelectorAll(".art-card").forEach(card => {
+      const name = card.getAttribute("data-name") || "";
+      const line = card.getAttribute("data-line") || "";
+      const show = (artFilterLine === "ALL" || line === artFilterLine)
+        && (!txt || name.includes(txt));
+      card.style.display = show ? "" : "none";
+    });
+  };
+
+  const artSearchInput = document.getElementById("artSearch");
+  if(artSearchInput) artSearchInput.addEventListener("input", () => {
+    artFilterText = artSearchInput.value;
+    applyArtFilter();
+  });
+
+  document.querySelectorAll("#artFilters .filter-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      artFilterLine = pill.getAttribute("data-line") || "ALL";
+      document.querySelectorAll("#artFilters .filter-pill").forEach(x =>
+        x.classList.toggle("active", x === pill));
+      applyArtFilter();
+    });
+  });
+
   /* ─── render() ─── */
   const render = () => {
     ensureOne();
@@ -1978,8 +2015,10 @@
     let html = "";
 
     items.forEach(it => {
-      const optsA = ARTICLES.map(a =>
-        `<option value="${a}" ${a===it.article ? "selected" : ""}>${a}</option>`
+      // Include anche articoli custom dal catalogo (non presenti nella lista base)
+      const artList = ARTICLES.includes(it.article) ? ARTICLES : [it.article, ...ARTICLES];
+      const optsA = artList.map(a =>
+        `<option value="${esc(a)}" ${a===it.article ? "selected" : ""}>${esc(a)}</option>`
       ).join("");
       const optsL = LINES.map(l =>
         `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`
@@ -1992,10 +2031,10 @@
       const giftClass  = it.isGift ? " is-gift" : "";
 
       html += `
-<div class="art-card${giftClass}">
+<div class="art-card${giftClass}" data-name="${esc(String(it.article).toLowerCase())}" data-line="${esc(it.line)}">
   <div class="art-card-main">
 
-    <div class="art-thumb" title="${it.article}">
+    <div class="art-thumb" title="${esc(it.article)}">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5">
         <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/>
       </svg>
@@ -2045,6 +2084,7 @@
     });
 
     itemsBody.innerHTML = html;
+    applyArtFilter();
 
     itemsBody.querySelectorAll("[data-act]").forEach(el => {
       const act = el.getAttribute("data-act");
@@ -2278,9 +2318,13 @@
       }
     }
 
+    // Copertura acconto: l'IVA incassata sull'acconto va versata, quindi
+    // la copertura reale è l'acconto al netto IVA vs costo produzione + buffer.
     const secureNeed        = totalCost * (1 + buf);
+    const minDepositGross   = vatOn ? secureNeed * (1 + vatRate) : secureNeed;
     const depositAmount     = invoiceTotal * dep;
-    const depositPctRequired= invoiceTotal > 0 ? (secureNeed / invoiceTotal) : 0;
+    const depositNet        = vatOn ? depositAmount / (1 + vatRate) : depositAmount;
+    const depositPctRequired= invoiceTotal > 0 ? (minDepositGross / invoiceTotal) : 0;
 
     kCostAthlete.textContent    = eur(costPerAthlete);
     kPriceAthlete.textContent   = eur(pricePerAthlete);
@@ -2301,7 +2345,7 @@
     kMinSustainable.textContent = eur(minSustainableDisplay);
     kTargetPrice.textContent    = eur(targetPricePerAthlete);
     kMinPrice.textContent       = eur(minAcceptablePerAthlete);
-    kMinDeposit.textContent     = eur(secureNeed);
+    kMinDeposit.textContent     = eur(minDepositGross);
     if(totalBar) totalBar.textContent = eur(totalCost);
 
     kGrossNote.textContent = usingOffer
@@ -2310,9 +2354,32 @@
           ? `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · IVA ${(vatRate*100).toFixed(0)}%`
           : `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · NO IVA`);
 
-    kDepNote.textContent = `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`;
+    kDepNote.textContent = vatOn
+      ? `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · netto IVA ${eur(depositNet)} · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`
+      : `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`;
 
     const alerts = [];
+
+    // Coerenza quantità: la quantità stimata guida i valori per atleta
+    // e (in modalità budget) il totale fatturato.
+    if(q <= 0){
+      alerts.push({
+        level: usingOffer ? "bad" : "warn",
+        title: "Quantità stimata mancante",
+        text: usingOffer
+          ? "Senza quantità stimata il totale a budget è calcolato su 1 solo atleta: margine e prezzi non sono affidabili. Inserisci il numero di atleti."
+          : "Senza quantità stimata i valori per atleta sono calcolati su 1 solo atleta. Inserisci il numero di atleti."
+      });
+    } else if(usingOffer){
+      const maxQty = items.reduce((mx, it) => Math.max(mx, toNum(it.qty)), 0);
+      if(maxQty > q){
+        alerts.push({
+          level: "warn",
+          title: "Quantità righe > atleti stimati",
+          text: `Alcune righe hanno quantità superiore a ${q}: quei costi sono conteggiati ma il budget fattura solo ${q} atleti. Verifica le quantità.`
+        });
+      }
+    }
 
     if(realMargin + 1e-9 < m){
       alerts.push({ level:"bad", title:"Margine sotto target", text:`Stai facendo ${(realMargin*100).toFixed(1)}% invece di ${(m*100).toFixed(0)}%.` });
@@ -2322,14 +2389,14 @@
     }
 
     if(pricePerAthlete + 1e-9 < minAcceptablePerAthlete){
-      alerts.push({ level:"bad", title:"Prezzo sotto minimo accettabile", text:`Minimo accettabile: ${eur(minAcceptablePerAthlete)} / atleta.` });
+      alerts.push({ level:"bad", title:"Prezzo sotto minimo trattativa", text:`Minimo trattativa: ${eur(minAcceptablePerAthlete)} / atleta (target meno sconto massimo).` });
       setBox(kpiPrice,"bad"); setBox(kpiMinPrice,"bad");
     } else {
       setBox(kpiPrice,"good"); setBox(kpiMinPrice,"good");
     }
 
-    if(depositAmount + 1e-9 < secureNeed){
-      alerts.push({ level:"warn", title:"Acconto insufficiente", text:`Per stare "sicuro" servono ${eur(secureNeed)}. Aumenta acconto o riduci costo.` });
+    if(depositNet + 1e-9 < secureNeed){
+      alerts.push({ level:"warn", title:"Acconto insufficiente", text:`L'acconto al netto IVA (${eur(depositNet)}) non copre produzione + buffer (${eur(secureNeed)}). Richiedi almeno ${eur(minDepositGross)}.` });
       setBox(kpiDeposit,"warn");
     } else {
       setBox(kpiDeposit,"good");
@@ -2338,8 +2405,8 @@
     setBox(kpiTargetPrice, "good");
 
     const overallState   = (realMargin + 1e-9 < m || pricePerAthlete + 1e-9 < minAcceptablePerAthlete) ? "bad"
-      : (depositAmount + 1e-9 < secureNeed) ? "warn" : "good";
-    const stateLabels    = { good:"Preventivo OK — margine raggiunto", warn:"Attenzione: acconto insufficiente", bad:"Problema: margine o prezzo sotto soglia" };
+      : (depositNet + 1e-9 < secureNeed || alerts.some(a => a.level === "warn" || a.level === "bad")) ? "warn" : "good";
+    const stateLabels    = { good:"Preventivo OK — margine raggiunto", warn:"Attenzione: controlla gli avvisi", bad:"Problema: margine o prezzo sotto soglia" };
     statusBar.className  = "statusBar " + overallState;
     statusLabel.textContent = stateLabels[overallState];
     statusStats.innerHTML = `
@@ -2416,8 +2483,8 @@
     lines.push(`Margine reale: ${kRealMargin.textContent}`);
     lines.push(`Minimo sostenibile: ${kMinSustainable.textContent}`);
     lines.push(`Prezzo target: ${kTargetPrice.textContent}`);
-    lines.push(`Prezzo minimo accettabile: ${kMinPrice.textContent}`);
-    lines.push(`Acconto minimo sicuro: ${kMinDeposit.textContent}`);
+    lines.push(`Prezzo minimo trattativa: ${kMinPrice.textContent}`);
+    lines.push(`Acconto minimo sicuro (da richiedere): ${kMinDeposit.textContent}`);
     const text = lines.join("\n");
     try {
       await navigator.clipboard.writeText(text);
@@ -2454,8 +2521,8 @@
       const sub     = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
       const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
       return `<tr${it.isGift ? ' style="background:rgba(232,124,43,.04)"' : ''}>
-        <td>${it.article}${giftTag}</td>
-        <td>${it.line}</td>
+        <td>${esc(it.article)}${giftTag}</td>
+        <td>${esc(it.line)}</td>
         <td>${eur(toNum(it.base))}</td>
         <td>${eur(toNum(it.extra))}</td>
         <td style="font-weight:700">${toNum(it.qty)}</td>
@@ -2464,7 +2531,7 @@
     }).join("");
 
     const offerPill   = usingOff
-      ? `<div class="pill"><span>Prezzo proposto</span>${offerPrice.value} € ${vatOn ? "(IVA incl.)" : "(netto)"}</div>` : "";
+      ? `<div class="pill"><span>Prezzo proposto</span>${esc(offerPrice.value)} € ${vatOn ? "(IVA incl.)" : "(netto)"}</div>` : "";
     const marginLabel = margin.options[margin.selectedIndex].text;
     const g           = (id) => document.getElementById(id).textContent;
 
@@ -2472,7 +2539,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<title>DOUBLEU — ${projectName.value || "Preventivo"}</title>
+<title>DOUBLEU — ${esc(projectName.value || "Preventivo")}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;color:#001D39;background:#fff;padding:28px;font-size:13px;line-height:1.4}
@@ -2505,9 +2572,9 @@ th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7BBDE8;fon
 td{padding:7px 8px;font-size:12px;border-bottom:1px solid #EBF3FA;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 .pills{display:flex;gap:7px;flex-wrap:wrap}
-.pill{padding:4px 11px;border-radius:999px;background:#F6F2EE;border:1px solid #E0D8D0;font-size:11px;font-weight:700;color:#18100C}
-.pill span{color:#AE9E96;font-weight:400;margin-right:4px}
-.footer{margin-top:22px;padding-top:10px;border-top:1px solid #E0D8D0;font-size:9px;color:#AE9E96;display:flex;justify-content:space-between}
+.pill{padding:4px 11px;border-radius:999px;background:#EFF5FA;border:1px solid #C8DFF0;font-size:11px;font-weight:700;color:#001D39}
+.pill span{color:#49769F;font-weight:400;margin-right:4px}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #C8DFF0;font-size:9px;color:#49769F;display:flex;justify-content:space-between}
 @media print{body{padding:16px}@page{margin:.7cm;size:A4 portrait}}
 </style>
 </head>
@@ -2517,9 +2584,9 @@ tr:last-child td{border-bottom:none}
   <div><h1>doubleu kit</h1><div class="sub">Analisi interna preventivo</div></div>
   <div class="meta">
     <div>${date}</div>
-    ${clientName.value.trim()  ? `<div>Cliente: <strong>${clientName.value.trim()}</strong></div>`  : ""}
-    ${projectName.value.trim() ? `<div>Progetto: <strong>${projectName.value.trim()}</strong></div>` : ""}
-    ${qtyEst.value.trim()      ? `<div>Quantità stimata: <strong>${qtyEst.value.trim()}</strong></div>` : ""}
+    ${clientName.value.trim()  ? `<div>Cliente: <strong>${esc(clientName.value.trim())}</strong></div>`  : ""}
+    ${projectName.value.trim() ? `<div>Progetto: <strong>${esc(projectName.value.trim())}</strong></div>` : ""}
+    ${qtyEst.value.trim()      ? `<div>Quantità stimata: <strong>${esc(qtyEst.value.trim())}</strong></div>` : ""}
   </div>
 </div>
 
@@ -2566,9 +2633,9 @@ tr:last-child td{border-bottom:none}
     <div class="kpi"><div class="lbl">Totale fatturato</div><div class="val">${g("kGross")}</div></div>
     <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
     <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
-    <div class="kpi"><div class="lbl">Margine per atleta</div><div class="val">${g("kProfitAthlete")}</div><div class="note">Margine ÷ atleti fatturati</div></div>
-    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo</div><div class="val">${g("kMinPrice")}</div><div class="note">Sotto = fuori margine</div></div>
-    <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Copre produzione + buffer</div></div>
+    <div class="kpi"><div class="lbl">Margine per atleta</div><div class="val">${g("kProfitAthlete")}</div><div class="note">Margine ÷ quantità stimata</div></div>
+    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo trattativa</div><div class="val">${g("kMinPrice")}</div><div class="note">Target − sconto trattativa</div></div>
+    <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Al netto IVA copre produzione + buffer</div></div>
   </div>
 </div>
 
@@ -2654,20 +2721,22 @@ tr:last-child td{border-bottom:none}
     try {
       const label = projectLabel || projectPayload.projectName || "Progetto";
       if(activeCloudId) {
-        const { error } = await supabase
-          .from("projects")
-          .update({ name: label, data: projectPayload })
-          .eq("id", activeCloudId);
-        if(error){ console.error("Cloud update error:", error); toast("Errore cloud: " + error.message, "err"); }
-        else { await loadProjectsFromCloud(); }
-      } else {
         const { data, error } = await supabase
           .from("projects")
-          .insert([{ name: label, data: projectPayload }])
+          .update({ name: label, data: projectPayload })
+          .eq("id", activeCloudId)
           .select("id");
-        if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); }
-        else { if(data?.[0]?.id) activeCloudId = data[0].id; await loadProjectsFromCloud(); }
+        if(error){ console.error("Cloud update error:", error); toast("Errore cloud: " + error.message, "err"); return; }
+        if(data && data.length){ await loadProjectsFromCloud(); return; }
+        // La riga cloud non esiste più (eliminata altrove): ricrea invece di "salvare nel vuoto"
+        activeCloudId = null;
       }
+      const { data, error } = await supabase
+        .from("projects")
+        .insert([{ name: label, data: projectPayload }])
+        .select("id");
+      if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); }
+      else { if(data?.[0]?.id) activeCloudId = data[0].id; await loadProjectsFromCloud(); }
     } catch(err) { console.error("Cloud save exception:", err); toast("Errore cloud: " + err.message, "err"); }
   };
 
@@ -2675,8 +2744,8 @@ tr:last-child td{border-bottom:none}
     const client  = (clientName.value  || "").trim();
     const project = (projectName.value || "").trim();
     if(!project){ toast("Inserisci un nome progetto prima di salvare", "warn"); projectName.focus(); return; }
-    const date    = new Date().toLocaleDateString("it-IT");
-    const name    = `${client || "Cliente"} – ${project} – ${date}`;
+    // Nome stabile (senza data): risalvare lo stesso kit aggiorna la voce esistente
+    const name    = `${client || "Cliente"} – ${project}`;
     const p       = payload();
     const store   = getStore();
     store[name]   = { payload: p, savedAt: Date.now() };
@@ -2835,8 +2904,9 @@ tr:last-child td{border-bottom:none}
       invoiceTotal = offer * qtyBase;
     } else {
       const m = parseFloat(p.margin ?? 0.5);
+      const disc = toNum(p.discount) / 100;
       const revenueNetTarget = totalCost / (1 - m);
-      invoiceTotal = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
+      invoiceTotal = (vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget) * (1 - disc);
     }
     const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
     const profit     = revenueNet - totalCost;
@@ -2911,8 +2981,8 @@ tr:last-child td{border-bottom:none}
       const canDel = true;
       return `<tr>
         <td>
-          <div class="dash-kit-name">${kit.name}</div>
-          ${client ? `<div class="dash-kit-sub">${client}</div>` : ""}
+          <div class="dash-kit-name">${esc(kit.name)}</div>
+          ${client ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
         </td>
         <td>${kit.itemCount}</td>
         <td>${date}</td>
@@ -3005,8 +3075,8 @@ tr:last-child td{border-bottom:none}
           return `<div class="dash-kit-card">
             <div class="dash-kit-card-top">
               <div>
-                <div class="dash-kit-name">${kit.name}</div>
-                ${client ? `<div class="dash-kit-sub">${client}</div>` : ""}
+                <div class="dash-kit-name">${esc(kit.name)}</div>
+                ${client ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
               </div>
               ${src}
             </div>
@@ -3092,7 +3162,7 @@ tr:last-child td{border-bottom:none}
     const w    = Math.min(100, Math.max(0, pct)).toFixed(1);
     const cls  = pct >= targetPct ? "" : (pct >= targetPct * 0.8 ? "warn" : "bad");
     return `<div class="margin-bar-row">
-      <div class="margin-bar-label"><span>${label}</span><span>${pct.toFixed(1)}%</span></div>
+      <div class="margin-bar-label"><span>${esc(label)}</span><span>${pct.toFixed(1)}%</span></div>
       <div class="margin-bar-track"><div class="margin-bar-fill ${cls}" style="width:${w}%"></div></div>
     </div>`;
   };
@@ -3154,7 +3224,7 @@ tr:last-child td{border-bottom:none}
     const soglie = document.getElementById("prezziSoglie");
     if(soglie) soglie.innerHTML = [
       ["Prezzo target/atleta",      domVal("kTargetPrice")],
-      ["Prezzo minimo accettabile", domVal("kMinPrice")],
+      ["Prezzo minimo trattativa",  domVal("kMinPrice")],
       ["Prezzo offerto/atleta",     domVal("kPriceAthlete")],
       ["Sconto applicato",          (() => { const d = toNum(discount.value); return d > 0 ? d + "%" : "—"; })()],
     ].map(([l,v]) => `<tr class="soglia-row"><td>${l}</td><td>${v}</td></tr>`).join("");
@@ -3208,7 +3278,7 @@ tr:last-child td{border-bottom:none}
         itemsEl.innerHTML = items.map(it => {
           const qty  = toNum(it.qty);
           const cost = (toNum(it.base) + toNum(it.extra)) * qty;
-          return `<tr><td>${it.article}</td><td>${it.line}</td><td>${qty || "—"}</td><td style="text-align:right">${cost > 0 ? eur(cost) : "—"}</td></tr>`;
+          return `<tr><td>${esc(it.article)}</td><td>${esc(it.line)}</td><td>${qty || "—"}</td><td style="text-align:right">${cost > 0 ? eur(cost) : "—"}</td></tr>`;
         }).join("");
       }
     }
@@ -3237,12 +3307,12 @@ tr:last-child td{border-bottom:none}
           const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
           const catLabel = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" }[art.categoria] || art.categoria || "—";
           const inKit = items.filter(it => it.article === art.name).length;
-          const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--ok,#16a34a);color:#fff">nel kit ×${inKit}</span>` : "";
+          const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
           const row = document.createElement("div");
           row.className = "catalog-item";
           row.innerHTML = `
             <div class="catalog-item-info">
-              <div class="catalog-item-name">${art.name} <span class="cat-badge">${catLabel}</span>${inKitBadge}</div>
+              <div class="catalog-item-name">${esc(art.name)} <span class="cat-badge">${esc(catLabel)}</span>${inKitBadge}</div>
               <div class="catalog-item-prices">${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
@@ -3369,10 +3439,11 @@ tr:last-child td{border-bottom:none}
   if(_btnExportCSV) _btnExportCSV.addEventListener("click", () => {
     if(!items.length){ toast("Nessun articolo da esportare","warn"); return; }
     const header = "Articolo,Linea,Base €,Extra €,Quantità,Subtotale €";
+    const csvCell = (v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const rows = items.map(it => {
       const cost = toNum(it.base) + toNum(it.extra);
       const sub  = cost * toNum(it.qty);
-      return [it.article, it.line, toNum(it.base).toFixed(2), toNum(it.extra).toFixed(2), toNum(it.qty), sub.toFixed(2)].join(",");
+      return [csvCell(it.article), csvCell(it.line), toNum(it.base).toFixed(2), toNum(it.extra).toFixed(2), toNum(it.qty), sub.toFixed(2)].join(",");
     });
     const csv  = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type:"text/csv" });
