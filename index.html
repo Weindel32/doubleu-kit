@@ -999,6 +999,19 @@
     }
     .catalog-item:last-child { border-bottom: none; }
     .catalog-item-info { flex: 1; min-width: 0; }
+
+    /* ─── Catalog groups (per linea) ─── */
+    .catalog-group + .catalog-group { margin-top: 6px; }
+    .catalog-group-head {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--muted); padding: 16px 0 8px; border-bottom: 1.5px solid var(--border-2);
+    }
+    .catalog-group:first-child .catalog-group-head { padding-top: 2px; }
+    .catalog-group-count {
+      font-size: 10px; font-weight: 700; color: var(--accent);
+      background: var(--accent-light); border-radius: 999px; padding: 1px 8px;
+    }
     .catalog-item-name { font-size: 14px; font-weight: 700; color: var(--text); }
     .catalog-item-prices { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .catalog-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
@@ -3785,31 +3798,49 @@ tr:last-child td{border-bottom:none}
     const emptyEl = document.getElementById("catalogEmpty");
 
     if(listEl) {
-      listEl.querySelectorAll(".catalog-item").forEach(el => el.remove());
+      listEl.querySelectorAll(".catalog-group").forEach(el => el.remove());
       if(catalog.length === 0) {
         if(emptyEl) emptyEl.style.display = "";
       } else {
         if(emptyEl) emptyEl.style.display = "none";
-        catalog.forEach(art => {
+
+        const LINE_ORDER = ["PREMIUM","BASIC","LS24","ALTRO"];
+        const LINE_LABEL = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" };
+        const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
+
+        const rowHtml = (art) => {
           const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
-          const catLabel = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" }[art.categoria] || art.categoria || "—";
           const label = catalogLabel(art);
           const meta  = catalogMeta(art);
           const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
-          const row = document.createElement("div");
-          row.className = "catalog-item";
-          row.innerHTML = `
+          return `<div class="catalog-item">
             <div class="catalog-item-info">
-              <div class="catalog-item-name">${esc(label)} <span class="cat-badge">${esc(catLabel)}</span>${inKitBadge}</div>
+              <div class="catalog-item-name">${esc(label)}${inKitBadge}</div>
               <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
               <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cact="add">+ Kit</button>
               <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="edit">Modifica</button>
               <button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-cid="${art.id}" data-cact="del">✕</button>
-            </div>`;
-          listEl.appendChild(row);
+            </div>
+          </div>`;
+        };
+
+        // Raggruppa per linea, sezioni sempre aperte, ordine interno per Tipo
+        const byLine = {};
+        catalog.forEach(a => {
+          const l = LINE_ORDER.includes(a.categoria) ? a.categoria : "ALTRO";
+          (byLine[l] = byLine[l] || []).push(a);
+        });
+        LINE_ORDER.forEach(line => {
+          const arts = byLine[line];
+          if(!arts || !arts.length) return;
+          arts.sort((a, b) => tipoIdx(a.tipo) - tipoIdx(b.tipo) || catalogLabel(a).localeCompare(catalogLabel(b)));
+          const group = document.createElement("div");
+          group.className = "catalog-group";
+          group.innerHTML = `<div class="catalog-group-head">${LINE_LABEL[line]} <span class="catalog-group-count">${arts.length}</span></div>${arts.map(rowHtml).join("")}`;
+          listEl.appendChild(group);
         });
 
         listEl.querySelectorAll("[data-cact='add']").forEach(btn => {
