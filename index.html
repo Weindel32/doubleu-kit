@@ -1268,7 +1268,7 @@
             </div>
 
             <div id="dashCloudError" style="display:none;padding:10px 12px;background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:var(--r-sm);margin-bottom:12px;font-size:13px;color:var(--warn)">
-              Impossibile caricare i kit dal cloud. Controlla la connessione e premi ↻ Ricarica.
+              Impossibile raggiungere il cloud. Le richieste al database potrebbero essere bloccate da un <strong>ad-blocker o un'estensione privacy</strong>: disattivalo per questo sito (o usa un browser senza estensioni), controlla la connessione e premi ↻ Ricarica. I tuoi kit salvati sul cloud non sono persi.
             </div>
 
             <div class="dash-empty" id="dashEmpty" style="display:none">
@@ -2857,6 +2857,12 @@ tr:last-child td{border-bottom:none}
     updateSidebarKit();
   };
 
+  // Impedisce che una richiesta bloccata (ad-blocker / rete) resti "in caricamento" all'infinito
+  const withTimeout = (promise, ms = 12000) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+
   const loadProjectsFromCloud = async () => {
     if(!supabase) return;
     const loadingEl = document.getElementById("dashCloudLoading");
@@ -2865,10 +2871,10 @@ tr:last-child td{border-bottom:none}
     if(loadingEl) loadingEl.style.display = "";
     if(errorEl)   errorEl.style.display   = "none";
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withTimeout(supabase
         .from("projects")
         .select("id, name, data, created_at")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }));
       if(error){
         console.error("Cloud load error:", error);
         if(errorEl)   errorEl.style.display   = "";
