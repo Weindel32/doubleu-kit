@@ -1707,18 +1707,39 @@
           <div class="card" id="catalogForm" style="display:none;margin-bottom:16px">
             <div class="card-title" id="catalogFormTitle">Nuovo articolo</div>
             <input type="hidden" id="catalogEditId">
-            <div class="field" style="margin-bottom:12px">
-              <label class="lbl">Nome articolo</label>
-              <input type="text" id="catalogName" placeholder="es. T-shirt, Polo, Pantalone…" autocomplete="off">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+              <div class="field">
+                <label class="lbl">Codice articolo <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
+                <input type="text" id="catalogCode" placeholder="es. TS-001" autocomplete="off">
+              </div>
+              <div class="field">
+                <label class="lbl">Tipo articolo</label>
+                <select id="catalogTipo"></select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+              <div class="field">
+                <label class="lbl">Genere</label>
+                <select id="catalogGenere">
+                  <option value="Unisex">Unisex</option>
+                  <option value="Uomo">Uomo</option>
+                  <option value="Donna">Donna</option>
+                  <option value="Junior">Junior</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="lbl">Categoria / linea</label>
+                <select id="catalogCategoria">
+                  <option value="PREMIUM">Premium</option>
+                  <option value="BASIC">Basic</option>
+                  <option value="LS24">LS24</option>
+                  <option value="ALTRO">Altro</option>
+                </select>
+              </div>
             </div>
             <div class="field" style="margin-bottom:12px">
-              <label class="lbl">Categoria</label>
-              <select id="catalogCategoria">
-                <option value="PREMIUM">Premium</option>
-                <option value="BASIC">Basic</option>
-                <option value="LS24">LS24</option>
-                <option value="ALTRO">Altro</option>
-              </select>
+              <label class="lbl">Nome / descrizione <span style="font-weight:400;color:var(--muted)">(opz. — utile per articoli LS24)</span></label>
+              <input type="text" id="catalogName" placeholder="es. Maglia Pro Team" autocomplete="off">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
               <div class="field">
@@ -2244,6 +2265,7 @@
         el.addEventListener("change", () => {
           const it = find(); if(!it) return;
           it.article = el.value;
+          it.code = ""; // il codice era legato all'articolo di catalogo: cambiando articolo non è più valido
           if(it.costMode === "auto" && it.line !== "ALTRO"){
             const r = refCost(it.line, it.article);
             if(r !== null) it.base = r;
@@ -2617,7 +2639,8 @@
     lines.push(`ARTICOLI:`);
     items.forEach(it => {
       const giftMark = it.isGift ? " | OMAGGIO" : "";
-      lines.push(`- ${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
+      const codePrefix = it.code ? `[${it.code}] ` : "";
+      lines.push(`- ${codePrefix}${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
     });
     lines.push(``);
     lines.push(`RIEPILOGO:`);
@@ -2670,8 +2693,9 @@
     const itemsRows   = items.map(it => {
       const sub     = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
       const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
+      const codeCell = it.code ? `<span style="font-family:monospace;font-size:10px;color:#5A7690">${esc(it.code)}</span> ` : "";
       return `<tr${it.isGift ? ' style="background:rgba(232,124,43,.04)"' : ''}>
-        <td>${esc(it.article)}${giftTag}</td>
+        <td>${codeCell}${esc(it.article)}${giftTag}</td>
         <td>${esc(it.line)}</td>
         <td>${eur(toNum(it.base))}</td>
         <td>${eur(toNum(it.extra))}</td>
@@ -3665,6 +3689,28 @@ tr:last-child td{border-bottom:none}
 
   /* ─── Custom catalog (localStorage + cloud) ─── */
   const CATALOG_KEY = "doubleu_catalog_v1";
+  const CATALOG_TIPI = ["T-Shirt","Polo","Tank Top","Short","Skirt","Dress","Sweatshirt","Hoodie","Zip Hoodie","Sweatpants","Jacket","Cappellino","Calzini"];
+  const CATALOG_GENERI = ["Unisex","Uomo","Donna","Junior"];
+
+  // Etichetta articolo: nome esplicito (es. articoli LS24) oppure Tipo + Genere
+  const catalogLabel = (art) => {
+    if(!art) return "";
+    const name = (art.name || "").trim();
+    if(name) return name;
+    const tipo = art.tipo || art.type || "";
+    const g = art.genere && art.genere !== "Unisex" ? " " + art.genere : "";
+    return (tipo + g).trim() || "Articolo";
+  };
+  // Testo secondario: codice · tipo genere
+  const catalogMeta = (art) => {
+    const parts = [];
+    if(art.code) parts.push(art.code);
+    const tg = [art.tipo, art.genere && art.genere !== "Unisex" ? art.genere : ""].filter(Boolean).join(" ");
+    // se il nome coincide già col tipo+genere non ripetere
+    if(tg && tg.toLowerCase() !== catalogLabel(art).toLowerCase()) parts.push(tg);
+    return parts.join(" · ");
+  };
+
   const getCatalog = () => {
     try { const r = localStorage.getItem(CATALOG_KEY); return r ? JSON.parse(r) : []; } catch(e) { return []; }
   };
@@ -3680,19 +3726,25 @@ tr:last-child td{border-bottom:none}
       ...Object.values(store).map(d => d.payload),
       ...cloudProjects.map(p => p.data),
     ];
+    // Prova a riconoscere il Tipo dal nome dell'articolo salvato
+    const guessTipo = (name) => {
+      const n = (name || "").toLowerCase();
+      const hit = CATALOG_TIPI.find(t => n.includes(t.toLowerCase().replace("-", "")) || n.includes(t.toLowerCase()));
+      return hit || "";
+    };
     const found = new Map();
     sources.forEach(p => (p?.items || []).forEach(it => {
       if(!it?.article) return;
       const k = it.article.toLowerCase();
       if(!found.has(k)) found.set(k, {
-        id: uid(), name: it.article,
+        id: uid(), code: it.code || "", tipo: guessTipo(it.article), genere: "Unisex", name: it.article,
         categoria: ["PREMIUM","BASIC","LS24"].includes(it.line) ? it.line : "ALTRO",
         base: toNum(it.base), extra: toNum(it.extra),
       });
     }));
     const catalog = getCatalog();
-    const have    = new Set(catalog.map(a => (a.name || "").toLowerCase()));
-    const added   = [...found.values()].filter(a => !have.has(a.name.toLowerCase()));
+    const have    = new Set(catalog.map(a => catalogLabel(a).toLowerCase()));
+    const added   = [...found.values()].filter(a => !have.has(catalogLabel(a).toLowerCase()));
     if(!added.length){ toast("Nessun nuovo articolo trovato nei kit salvati", "warn"); return; }
     setCatalog([...catalog, ...added]);
     renderArticoli();
@@ -3714,14 +3766,16 @@ tr:last-child td{border-bottom:none}
         catalog.forEach(art => {
           const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
           const catLabel = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" }[art.categoria] || art.categoria || "—";
-          const inKit = items.filter(it => it.article === art.name).length;
+          const label = catalogLabel(art);
+          const meta  = catalogMeta(art);
+          const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
           const row = document.createElement("div");
           row.className = "catalog-item";
           row.innerHTML = `
             <div class="catalog-item-info">
-              <div class="catalog-item-name">${esc(art.name)} <span class="cat-badge">${esc(catLabel)}</span>${inKitBadge}</div>
-              <div class="catalog-item-prices">${priceStr}</div>
+              <div class="catalog-item-name">${esc(label)} <span class="cat-badge">${esc(catLabel)}</span>${inKitBadge}</div>
+              <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
               <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cact="add">+ Kit</button>
@@ -3736,11 +3790,12 @@ tr:last-child td{border-bottom:none}
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
             const line = art.categoria && LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
-            items.push({ id: uid(), article: art.name, line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
+            const label = catalogLabel(art);
+            items.push({ id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "", line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
             render();
             // Resta nell'archivio così si possono aggiungere più articoli di seguito
             renderArticoli();
-            toast(`"${art.name}" aggiunto al kit ✓`, "ok");
+            toast(`"${label}" aggiunto al kit ✓`, "ok");
           });
         });
 
@@ -3749,7 +3804,10 @@ tr:last-child td{border-bottom:none}
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
             document.getElementById("catalogEditId").value    = art.id;
-            document.getElementById("catalogName").value      = art.name;
+            document.getElementById("catalogCode").value      = art.code || "";
+            document.getElementById("catalogTipo").value      = CATALOG_TIPI.includes(art.tipo) ? art.tipo : CATALOG_TIPI[0];
+            document.getElementById("catalogGenere").value    = CATALOG_GENERI.includes(art.genere) ? art.genere : "Unisex";
+            document.getElementById("catalogName").value      = art.name || "";
             document.getElementById("catalogCategoria").value = art.categoria || "ALTRO";
             document.getElementById("catalogBase").value      = art.base || "";
             document.getElementById("catalogExtra").value     = art.extra || "";
@@ -3757,7 +3815,7 @@ tr:last-child td{border-bottom:none}
             const form = document.getElementById("catalogForm");
             form.style.display = "";
             form.scrollIntoView({ behavior: "smooth", block: "start" });
-            document.getElementById("catalogName").focus();
+            document.getElementById("catalogCode").focus();
           });
         });
 
@@ -3765,7 +3823,7 @@ tr:last-child td{border-bottom:none}
           btn.addEventListener("click", () => {
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
-            if(!confirm(`Eliminare "${art.name}" dal catalogo?`)) return;
+            if(!confirm(`Eliminare "${catalogLabel(art)}" dal catalogo?`)) return;
             setCatalog(getCatalog().filter(a => a.id !== art.id));
             renderArticoli();
             toast("Articolo eliminato ✓", "ok");
@@ -3777,23 +3835,38 @@ tr:last-child td{border-bottom:none}
   };
 
   /* ─── Catalog form listeners ─── */
-  const _btnAddCatalogItem = document.getElementById("btnAddCatalogItem");
-  if(_btnAddCatalogItem) _btnAddCatalogItem.addEventListener("click", () => {
+  // Popola il menu Tipo articolo
+  (() => {
+    const sel = document.getElementById("catalogTipo");
+    if(sel) sel.innerHTML = CATALOG_TIPI.map(t => `<option value="${t}">${t}</option>`).join("");
+  })();
+
+  const resetCatalogForm = () => {
     document.getElementById("catalogEditId").value    = "";
+    document.getElementById("catalogCode").value      = "";
+    document.getElementById("catalogTipo").value      = CATALOG_TIPI[0];
+    document.getElementById("catalogGenere").value    = "Unisex";
     document.getElementById("catalogName").value      = "";
     document.getElementById("catalogCategoria").value = "ALTRO";
     document.getElementById("catalogBase").value      = "";
     document.getElementById("catalogExtra").value     = "";
+  };
+
+  const _btnAddCatalogItem = document.getElementById("btnAddCatalogItem");
+  if(_btnAddCatalogItem) _btnAddCatalogItem.addEventListener("click", () => {
+    resetCatalogForm();
     document.getElementById("catalogFormTitle").textContent = "Nuovo articolo";
     const form = document.getElementById("catalogForm");
     form.style.display = form.style.display === "none" ? "" : "none";
-    if(form.style.display !== "none") document.getElementById("catalogName").focus();
+    if(form.style.display !== "none") document.getElementById("catalogCode").focus();
   });
 
   const _btnSaveCatalogItem = document.getElementById("btnSaveCatalogItem");
   if(_btnSaveCatalogItem) _btnSaveCatalogItem.addEventListener("click", () => {
+    const code      = document.getElementById("catalogCode").value.trim();
+    const tipo      = document.getElementById("catalogTipo").value || CATALOG_TIPI[0];
+    const genere    = document.getElementById("catalogGenere").value || "Unisex";
     const name      = document.getElementById("catalogName").value.trim();
-    if(!name){ toast("Inserisci un nome per l'articolo", "warn"); return; }
     const categoria = document.getElementById("catalogCategoria").value || "ALTRO";
     const base      = parseFloat(document.getElementById("catalogBase").value)  || 0;
     const extra     = parseFloat(document.getElementById("catalogExtra").value) || 0;
@@ -3801,9 +3874,9 @@ tr:last-child td{border-bottom:none}
     const catalog   = getCatalog();
     if(editId) {
       const idx = catalog.findIndex(a => a.id === editId);
-      if(idx >= 0) catalog[idx] = { ...catalog[idx], name, categoria, base, extra };
+      if(idx >= 0) catalog[idx] = { ...catalog[idx], code, tipo, genere, name, categoria, base, extra };
     } else {
-      catalog.push({ id: uid(), name, categoria, base, extra });
+      catalog.push({ id: uid(), code, tipo, genere, name, categoria, base, extra });
     }
     setCatalog(catalog);
     document.getElementById("catalogForm").style.display = "none";
@@ -3875,12 +3948,12 @@ tr:last-child td{border-bottom:none}
   const _btnExportCSV = document.getElementById("btnExportCSV");
   if(_btnExportCSV) _btnExportCSV.addEventListener("click", () => {
     if(!items.length){ toast("Nessun articolo da esportare","warn"); return; }
-    const header = "Articolo,Linea,Base €,Extra €,Quantità,Subtotale €";
+    const header = "Codice,Articolo,Linea,Base €,Extra €,Quantità,Subtotale €";
     const csvCell = (v) => { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const rows = items.map(it => {
       const cost = toNum(it.base) + toNum(it.extra);
       const sub  = cost * toNum(it.qty);
-      return [csvCell(it.article), csvCell(it.line), toNum(it.base).toFixed(2), toNum(it.extra).toFixed(2), toNum(it.qty), sub.toFixed(2)].join(",");
+      return [csvCell(it.code || ""), csvCell(it.article), csvCell(it.line), toNum(it.base).toFixed(2), toNum(it.extra).toFixed(2), toNum(it.qty), sub.toFixed(2)].join(",");
     });
     const csv  = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type:"text/csv" });
