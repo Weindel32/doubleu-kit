@@ -781,6 +781,9 @@
     .mb-chip.warn { color: var(--warn); border-color: var(--warn-bd); }
     .mb-chip.bad  { color: var(--bad);  border-color: var(--bad-bd);  }
 
+    /* Griglia 2 colonne di Analisi — si impila su schermi stretti */
+    .analisi-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
     /* Scala prezzi (Analisi → Prezzi) */
     .ps-wrap { position: relative; margin: 34px 6px 8px; }
     .ps-track { position: relative; height: 14px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
@@ -934,6 +937,7 @@
 
       /* Row grids collapse */
       .row2, .row3 { grid-template-columns: 1fr; }
+      .analisi-2col { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 380px) {
@@ -1647,7 +1651,7 @@
               <div class="card-title">Scala prezzi per atleta</div>
               <div id="prezziScala"><div class="hint">Inserisci i dati nel Kit Builder per vedere la scala.</div></div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="analisi-2col">
               <div class="card">
                 <div class="card-title">Soglie prezzi</div>
                 <table class="dash-table" style="display:table"><tbody id="prezziSoglie"></tbody></table>
@@ -1667,17 +1671,19 @@
               <div class="kpi"><div class="lbl">Costo totale</div><div class="val" id="kvCost">—</div><div class="note" id="kvCostNote">—</div></div>
               <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="analisi-2col">
               <div class="card">
                 <div class="card-title">Obiettivi margine</div>
                 <div id="kpiVBars" style="display:flex;flex-direction:column;gap:14px;margin-top:4px"></div>
               </div>
               <div class="card">
                 <div class="card-title">Articoli nel kit</div>
-                <table class="dash-table" style="display:table">
-                  <thead><tr><th>Articolo</th><th>Linea</th><th>Qtà</th><th>Costo tot.</th></tr></thead>
-                  <tbody id="kpiVItems"></tbody>
-                </table>
+                <div style="overflow-x:auto">
+                  <table class="dash-table" style="display:table">
+                    <thead><tr><th>Articolo</th><th>Linea</th><th>Qtà</th><th>Costo tot.</th></tr></thead>
+                    <tbody id="kpiVItems"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -3638,9 +3644,10 @@ tr:last-child td{border-bottom:none}
     copyState("kpiPrice",  "kpiV_price");
 
     const barsEl = document.getElementById("kpiVBars");
-    if(barsEl) barsEl.innerHTML =
-      marginBar(`Margine reale (target ${m.toFixed(0)}%)`, realPct, m) +
-      shareBar("Acconto richiesto", toNum(depositPct.value).toFixed(0) + "%", toNum(depositPct.value));
+    if(barsEl) barsEl.innerHTML = (domVal("kRealMargin") === "—")
+      ? '<div class="hint">Inserisci i dati nel Kit Builder per vedere gli obiettivi.</div>'
+      : marginBar(`Margine reale (target ${m.toFixed(0)}%)`, realPct, m) +
+        shareBar("Acconto richiesto", toNum(depositPct.value).toFixed(0) + "%", toNum(depositPct.value));
 
     const itemsEl = document.getElementById("kpiVItems");
     if(itemsEl) {
