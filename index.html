@@ -784,6 +784,35 @@
     /* Griglia 2 colonne di Analisi — si impila su schermi stretti */
     .analisi-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+    /* Confronto kit — interruttore ordinamento */
+    .cmp-sort { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .cmp-sort-lbl { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; }
+    .cmp-sort-btn {
+      padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-2);
+      background: var(--surface); font-size: 12px; font-weight: 700; color: var(--muted);
+      cursor: pointer; box-shadow: none; transition: background .13s, color .13s, border-color .13s;
+    }
+    .cmp-sort-btn:hover:not(.active) { background: var(--surface-2); color: var(--text); }
+    .cmp-sort-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Confronto kit — riga classifica */
+    .cmp-row {
+      display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .cmp-row:last-child { border-bottom: none; }
+    .cmp-rank { font-family: var(--mono, ui-monospace, monospace); font-size: 15px; font-weight: 800; color: var(--muted); text-align: center; }
+    .cmp-main { min-width: 0; }
+    .cmp-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cmp-sub  { font-size: 12px; color: var(--muted); margin: 2px 0 7px; }
+    .cmp-right { text-align: right; white-space: nowrap; }
+    .cmp-profit { font-size: 15px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+    .cmp-cost { font-size: 12px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+    @media (max-width: 560px) {
+      .cmp-row { grid-template-columns: 22px 1fr; }
+      .cmp-right { grid-column: 2; text-align: left; margin-top: 2px; }
+    }
+
     /* Scala prezzi (Analisi → Prezzi) */
     .ps-wrap { position: relative; margin: 34px 6px 8px; }
     .ps-track { position: relative; height: 14px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
@@ -1606,75 +1635,45 @@
 
         </div><!-- /builderView -->
 
-        <!-- ── Analisi View (Margini + Prezzi + KPI con tabs) ── -->
+        <!-- ── Analisi View (Questo kit + Confronto kit) ── -->
         <div id="analisiView" style="display:none">
           <div class="dash-header">
             <div>
               <div class="dash-welcome">Analisi</div>
-              <div class="dash-sub">Margini, prezzi e KPI del kit attivo.</div>
+              <div class="dash-sub">Il kit attivo in dettaglio e il confronto tra tutti i tuoi preventivi.</div>
             </div>
             <button class="secondary" id="btnAnalisiGoBuilder">Apri Kit Builder →</button>
           </div>
 
           <!-- Tab bar -->
           <div class="tab-bar">
-            <button class="tab-btn active" data-analisi-tab="margini">Margini</button>
-            <button class="tab-btn"        data-analisi-tab="prezzi">Prezzi</button>
-            <button class="tab-btn"        data-analisi-tab="kpi">KPI</button>
+            <button class="tab-btn active" data-analisi-tab="kit">Questo kit</button>
+            <button class="tab-btn"        data-analisi-tab="confronto">Confronto kit</button>
           </div>
 
-          <!-- Margini tab -->
-          <div class="tab-content active" data-analisi-tab="margini">
+          <!-- Questo kit -->
+          <div class="tab-content active" data-analisi-tab="kit">
+            <div class="dash-kpis" style="margin-bottom:16px">
+              <div class="kpi" id="kpiV_margin"><div class="lbl">Margine reale</div><div class="val" id="kvMargin">—</div><div class="note" id="kvMarginNote">—</div></div>
+              <div class="kpi" id="kpiV_price"><div class="lbl">Prezzo/atleta</div><div class="val" id="kvPrice">—</div><div class="note">Prezzo proposto</div></div>
+              <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val" id="kvCostAthlete">—</div><div class="note">Costo produzione</div></div>
+              <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
+            </div>
+
             <div class="card" style="margin-bottom:16px">
-              <div class="card-title">Kit attivo — breakdown margine</div>
-              <div id="marginiKitAttivo">
-                <div class="hint">Apri un kit nel builder per vedere il dettaglio.</div>
-              </div>
+              <div class="card-title">Margine vs target</div>
+              <div id="kitMarginBox"><div class="hint">Apri o crea un kit nel Builder per vedere il dettaglio.</div></div>
             </div>
-            <div class="card">
-              <div class="card-title">Storico kit salvati</div>
-              <div id="marginiStorico">
-                <div class="hint">Nessun kit salvato.</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Prezzi tab -->
-          <div class="tab-content" data-analisi-tab="prezzi">
-            <div class="dash-kpis" id="prezziKpis" style="margin-bottom:16px">
-              <div class="kpi"><div class="lbl">Prezzo/atleta</div><div class="val" id="pvPriceAthlete">—</div><div class="note">Prezzo offerto</div></div>
-              <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val" id="pvCostAthlete">—</div><div class="note">Costo produzione</div></div>
-              <div class="kpi"><div class="lbl">Margine reale</div><div class="val" id="pvMargin">—</div><div class="note">Sul prezzo netto</div></div>
-              <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="pvProfit">—</div><div class="note">Ricavo − costo</div></div>
-            </div>
             <div class="card" style="margin-bottom:16px">
               <div class="card-title">Scala prezzi per atleta</div>
               <div id="prezziScala"><div class="hint">Inserisci i dati nel Kit Builder per vedere la scala.</div></div>
             </div>
-            <div class="analisi-2col">
-              <div class="card">
-                <div class="card-title">Soglie prezzi</div>
-                <table class="dash-table" style="display:table"><tbody id="prezziSoglie"></tbody></table>
-              </div>
-              <div class="card">
-                <div class="card-title">Riepilogo fatturazione</div>
-                <table class="dash-table" style="display:table"><tbody id="prezziRiepilogo"></tbody></table>
-              </div>
-            </div>
-          </div>
 
-          <!-- KPI tab -->
-          <div class="tab-content" data-analisi-tab="kpi">
-            <div class="dash-kpis" style="margin-bottom:16px">
-              <div class="kpi" id="kpiV_margin"><div class="lbl">Margine reale</div><div class="val" id="kvMargin">—</div><div class="note" id="kvMarginNote">—</div></div>
-              <div class="kpi" id="kpiV_price"><div class="lbl">Prezzo/atleta</div><div class="val" id="kvPrice">—</div><div class="note">Prezzo proposto</div></div>
-              <div class="kpi"><div class="lbl">Costo totale</div><div class="val" id="kvCost">—</div><div class="note" id="kvCostNote">—</div></div>
-              <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
-            </div>
             <div class="analisi-2col">
               <div class="card">
-                <div class="card-title">Obiettivi margine</div>
-                <div id="kpiVBars" style="display:flex;flex-direction:column;gap:14px;margin-top:4px"></div>
+                <div class="card-title">Composizione costo per articolo</div>
+                <div id="kitCompos" style="margin-top:4px"><div class="hint">Nessun articolo.</div></div>
               </div>
               <div class="card">
                 <div class="card-title">Articoli nel kit</div>
@@ -1685,6 +1684,29 @@
                   </table>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Confronto kit -->
+          <div class="tab-content" data-analisi-tab="confronto">
+            <div class="dash-kpis" id="cmpSummary" style="margin-bottom:16px">
+              <div class="kpi"><div class="lbl">Kit salvati</div><div class="val" id="cmpCount">—</div><div class="note">Totale preventivi</div></div>
+              <div class="kpi"><div class="lbl">Margine medio</div><div class="val" id="cmpAvgMargin">—</div><div class="note">Media su tutti i kit</div></div>
+              <div class="kpi"><div class="lbl">A target</div><div class="val" id="cmpOnTarget">—</div><div class="note">Kit che raggiungono il target</div></div>
+              <div class="kpi"><div class="lbl">Da rivedere</div><div class="val" id="cmpBelow">—</div><div class="note">Sotto target o in perdita</div></div>
+            </div>
+
+            <div class="card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+                <div class="card-title" style="margin:0">Classifica kit</div>
+                <div class="cmp-sort">
+                  <span class="cmp-sort-lbl">Ordina per</span>
+                  <button class="cmp-sort-btn active" data-cmp-sort="margin">Margine %</button>
+                  <button class="cmp-sort-btn"        data-cmp-sort="profit">Margine €</button>
+                  <button class="cmp-sort-btn"        data-cmp-sort="date">Data</button>
+                </div>
+              </div>
+              <div id="cmpList"><div class="hint">Nessun kit salvato con dati sufficienti.</div></div>
             </div>
           </div>
 
@@ -3217,7 +3239,7 @@ tr:last-child td{border-bottom:none}
   };
 
   /* ─── Analisi tab state ─── */
-  let currentAnalisiTab = "margini";
+  let currentAnalisiTab = "kit";
 
   const switchAnalisiTab = (tab) => {
     currentAnalisiTab = tab;
@@ -3226,9 +3248,8 @@ tr:last-child td{border-bottom:none}
       if(el.classList.contains("tab-btn"))     el.classList.toggle("active", t === tab);
       if(el.classList.contains("tab-content")) el.classList.toggle("active", t === tab);
     });
-    if(tab === "margini") renderMargini();
-    else if(tab === "prezzi") renderPrezzi();
-    else if(tab === "kpi") renderKpiView();
+    if(tab === "confronto") renderConfronto();
+    else renderKitAttivo();
   };
 
   const renderAnalisi = () => switchAnalisiTab(currentAnalisiTab);
@@ -3258,8 +3279,13 @@ tr:last-child td{border-bottom:none}
     const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
     const profit     = revenueNet - totalCost;
     return {
-      margin:         revenueNet > 0 ? profit / revenueNet : 0,
-      costPerAthlete: totalCost / qtyBase,
+      margin:          revenueNet > 0 ? profit / revenueNet : 0,
+      costPerAthlete:  totalCost / qtyBase,
+      pricePerAthlete: invoiceTotal / qtyBase,
+      profit:          profit,       // margine dell'ordine in €
+      totalCost:       totalCost,
+      qtyBase:         qtyBase,
+      target:          parseFloat(p.margin ?? 0.5) || 0.5,
     };
   };
 
@@ -3529,71 +3555,43 @@ tr:last-child td{border-bottom:none}
   };
 
   /* ─── Margini render ─── */
-  const renderMargini = () => {
-    const targetPct = parseFloat(margin.value) * 100 || 50;
-
-    // Kit attivo: margine vs target + composizione del costo per articolo
-    const attivoEl = document.getElementById("marginiKitAttivo");
-    if(attivoEl) {
-      const rawMargin = domVal("kRealMargin");
-      if(rawMargin === "—") {
-        attivoEl.innerHTML = '<div class="hint">Inserisci i dati nel Kit Builder per vedere il margine.</div>';
-      } else {
-        const realPct = parseFloat(rawMargin.replace(",", ".")) || 0;
-        const totCost = items.reduce((s, it) => s + (toNum(it.base) + toNum(it.extra)) * toNum(it.qty), 0);
-        const compo = totCost > 0 ? items
-          .map(it => ({ label: it.article + (it.isGift ? " (omaggio)" : ""), cost: (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) }))
-          .filter(r => r.cost > 0)
-          .sort((a, b) => b.cost - a.cost)
-          .map(r => shareBar(r.label, `${eur(r.cost)} · ${(r.cost / totCost * 100).toFixed(0)}%`, r.cost / totCost * 100)).join("") : "";
-        attivoEl.innerHTML = `
-          <div class="margin-bar-wrap" style="margin-bottom:18px">
-            ${marginBar(`Margine reale (target ${targetPct.toFixed(0)}%)`, realPct, targetPct)}
-          </div>
-          <div class="dash-kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:${compo ? "18px" : "0"}">
-            <div class="kpi"><div class="lbl">Margine reale</div><div class="val">${rawMargin}</div></div>
-            <div class="kpi"><div class="lbl">Margine target</div><div class="val">${targetPct.toFixed(0)}%</div></div>
-            <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val">${domVal("kCostAthlete")}</div></div>
-            <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${domVal("kProfit")}</div></div>
-          </div>
-          ${compo ? `<div class="section-lbl" style="margin-bottom:10px">Composizione costo per articolo</div><div class="margin-bar-wrap">${compo}</div>` : ""}`;
-      }
-    }
-
-    // Storico: margine REALE di ogni kit salvato, valutato contro il SUO target
-    const storicoEl = document.getElementById("marginiStorico");
-    if(!storicoEl) return;
-    const store = getStore();
-    const allKits = [
-      ...Object.entries(store).map(([name, d]) => ({ name, payload: d.payload, source:"locale" })),
-      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Cloud", payload: p.data, source:"cloud" })),
-    ];
-    const rows = allKits.map(k => {
-      const stats = calcKitStats(k.payload);
-      if(!stats) return null;
-      const kitTarget = (parseFloat(k.payload?.margin) || 0.5) * 100;
-      return marginBar((k.source === "cloud" ? "☁ " : "") + k.name, stats.margin * 100, kitTarget);
-    }).filter(Boolean);
-    storicoEl.innerHTML = rows.length
-      ? `<div class="hint" style="margin-bottom:10px">Margine reale di ogni kit; la tacca indica il suo target. ✓ raggiunto · ⚠ vicino · ✕ sotto.</div><div class="margin-bar-wrap">${rows.join("")}</div>`
-      : '<div class="hint">Nessun kit salvato con dati sufficienti.</div>';
-  };
-
   /* ─── helper: parse "1.234,56 €" → 1234.56 ─── */
   const parseEur = (s) => {
     if(!s || s === "—") return NaN;
     return parseFloat(String(s).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."));
   };
 
-  /* ─── Prezzi render ─── */
-  const renderPrezzi = () => {
+  /* ─── Tab "Questo kit": dettaglio completo del kit attivo ─── */
+  const renderKitAttivo = () => {
     const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-    set("pvPriceAthlete", domVal("kPriceAthlete"));
-    set("pvCostAthlete",  domVal("kCostAthlete"));
-    set("pvMargin",       domVal("kRealMargin"));
-    set("pvProfit",       domVal("kProfit"));
+    const copyState = (srcId, dstId) => {
+      const src = document.getElementById(srcId), dst = document.getElementById(dstId);
+      if(!src || !dst) return;
+      dst.classList.remove("good","warn","bad");
+      ["good","warn","bad"].forEach(s => { if(src.classList.contains(s)) dst.classList.add(s); });
+    };
+    const rawMargin = domVal("kRealMargin");
+    const hasData   = rawMargin !== "—";
+    const targetPct = parseFloat(margin.value) * 100 || 50;
 
-    // Scala prezzi: dove si colloca il prezzo attuale rispetto alle soglie
+    // KPI principali
+    set("kvMargin",      rawMargin);
+    set("kvMarginNote",  domVal("kTarget"));
+    set("kvPrice",       domVal("kPriceAthlete"));
+    set("kvCostAthlete", domVal("kCostAthlete"));
+    set("kvProfit",      domVal("kProfit"));
+    copyState("kpiMargin", "kpiV_margin");
+    copyState("kpiPrice",  "kpiV_price");
+
+    // Margine vs target
+    const marginBox = document.getElementById("kitMarginBox");
+    if(marginBox){
+      marginBox.innerHTML = hasData
+        ? `<div class="margin-bar-wrap">${marginBar(`Margine reale (target ${targetPct.toFixed(0)}%)`, parseFloat(rawMargin.replace(",", ".")) || 0, targetPct)}</div>`
+        : '<div class="hint">Apri o crea un kit nel Builder per vedere il dettaglio.</div>';
+    }
+
+    // Scala prezzi
     const scalaEl = document.getElementById("prezziScala");
     if(scalaEl){
       const minSost  = parseEur(domVal("kMinSustainable"));
@@ -3631,66 +3629,86 @@ tr:last-child td{border-bottom:none}
       }
     }
 
-    const soglie = document.getElementById("prezziSoglie");
-    if(soglie) soglie.innerHTML = [
-      ["Prezzo target/atleta",      domVal("kTargetPrice")],
-      ["Prezzo minimo trattativa",  domVal("kMinPrice")],
-      ["Prezzo offerto/atleta",     domVal("kPriceAthlete")],
-      ["Sconto applicato",          (() => { const d = toNum(discount.value); return d > 0 ? d + "%" : "—"; })()],
-    ].map(([l,v]) => `<tr class="soglia-row"><td>${l}</td><td>${v}</td></tr>`).join("");
+    // Composizione costo per articolo
+    const composEl = document.getElementById("kitCompos");
+    if(composEl){
+      const totCost = items.reduce((s, it) => s + (toNum(it.base) + toNum(it.extra)) * toNum(it.qty), 0);
+      const compo = totCost > 0 ? items
+        .map(it => ({ label: it.article + (it.isGift ? " (omaggio)" : ""), cost: (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) }))
+        .filter(r => r.cost > 0)
+        .sort((a, b) => b.cost - a.cost)
+        .map(r => shareBar(r.label, `${eur(r.cost)} · ${(r.cost / totCost * 100).toFixed(0)}%`, r.cost / totCost * 100)).join("") : "";
+      composEl.innerHTML = compo ? `<div class="margin-bar-wrap">${compo}</div>` : '<div class="hint">Nessun articolo.</div>';
+    }
 
-    const riepilogo = document.getElementById("prezziRiepilogo");
-    if(riepilogo) riepilogo.innerHTML = [
-      ["Ricavo lordo",   domVal("kGross")],
-      ["Ricavo netto",   domVal("kNet")],
-      ["Costo totale",   domVal("kTotalCost")],
-      ["Margine dell'ordine", domVal("kProfit")],
-      ["Acconto minimo", domVal("kMinDeposit")],
-    ].map(([l,v]) => `<tr class="soglia-row"><td>${l}</td><td>${v}</td></tr>`).join("");
+    // Articoli nel kit
+    const itemsEl = document.getElementById("kpiVItems");
+    if(itemsEl){
+      itemsEl.innerHTML = items.length
+        ? items.map(it => {
+            const qty = toNum(it.qty), cost = (toNum(it.base) + toNum(it.extra)) * qty;
+            return `<tr><td>${esc(it.article)}</td><td>${esc(it.line)}</td><td>${qty || "—"}</td><td style="text-align:right">${cost > 0 ? eur(cost) : "—"}</td></tr>`;
+          }).join("")
+        : '<tr><td colspan="4" class="hint" style="padding:12px">Nessun articolo.</td></tr>';
+    }
   };
 
-  /* ─── KPI view render ─── */
-  const renderKpiView = () => {
-    const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-    const copyState = (srcId, dstId) => {
-      const src = document.getElementById(srcId);
-      const dst = document.getElementById(dstId);
-      if(!src || !dst) return;
-      dst.classList.remove("good","warn","bad");
-      ["good","warn","bad"].forEach(s => { if(src.classList.contains(s)) dst.classList.add(s); });
-    };
-    set("kvMargin",      domVal("kRealMargin"));
-    set("kvMarginNote",  domVal("kTarget"));
-    set("kvPrice",       domVal("kPriceAthlete"));
-    set("kvCost",        domVal("kTotalCost"));
-    set("kvCostNote",    domVal("kVatNote"));
-    set("kvProfit",      domVal("kProfit"));
+  /* ─── Tab "Confronto kit": classifica di tutti i preventivi ─── */
+  let cmpSortMode = "margin"; // margin | profit | date
+  const renderConfronto = () => {
+    const store = getStore();
+    const all = [
+      ...Object.entries(store).map(([name, d]) => ({ name, payload: d.payload, date: d.savedAt || 0, source:"locale" })),
+      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Kit cloud", payload: p.data, date: p.created_at ? new Date(p.created_at).getTime() : 0, source:"cloud" })),
+    ];
+    const kits = all.map(k => {
+      const s = calcKitStats(k.payload);
+      if(!s) return null;
+      return { ...k, marginPct: s.margin * 100, targetPct: (s.target || 0.5) * 100, profit: s.profit, costPerAthlete: s.costPerAthlete };
+    }).filter(Boolean);
 
-    const q = toNum(qtyEst.value) || 1;
-    const m = parseFloat(margin.value) * 100 || 50;
-    const realPct = parseFloat(domVal("kRealMargin")) || 0;
-
-    copyState("kpiMargin", "kpiV_margin");
-    copyState("kpiPrice",  "kpiV_price");
-
-    const barsEl = document.getElementById("kpiVBars");
-    if(barsEl) barsEl.innerHTML = (domVal("kRealMargin") === "—")
-      ? '<div class="hint">Inserisci i dati nel Kit Builder per vedere gli obiettivi.</div>'
-      : marginBar(`Margine reale (target ${m.toFixed(0)}%)`, realPct, m) +
-        shareBar("Acconto richiesto", toNum(depositPct.value).toFixed(0) + "%", toNum(depositPct.value));
-
-    const itemsEl = document.getElementById("kpiVItems");
-    if(itemsEl) {
-      if(!items.length) {
-        itemsEl.innerHTML = '<tr><td colspan="4" class="hint" style="padding:12px">Nessun articolo.</td></tr>';
-      } else {
-        itemsEl.innerHTML = items.map(it => {
-          const qty  = toNum(it.qty);
-          const cost = (toNum(it.base) + toNum(it.extra)) * qty;
-          return `<tr><td>${esc(it.article)}</td><td>${esc(it.line)}</td><td>${qty || "—"}</td><td style="text-align:right">${cost > 0 ? eur(cost) : "—"}</td></tr>`;
-        }).join("");
-      }
+    // Sintesi
+    const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+    if(kits.length){
+      const avg = kits.reduce((a, k) => a + k.marginPct, 0) / kits.length;
+      const onT = kits.filter(k => k.marginPct >= k.targetPct - 1e-9).length;
+      set("cmpCount", kits.length);
+      set("cmpAvgMargin", avg.toFixed(1) + "%");
+      set("cmpOnTarget", onT);
+      set("cmpBelow", kits.length - onT);
+    } else {
+      ["cmpCount","cmpAvgMargin","cmpOnTarget","cmpBelow"].forEach(id => set(id, "—"));
     }
+
+    // Ordinamento
+    const sorters = {
+      margin: (a, b) => b.marginPct - a.marginPct,
+      profit: (a, b) => b.profit - a.profit,
+      date:   (a, b) => b.date - a.date,
+    };
+    kits.sort(sorters[cmpSortMode] || sorters.margin);
+
+    const listEl = document.getElementById("cmpList");
+    if(!listEl) return;
+    if(!kits.length){ listEl.innerHTML = '<div class="hint">Nessun kit salvato con dati sufficienti. Salva un preventivo dal Builder per confrontarlo qui.</div>'; return; }
+
+    listEl.innerHTML = kits.map((k, i) => {
+      const client  = (k.payload?.clientName || "").trim();
+      const dateStr = k.date ? new Date(k.date).toLocaleDateString("it-IT") : "—";
+      const bar     = marginBar("", k.marginPct, k.targetPct);
+      return `<div class="cmp-row">
+        <div class="cmp-rank">${i + 1}</div>
+        <div class="cmp-main">
+          <div class="cmp-name">${k.source === "cloud" ? "☁ " : ""}${esc(k.name)}</div>
+          <div class="cmp-sub">${client ? esc(client) + " · " : ""}${dateStr}</div>
+          ${bar}
+        </div>
+        <div class="cmp-right">
+          <div class="cmp-profit">${eur(k.profit)}</div>
+          <div class="cmp-cost">${eur(k.costPerAthlete)}/atleta</div>
+        </div>
+      </div>`;
+    }).join("");
   };
 
   /* ─── Custom catalog (localStorage + cloud) ─── */
@@ -4037,6 +4055,15 @@ tr:last-child td{border-bottom:none}
       // Analisi tab buttons
       document.querySelectorAll(".tab-btn[data-analisi-tab]").forEach(btn => {
         btn.addEventListener("click", () => switchAnalisiTab(btn.getAttribute("data-analisi-tab")));
+      });
+
+      // Confronto kit — interruttore ordinamento (%, €, data)
+      document.querySelectorAll(".cmp-sort-btn[data-cmp-sort]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          cmpSortMode = btn.getAttribute("data-cmp-sort");
+          document.querySelectorAll(".cmp-sort-btn[data-cmp-sort]").forEach(b => b.classList.toggle("active", b === btn));
+          renderConfronto();
+        });
       });
 
       // Mobile nav bar
