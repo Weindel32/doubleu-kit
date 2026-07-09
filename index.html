@@ -1000,14 +1000,21 @@
     .catalog-item:last-child { border-bottom: none; }
     .catalog-item-info { flex: 1; min-width: 0; }
 
-    /* ─── Catalog groups (per linea) ─── */
+    /* ─── Catalog groups (per linea, collassabili) ─── */
     .catalog-group + .catalog-group { margin-top: 6px; }
     .catalog-group-head {
-      display: flex; align-items: center; gap: 8px;
+      width: 100%; display: flex; align-items: center; gap: 8px;
       font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
-      color: var(--muted); padding: 16px 0 8px; border-bottom: 1.5px solid var(--border-2);
+      color: var(--muted); padding: 16px 2px 8px; border: none; border-bottom: 1.5px solid var(--border-2);
+      background: none; cursor: pointer; text-align: left; font-family: inherit;
+      box-shadow: none; border-radius: 0; transition: color .13s;
     }
+    .catalog-group-head:hover { color: var(--text-2); }
+    .catalog-group-head:active { transform: none; }
     .catalog-group:first-child .catalog-group-head { padding-top: 2px; }
+    .cat-caret { font-size: 9px; color: var(--muted-2); transition: transform .15s; display: inline-block; }
+    .catalog-group.collapsed .cat-caret { transform: rotate(-90deg); }
+    .catalog-group.collapsed .catalog-item { display: none; }
     .catalog-group-count {
       font-size: 10px; font-weight: 700; color: var(--accent);
       background: var(--accent-light); border-radius: 999px; padding: 1px 8px;
@@ -3759,6 +3766,13 @@ tr:last-child td{border-bottom:none}
     syncCatalogToCloud(); // fire-and-forget: il catalogo sopravvive ai wipe di iOS
   };
 
+  // Stato "sezioni linea richiuse" (persistito: resta tale mentre inserisci più articoli)
+  const CATALOG_COLLAPSE_KEY = "doubleu_catalog_collapsed_v1";
+  let catalogCollapsed = (() => {
+    try { return new Set(JSON.parse(localStorage.getItem(CATALOG_COLLAPSE_KEY) || "[]")); } catch(e) { return new Set(); }
+  })();
+  const saveCollapsed = () => { try { localStorage.setItem(CATALOG_COLLAPSE_KEY, JSON.stringify([...catalogCollapsed])); } catch(e) {} };
+
   // Ricostruisce il catalogo dagli articoli presenti nei kit salvati (cloud + locali)
   const recoverCatalogFromKits = () => {
     const store   = getStore();
@@ -3838,9 +3852,20 @@ tr:last-child td{border-bottom:none}
           if(!arts || !arts.length) return;
           arts.sort((a, b) => tipoIdx(a.tipo) - tipoIdx(b.tipo) || catalogLabel(a).localeCompare(catalogLabel(b)));
           const group = document.createElement("div");
-          group.className = "catalog-group";
-          group.innerHTML = `<div class="catalog-group-head">${LINE_LABEL[line]} <span class="catalog-group-count">${arts.length}</span></div>${arts.map(rowHtml).join("")}`;
+          group.className = "catalog-group" + (catalogCollapsed.has(line) ? " collapsed" : "");
+          group.innerHTML = `<button type="button" class="catalog-group-head" data-line="${line}"><span class="cat-caret" aria-hidden="true">▾</span><span class="catalog-group-title">${LINE_LABEL[line]}</span><span class="catalog-group-count">${arts.length}</span></button>${arts.map(rowHtml).join("")}`;
           listEl.appendChild(group);
+        });
+
+        // Apri/chiudi le sezioni cliccando sull'intestazione
+        listEl.querySelectorAll(".catalog-group-head").forEach(head => {
+          head.addEventListener("click", () => {
+            const line  = head.getAttribute("data-line");
+            const group = head.parentElement;
+            const collapsed = group.classList.toggle("collapsed");
+            if(collapsed) catalogCollapsed.add(line); else catalogCollapsed.delete(line);
+            saveCollapsed();
+          });
         });
 
         listEl.querySelectorAll("[data-cact='add']").forEach(btn => {
