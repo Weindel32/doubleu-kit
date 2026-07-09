@@ -806,8 +806,10 @@
     .cmp-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cmp-sub  { font-size: 12px; color: var(--muted); margin: 2px 0 7px; }
     .cmp-right { text-align: right; white-space: nowrap; }
-    .cmp-profit { font-size: 15px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
-    .cmp-cost { font-size: 12px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .cmp-cap { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); line-height: 1.2; }
+    .cmp-cap.sec { margin-top: 7px; }
+    .cmp-profit { font-size: 15px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; margin-top: 1px; }
+    .cmp-cost { font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 1px; font-variant-numeric: tabular-nums; }
     @media (max-width: 560px) {
       .cmp-row { grid-template-columns: 22px 1fr; }
       .cmp-right { grid-column: 2; text-align: left; margin-top: 2px; }
@@ -3704,8 +3706,10 @@ tr:last-child td{border-bottom:none}
           ${bar}
         </div>
         <div class="cmp-right">
+          <div class="cmp-cap">Margine ordine</div>
           <div class="cmp-profit">${eur(k.profit)}</div>
-          <div class="cmp-cost">${eur(k.costPerAthlete)}/atleta</div>
+          <div class="cmp-cap sec">Costo / atleta</div>
+          <div class="cmp-cost">${eur(k.costPerAthlete)}</div>
         </div>
       </div>`;
     }).join("");
