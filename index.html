@@ -849,6 +849,59 @@
     .soglia-row td:first-child { color: var(--muted); font-size: 12px; }
     .soglia-row td:last-child  { font-weight: 700; text-align: right; }
 
+    /* ─── Scala sconti (Builder → Riepilogo) ─── */
+    .disc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .disc-table { width: 100%; border-collapse: collapse; font-size: 13px; color: var(--text); }
+    .disc-table th {
+      padding: 8px 10px; text-align: right; white-space: nowrap;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .03em;
+      border-bottom: 1px solid var(--border-2);
+    }
+    .disc-table th:first-child, .disc-table td:first-child { text-align: left; }
+    .disc-table td {
+      padding: 8px 10px; text-align: right; white-space: nowrap;
+      border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums;
+    }
+    .disc-table td:first-child { font-weight: 700; }
+    .disc-table td.strong { font-weight: 700; }
+    .disc-table th.st, .disc-table td.st { text-align: center; }
+    .disc-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+    }
+    .disc-badge.good { color: var(--good); background: var(--good-bg); }
+    .disc-badge.warn { color: var(--warn); background: var(--warn-bg); }
+    .disc-badge.bad  { color: var(--bad);  background: var(--bad-bg);  }
+
+    /* iPhone: la tabella diventa una lista di card (niente scroll orizzontale) */
+    @media (max-width: 560px) {
+      .disc-scroll { overflow-x: visible; }
+      .disc-table, .disc-table tbody, .disc-table tr, .disc-table td { display: block; width: 100%; }
+      .disc-table thead { display: none; }
+      .disc-table tr {
+        border: 1px solid var(--border); border-radius: 10px;
+        background: var(--surface); padding: 4px 12px; margin-bottom: 10px;
+      }
+      .disc-table tr.warn { border-color: var(--warn-bd); }
+      .disc-table tr.bad  { border-color: var(--bad-bd); }
+      .disc-table td {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 12px; text-align: right; white-space: normal;
+        padding: 8px 0; border-bottom: 1px solid var(--border);
+      }
+      .disc-table td:last-child { border-bottom: 0; }
+      .disc-table td::before {
+        content: attr(data-label); text-align: left;
+        font-size: 11px; font-weight: 700; color: var(--muted);
+        text-transform: uppercase; letter-spacing: .03em; flex: 0 0 auto;
+      }
+      .disc-table td:first-child {
+        font-size: 16px; padding: 6px 0 8px;
+        border-bottom: 1px solid var(--border-2); margin-bottom: 2px;
+      }
+    }
+
     @media (max-width: 900px) {
       .export-grid { grid-template-columns: 1fr 1fr; }
     }
@@ -2488,31 +2541,28 @@
       return { pct, pricePerAth, invoice, realMargin, profit, state, stateTxt };
     });
 
-    const cell = "padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)";
-    const head = "padding:8px 10px;text-align:right;white-space:nowrap;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border-2)";
     const body = rows.map(r => {
-      const bg  = `var(--${r.state}-bg)`;
-      const bd  = `var(--${r.state})`;
-      return `<tr>
-        <td style="${cell};text-align:left;font-weight:700">${(r.pct % 1 === 0 ? r.pct.toFixed(0) : r.pct.toFixed(1))}%</td>
-        <td style="${cell};font-weight:700">${eur(r.pricePerAth)}</td>
-        <td style="${cell}">${eur(r.invoice)}</td>
-        <td style="${cell}">${(r.realMargin*100).toFixed(1)}%</td>
-        <td style="${cell}">${eur(r.profit)}</td>
-        <td style="${cell};text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;color:${bd};background:${bg}">${r.stateTxt}</span></td>
+      const pctStr = (r.pct % 1 === 0 ? r.pct.toFixed(0) : r.pct.toFixed(1)) + "%";
+      return `<tr class="disc-row ${r.state}">
+        <td data-label="Sconto">${pctStr}</td>
+        <td data-label="Prezzo / atleta" class="strong">${eur(r.pricePerAth)}</td>
+        <td data-label="Totale fatturato">${eur(r.invoice)}</td>
+        <td data-label="Margine reale">${(r.realMargin*100).toFixed(1)}%</td>
+        <td data-label="Profitto ordine">${eur(r.profit)}</td>
+        <td data-label="Stato" class="st"><span class="disc-badge ${r.state}">${r.stateTxt}</span></td>
       </tr>`;
     }).join("");
 
     box.innerHTML = `
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;color:var(--text);min-width:520px">
+      <div class="disc-scroll">
+        <table class="disc-table">
           <thead><tr>
-            <th style="${head};text-align:left">Sconto</th>
-            <th style="${head}">Prezzo / atleta</th>
-            <th style="${head}">Totale fatturato</th>
-            <th style="${head}">Margine reale</th>
-            <th style="${head}">Profitto ordine</th>
-            <th style="${head};text-align:center">Stato</th>
+            <th>Sconto</th>
+            <th>Prezzo / atleta</th>
+            <th>Totale fatturato</th>
+            <th>Margine reale</th>
+            <th>Profitto ordine</th>
+            <th class="st">Stato</th>
           </tr></thead>
           <tbody>${body}</tbody>
         </table>
