@@ -3114,7 +3114,10 @@ tr:last-child td{border-bottom:none}
     }
   };
 
-  // Ritorna true se il progetto è stato salvato sul cloud (durevole), false altrimenti.
+  // Ritorna true se il progetto risulta salvato sul cloud, false altrimenti.
+  // Non mostra toast: il messaggio finale lo decide saveProject dopo la
+  // riconciliazione (su rete instabile la scrittura può riuscire anche se la
+  // risposta si perde, quindi qui non allarmiamo).
   const saveProjectToCloud = async (projectPayload, projectLabel) => {
     if(!supabase) return false;
     try {
@@ -3125,7 +3128,7 @@ tr:last-child td{border-bottom:none}
           .update({ name: label, data: projectPayload })
           .eq("id", activeCloudId)
           .select("id");
-        if(error){ console.error("Cloud update error:", error); toast("Errore cloud: " + error.message, "err"); return false; }
+        if(error){ console.error("Cloud update error:", error); return false; }
         if(data && data.length){ await loadProjectsFromCloud(); return true; }
         // La riga cloud non esiste più (eliminata altrove): ricrea invece di "salvare nel vuoto"
         activeCloudId = null;
@@ -3134,11 +3137,11 @@ tr:last-child td{border-bottom:none}
         .from("projects")
         .insert([{ name: label, data: projectPayload }])
         .select("id");
-      if(error){ console.error("Cloud save error:", error); toast("Errore cloud: " + error.message, "err"); return false; }
+      if(error){ console.error("Cloud save error:", error); return false; }
       if(data?.[0]?.id) activeCloudId = data[0].id;
       await loadProjectsFromCloud();
       return true;
-    } catch(err) { console.error("Cloud save exception:", err); toast("Errore cloud: " + err.message, "err"); return false; }
+    } catch(err) { console.error("Cloud save exception:", err); return false; }
   };
 
   const saveProject = async () => {
@@ -3151,14 +3154,21 @@ tr:last-child td{border-bottom:none}
     const store   = getStore();
     store[name]   = { payload: p, savedAt: Date.now() };
     setStore(store);
+
     const cloudOk = await saveProjectToCloud(p, name);
-    if(cloudOk) {
+    if(cloudOk){ toast("Progetto salvato sul cloud ✓", "ok"); return; }
+    if(!supabase){ toast("Salvato solo su questo dispositivo (cloud non disponibile)", "warn", 6000); return; }
+
+    // Il cloud ha riportato un problema, ma su rete instabile (iOS) la scrittura
+    // può essere comunque arrivata al server: la risposta si perde e sembra
+    // fallita pur essendo salvata. Prima di allarmare, verifichiamo davvero.
+    try { await loadProjectsFromCloud(); } catch(e) {}
+    const row = cloudProjects.find(k => k && k.name === name);
+    if(row){
+      activeCloudId = row.id;
       toast("Progetto salvato sul cloud ✓", "ok");
-    } else if(supabase) {
-      // Il cloud ha già mostrato l'errore specifico: chiariamo che resta solo la copia locale
-      toast("Salvato solo su questo dispositivo — riprova per salvarlo sul cloud", "warn", 6000);
     } else {
-      toast("Salvato solo su questo dispositivo (cloud non disponibile)", "warn", 6000);
+      toast("Salvato solo su questo dispositivo — riprova per salvarlo sul cloud", "warn", 6000);
     }
   };
 
