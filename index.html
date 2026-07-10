@@ -2469,14 +2469,14 @@
       box.innerHTML = '<div class="hint">Inserisci i dati del kit (quantità e articoli) per vedere la scala sconti.</div>';
       return;
     }
-    const { invoiceTarget, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay } = ctx;
+    const { baseInvoice, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay } = ctx;
     const input = document.getElementById("discountScale");
     let discs = parseDiscountList(input ? input.value : "");
     if(!discs.length) discs = [0, 5, 10, 15, 20];
 
     const rows = discs.map(pct => {
       const d           = pct / 100;
-      const invoice     = invoiceTarget * (1 - d);
+      const invoice     = baseInvoice * (1 - d);
       const pricePerAth = invoice / qtyBase;
       const revenueNet  = vatOn ? invoice / (1 + vatRate) : invoice;
       const profit      = revenueNet - totalCost;
@@ -2517,7 +2517,7 @@
           <tbody>${body}</tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:8px">Riferimento margine target ${(m*100).toFixed(0)}%. <b style="color:var(--warn)">Sotto target</b> = ancora in utile ma sotto il margine voluto · <b style="color:var(--bad)">Non sostenibile</b> = prezzo sotto il minimo sostenibile (breakeven + buffer).</div>`;
+      <div class="hint" style="margin-top:8px">Sconti calcolati sul prezzo attuale dell'ordine (0% = fatturato ${eur(baseInvoice)} del Riepilogo). Riferimento margine target ${(m*100).toFixed(0)}%. <b style="color:var(--warn)">Sotto target</b> = ancora in utile ma sotto il margine voluto · <b style="color:var(--bad)">Non sostenibile</b> = prezzo sotto il minimo sostenibile (breakeven + buffer).</div>`;
   };
 
   /* ─── calc() ─── */
@@ -2726,7 +2726,7 @@
       offerStatusBox.style.color = offerStatusColor || "var(--muted)";
     }
 
-    renderDiscountScale({ invoiceTarget, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay });
+    renderDiscountScale({ baseInvoice: invoiceTotal, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay });
 
     showAlerts(alerts);
     saveDraft();
