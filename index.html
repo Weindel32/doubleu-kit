@@ -3002,13 +3002,37 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <div class="footer"><span>doubleu kit — uso interno</span><span>${date}</span></div>
-<script>window.onload=()=>window.print();<\/script>
 </body></html>`;
 
-    const win = window.open("", "_blank");
-    if(!win){ toast("Abilita i popup del browser per stampare", "warn", 5000); return; }
-    win.document.write(html);
-    win.document.close();
+    // Stampa dentro un iframe nascosto nella STESSA pagina.
+    // Il vecchio window.open("_blank") su iPhone/iPad Safari apriva una scheda
+    // che ricaricava l'app (→ pagina di login) invece del preventivo.
+    const old = document.getElementById("pdfPrintFrame");
+    if(old) old.remove();
+    const frame = document.createElement("iframe");
+    frame.id = "pdfPrintFrame";
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none";
+    document.body.appendChild(frame);
+
+    let printed = false;
+    const fire = () => {
+      if(printed) return;
+      const w = frame.contentWindow;
+      if(!w) return;
+      printed = true;
+      try { w.focus(); w.print(); }
+      catch(err){ console.error("Print error:", err); toast("Stampa non riuscita su questo browser", "warn", 5000); }
+    };
+
+    const doc = frame.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    // Appena l'iframe ha caricato (con piccolo margine per il rendering su Safari)
+    frame.onload = () => setTimeout(fire, 300);
+    // Fallback: alcune versioni di Safari non scatenano onload dopo document.write
+    setTimeout(fire, 1200);
   };
 
   const payload = () => ({
