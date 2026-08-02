@@ -3741,7 +3741,7 @@ tr:last-child td{border-bottom:none}
     if(!s) return [];
     const input = document.getElementById("discountScale");
     let discs = parseDiscountList(input ? input.value : "");
-    [0, 5, 10, 20, 50].forEach(v => { if(!discs.includes(v)) discs.push(v); });
+    [0, 5, 10, 20, 25].forEach(v => { if(!discs.includes(v)) discs.push(v); });
     discs.sort((a,b) => a-b);
     return discs.map(pct => {
       const invoice = s.invoice * (1 - pct / 100);
