@@ -1029,6 +1029,85 @@
       .step-item { padding: 9px 8px; font-size: 11px; }
     }
 
+    /* ─── iPhone quick workflows ───
+       Deliberately capped at 560px: desktop and iPad keep the existing UI. */
+    .iphone-quick-home,
+    .iphone-flow-strip { display: none; }
+
+    @media (max-width: 560px) {
+      .topbar {
+        min-height: 58px;
+        padding: max(10px, env(safe-area-inset-top, 10px)) 16px 8px;
+        background: var(--sb-bg);
+        color: #fff;
+      }
+      .topbar-title { color: #fff; font-size: 16px; }
+      #btnLogoutMobile { color: var(--sb-text) !important; }
+      .content-area { padding-top: 12px; }
+
+      .iphone-quick-home { display: block; }
+      .iphone-quick-head { margin: 4px 0 14px; }
+      .iphone-quick-title {
+        font-size: 23px; line-height: 1.12; font-weight: 850;
+        letter-spacing: -.5px; color: var(--text);
+      }
+      .iphone-quick-sub { margin-top: 5px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+      .iphone-quick-list { display: flex; flex-direction: column; gap: 10px; }
+      .iphone-quick-card {
+        appearance: none; width: 100%; text-align: left; cursor: pointer;
+        border: 1px solid var(--border-2); border-radius: 17px;
+        background: var(--surface); padding: 15px 14px;
+        box-shadow: var(--shadow-sm); color: var(--text);
+        display: grid; grid-template-columns: 42px 1fr 18px;
+        gap: 11px; align-items: center;
+      }
+      .iphone-quick-card.recommended { border-color: var(--good-bd); background: var(--good-bg); }
+      .iphone-quick-icon {
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--surface-2); color: var(--accent); font-size: 21px; font-weight: 850;
+      }
+      .iphone-quick-card.recommended .iphone-quick-icon { background: var(--good); color: #fff; }
+      .iphone-quick-name { font-size: 16px; font-weight: 800; letter-spacing: -.15px; }
+      .iphone-quick-desc { font-size: 12px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
+      .iphone-quick-meta {
+        grid-column: 2 / 4; display: inline-flex; width: fit-content;
+        background: rgba(255,255,255,.72); border-radius: 999px;
+        padding: 5px 9px; font-size: 10px; color: var(--text-2); font-weight: 700;
+      }
+      .iphone-quick-arrow { color: var(--accent); font-size: 22px; font-weight: 800; text-align: right; }
+      .iphone-full-builder {
+        width: 100%; margin-top: 12px; min-height: 52px; border-radius: 14px;
+        border: 0; background: var(--sb-bg); color: #fff; font-size: 13px;
+        font-weight: 800; letter-spacing: .02em; cursor: pointer;
+      }
+      .iphone-full-note { text-align: center; font-size: 10px; color: var(--muted); margin: 8px 4px 18px; }
+
+      /* The regular dashboard remains available below, but starts compactly. */
+      #dashboardView > .dash-header { margin-top: 4px; padding-top: 15px; border-top: 1px solid var(--border); }
+      #dashboardView > .dash-kpis { display: none; }
+      #dashboardView > .dash-header .dash-sub { display: none; }
+
+      .iphone-flow-strip {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        margin-bottom: 10px; padding: 10px 12px; border-radius: 12px;
+        background: var(--surface); border: 1px solid var(--border);
+      }
+      .iphone-flow-copy { min-width: 0; }
+      .iphone-flow-label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+      .iphone-flow-name { margin-top: 2px; font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .iphone-flow-change { border: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: 800; cursor: pointer; padding: 6px; }
+
+      #builderView .step-bar { position: sticky; top: 0; z-index: 145; }
+      #builderView .step-item { flex-direction: column; gap: 3px; padding: 8px 4px; font-size: 11px; }
+      #builderView .step-num { width: 22px; height: 22px; }
+      #builderView .card-title { font-size: 15px; }
+      #builderView input, #builderView select { font-size: 16px; min-height: 44px; }
+      #builderView .step-nav { gap: 8px; align-items: stretch; }
+      #builderView .step-nav > div, #builderView .step-nav-right { width: 100%; margin-left: 0; }
+      #builderView .step-nav button { min-height: 44px; flex: 1; }
+    }
+
     /* ─── Dashboard kit cards (mobile) ─── */
     .dash-card-list { display: none; flex-direction: column; gap: 10px; }
     .dash-kit-card {
@@ -1330,6 +1409,44 @@
 
         <!-- ── Dashboard View ── -->
         <div id="dashboardView" style="display:none">
+          <section class="iphone-quick-home" aria-label="Controlli rapidi iPhone">
+            <div class="iphone-quick-head">
+              <div class="iphone-quick-title">Cosa devi verificare?</div>
+              <div class="iphone-quick-sub">Scegli il percorso più rapido per la trattativa.</div>
+            </div>
+            <div class="iphone-quick-list">
+              <button class="iphone-quick-card" type="button" data-quick-flow="margin">
+                <span class="iphone-quick-icon">✓</span>
+                <span>
+                  <span class="iphone-quick-name">Verifica margine</span>
+                  <span class="iphone-quick-desc">Controlla costi e prezzo prima di proporlo.</span>
+                </span>
+                <span class="iphone-quick-arrow">›</span>
+                <span class="iphone-quick-meta">Costo → prezzo → margine reale</span>
+              </button>
+              <button class="iphone-quick-card recommended" type="button" data-quick-flow="budget">
+                <span class="iphone-quick-icon">€</span>
+                <span>
+                  <span class="iphone-quick-name">Budget cliente</span>
+                  <span class="iphone-quick-desc">Verifica se il kit rientra nel prezzo indicato dal club.</span>
+                </span>
+                <span class="iphone-quick-arrow">›</span>
+                <span class="iphone-quick-meta">Prezzo per atleta · quantità prevista</span>
+              </button>
+              <button class="iphone-quick-card" type="button" data-quick-flow="discounts">
+                <span class="iphone-quick-icon">≡</span>
+                <span>
+                  <span class="iphone-quick-name">Simula sconti</span>
+                  <span class="iphone-quick-desc">Confronta più sconti sulla stessa offerta.</span>
+                </span>
+                <span class="iphone-quick-arrow">›</span>
+                <span class="iphone-quick-meta">Prezzo · fatturato · margine · sostenibilità</span>
+              </button>
+            </div>
+            <button class="iphone-full-builder" type="button" data-quick-flow="full">Apri Kit Builder completo</button>
+            <div class="iphone-full-note">Articoli · quantità · omaggi · acconto · riepilogo</div>
+          </section>
+
           <div class="dash-header">
             <div>
               <div class="dash-welcome">Dashboard</div>
@@ -1408,6 +1525,14 @@
 
         <!-- ── Builder View ── -->
         <div id="builderView" style="display:none">
+
+        <div class="iphone-flow-strip" id="iphoneFlowStrip">
+          <div class="iphone-flow-copy">
+            <div class="iphone-flow-label">Percorso rapido</div>
+            <div class="iphone-flow-name" id="iphoneFlowName">Kit Builder completo</div>
+          </div>
+          <button class="iphone-flow-change" id="iphoneFlowChange" type="button">Cambia</button>
+        </div>
 
         <!-- Step Indicator -->
         <div class="step-bar" id="stepBar">
@@ -2051,7 +2176,7 @@
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v16
+   build v17
 ========================= */
 
 (async function(){
@@ -2089,7 +2214,7 @@
   }
 
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v16";
+  if(buildTxt) buildTxt.textContent = "build v17";
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
@@ -3339,6 +3464,42 @@ tr:last-child td{border-bottom:none}
 
   /* ─── Step navigation ─── */
   let currentStep = 1;
+  let currentQuickFlow = "full";
+
+  const QUICK_FLOW_LABELS = {
+    margin: "Verifica margine",
+    budget: "Budget cliente",
+    discounts: "Simulazione sconti",
+    full: "Kit Builder completo"
+  };
+
+  const setQuickFlow = (flow) => {
+    currentQuickFlow = QUICK_FLOW_LABELS[flow] ? flow : "full";
+    const label = document.getElementById("iphoneFlowName");
+    if(label) label.textContent = QUICK_FLOW_LABELS[currentQuickFlow];
+
+    if(currentQuickFlow === "budget") {
+      useOffer.checked = true;
+    } else if(currentQuickFlow === "margin") {
+      useOffer.checked = false;
+    }
+    calc();
+  };
+
+  const openQuickFlow = (flow) => {
+    setQuickFlow(flow);
+    showView("builder");
+
+    // Sconti works on the active kit. If it has meaningful data, jump straight
+    // to the comparison; otherwise start from composition without hiding steps.
+    const hasKitData = toNum(qtyEst.value) > 0 && items.some(it => toNum(it.qty) > 0);
+    if(flow === "discounts" && hasKitData) {
+      goToStep(3);
+    } else {
+      goToStep(1);
+      if(flow === "discounts") toast("Prima completa gli articoli del kit, poi apri il riepilogo sconti.", "warn", 4200);
+    }
+  };
 
   const STEP_LABELS = ["Avanti: Prezzi →", "Avanti: Riepilogo →"];
 
@@ -4259,6 +4420,12 @@ tr:last-child td{border-bottom:none}
       document.querySelectorAll(".step-item[data-step]").forEach(el => {
         el.addEventListener("click", () => goToStep(parseInt(el.getAttribute("data-step"))));
       });
+
+      document.querySelectorAll("[data-quick-flow]").forEach(el => {
+        el.addEventListener("click", () => openQuickFlow(el.getAttribute("data-quick-flow")));
+      });
+      const iphoneFlowChange = document.getElementById("iphoneFlowChange");
+      if(iphoneFlowChange) iphoneFlowChange.addEventListener("click", () => showView("dashboard"));
 
       const _btnPrev = document.getElementById("btnPrev");
       if(_btnPrev) _btnPrev.addEventListener("click", () => goToStep(currentStep - 1));
