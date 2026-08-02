@@ -1033,6 +1033,7 @@
        Deliberately capped at 560px: desktop and iPad keep the existing UI. */
     .iphone-quick-home,
     .iphone-flow-strip,
+    .iphone-guide-progress,
     .iphone-quick-workspace { display: none; }
 
     @media (max-width: 560px) {
@@ -1083,11 +1084,30 @@
         font-weight: 800; letter-spacing: .02em; cursor: pointer;
       }
       .iphone-full-note { text-align: center; font-size: 10px; color: var(--muted); margin: 8px 4px 18px; }
+      .iphone-saved-title { margin-top: 22px; font-size: 16px; font-weight: 900; color: var(--text); }
 
       /* The regular dashboard remains available below, but starts compactly. */
-      #dashboardView > .dash-header { margin-top: 4px; padding-top: 15px; border-top: 1px solid var(--border); }
+      #dashboardView > .dash-header { display: none; }
       #dashboardView > .dash-kpis { display: none; }
       #dashboardView > .dash-header .dash-sub { display: none; }
+
+      .iphone-guide-progress {
+        grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 0 0 14px;
+        padding: 10px 8px; border: 1px solid var(--border); border-radius: 14px;
+        background: var(--surface); box-shadow: var(--shadow-sm);
+      }
+      #builderView.unified-active .iphone-guide-progress { display: grid; }
+      .iphone-guide-progress span {
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        color: var(--muted); font-size: 9px; font-weight: 800;
+      }
+      .iphone-guide-progress b {
+        width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%;
+        background: var(--surface-2); color: var(--muted); font-size: 11px;
+      }
+      .iphone-guide-progress span.active { color: var(--accent); }
+      .iphone-guide-progress span.active b { background: var(--accent); color: #fff; }
+      .iphone-guide-progress span.done b { background: var(--good); color: #fff; }
 
       .iphone-flow-strip {
         display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -1108,6 +1128,8 @@
       #builderView .step-nav > div, #builderView .step-nav-right { width: 100%; margin-left: 0; }
       #builderView .step-nav button { min-height: 44px; flex: 1; }
 
+      #builderView.unified-active > .step-bar { display: none; }
+
       /* Real quick-flow screens. The full builder remains untouched and is
          hidden only while one of these iPhone-only workspaces is active. */
       #builderView.quick-active .step-bar,
@@ -1125,6 +1147,7 @@
         font-size: 14px; font-weight: 750; padding: 5px 0; cursor: pointer;
       }
       .iq-link.strong { color: var(--text); font-weight: 850; }
+      .iq-kicker { margin-bottom: 7px; color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: .07em; }
       .iq-title { font-size: 24px; line-height: 1.12; letter-spacing: -.55px; font-weight: 900; }
       .iq-sub { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
       .iq-card {
@@ -1143,6 +1166,23 @@
         font-size: 23px; font-weight: 900; line-height: 1;
       }
       .iq-field select { font-size: 16px; }
+      .iq-mode-list { display: flex; flex-direction: column; gap: 8px; }
+      .iq-mode {
+        width: 100%; display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start;
+        padding: 13px; border: 1.5px solid var(--border-2); border-radius: 14px;
+        background: var(--surface); color: var(--text); text-align: left; cursor: pointer;
+      }
+      .iq-mode.active { border-color: var(--accent); background: var(--accent-light); }
+      .iq-mode-dot { width: 18px; height: 18px; margin-top: 1px; border: 2px solid var(--border-2); border-radius: 50%; }
+      .iq-mode.active .iq-mode-dot { border: 5px solid var(--accent); }
+      .iq-mode strong, .iq-mode small { display: block; }
+      .iq-mode strong { font-size: 13px; }
+      .iq-mode small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+      .iq-margin-select {
+        width: 100%; min-height: 50px; margin-top: 6px; padding: 10px 12px;
+        border: 1.5px solid var(--border-2); border-radius: 13px;
+        background: var(--surface-2); color: var(--text); font-size: 16px; font-weight: 800;
+      }
       .iq-toggle-row {
         display: flex; align-items: center; justify-content: space-between; gap: 15px;
         margin-top: 14px; color: var(--text-2); font-size: 12px;
@@ -1510,42 +1550,24 @@
 
         <!-- ── Dashboard View ── -->
         <div id="dashboardView" style="display:none">
-          <section class="iphone-quick-home" aria-label="Controlli rapidi iPhone">
+          <section class="iphone-quick-home" aria-label="Nuovo kit o verifica iPhone">
             <div class="iphone-quick-head">
-              <div class="iphone-quick-title">Cosa devi verificare?</div>
-              <div class="iphone-quick-sub">Scegli il percorso più rapido per la trattativa.</div>
+              <div class="iphone-quick-title">Kit e margini</div>
+              <div class="iphone-quick-sub">Un solo percorso guidato, dalla composizione alla verifica finale.</div>
             </div>
             <div class="iphone-quick-list">
-              <button class="iphone-quick-card" type="button" data-quick-flow="margin">
-                <span class="iphone-quick-icon">✓</span>
+              <button class="iphone-quick-card recommended" id="iphoneStartUnified" type="button">
+                <span class="iphone-quick-icon">+</span>
                 <span>
-                  <span class="iphone-quick-name">Verifica margine</span>
-                  <span class="iphone-quick-desc">Controlla costi e prezzo prima di proporlo.</span>
+                  <span class="iphone-quick-name">Nuovo kit / nuova verifica</span>
+                  <span class="iphone-quick-desc">Componi il kit, scegli budget o margine e controlla il risultato.</span>
                 </span>
                 <span class="iphone-quick-arrow">›</span>
-                <span class="iphone-quick-meta">Costo → prezzo → margine reale</span>
-              </button>
-              <button class="iphone-quick-card recommended" type="button" data-quick-flow="budget">
-                <span class="iphone-quick-icon">€</span>
-                <span>
-                  <span class="iphone-quick-name">Budget cliente</span>
-                  <span class="iphone-quick-desc">Verifica se il kit rientra nel prezzo indicato dal club.</span>
-                </span>
-                <span class="iphone-quick-arrow">›</span>
-                <span class="iphone-quick-meta">Prezzo per atleta · quantità prevista</span>
-              </button>
-              <button class="iphone-quick-card" type="button" data-quick-flow="discounts">
-                <span class="iphone-quick-icon">≡</span>
-                <span>
-                  <span class="iphone-quick-name">Simula sconti</span>
-                  <span class="iphone-quick-desc">Confronta più sconti sulla stessa offerta.</span>
-                </span>
-                <span class="iphone-quick-arrow">›</span>
-                <span class="iphone-quick-meta">Prezzo · fatturato · margine · sostenibilità</span>
+                <span class="iphone-quick-meta">1. Kit → 2. Prezzo → 3. Risultato → 4. Sconti</span>
               </button>
             </div>
-            <button class="iphone-full-builder" type="button" data-quick-flow="full">Apri Kit Builder completo</button>
-            <div class="iphone-full-note">Articoli · quantità · omaggi · acconto · riepilogo</div>
+            <div class="iphone-saved-title">Kit salvati</div>
+            <div class="iphone-full-note">Tocca un kit sotto per riprenderlo e continuare il percorso.</div>
           </section>
 
           <div class="dash-header">
@@ -1627,28 +1649,39 @@
         <!-- ── Builder View ── -->
         <div id="builderView" style="display:none">
 
-        <div class="iphone-flow-strip" id="iphoneFlowStrip">
-          <div class="iphone-flow-copy">
-            <div class="iphone-flow-label">Percorso rapido</div>
-            <div class="iphone-flow-name" id="iphoneFlowName">Kit Builder completo</div>
-          </div>
-          <button class="iphone-flow-change" id="iphoneFlowChange" type="button">Cambia</button>
+        <div class="iphone-guide-progress" id="iphoneGuideProgress" aria-label="Avanzamento verifica">
+          <span class="active" data-guide-step="1"><b>1</b> Kit</span>
+          <span data-guide-step="2"><b>2</b> Prezzo</span>
+          <span data-guide-step="3"><b>3</b> Esito</span>
+          <span data-guide-step="4"><b>4</b> Sconti</span>
         </div>
 
         <div class="iphone-quick-workspace" id="iphoneQuickWorkspace">
-          <section class="iq-screen" id="iqControlScreen">
+          <section class="iq-screen" id="iqPricingScreen">
             <div class="iq-nav">
-              <button class="iq-link" id="iqBackHome" type="button">‹ Controlli</button>
-              <button class="iq-link strong" id="iqEditKit" type="button">Modifica kit</button>
+              <button class="iq-link" id="iqBackKit" type="button">‹ Modifica kit</button>
+              <button class="iq-link strong" id="iqExitFlow" type="button">Esci</button>
             </div>
-            <div class="iq-title" id="iqControlTitle">Budget cliente</div>
-            <div class="iq-sub" id="iqControlSub">Parti dal prezzo comunicato dal club.</div>
+            <div class="iq-kicker">PASSAGGIO 2 DI 4</div>
+            <div class="iq-title">Come vuoi determinare il prezzo?</div>
+            <div class="iq-sub">Scegli in base alle informazioni che hai durante la trattativa.</div>
 
             <div class="iq-card">
-              <div class="iq-section-label" id="iqRequestLabel">Dati della richiesta</div>
-              <div class="iq-fields">
+              <div class="iq-mode-list" id="iqModeList">
+                <button class="iq-mode active" type="button" data-price-mode="budget">
+                  <span class="iq-mode-dot"></span><span><strong>Ho un budget cliente</strong><small>Inserisci il prezzo massimo per atleta.</small></span>
+                </button>
+                <button class="iq-mode" type="button" data-price-mode="target">
+                  <span class="iq-mode-dot"></span><span><strong>Parto dal margine desiderato</strong><small>L’app calcola il prezzo corretto da proporre.</small></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="iq-card">
+              <div class="iq-section-label" id="iqPricingLabel">Budget comunicato</div>
+              <div class="iq-fields" id="iqBudgetFields">
                 <div class="iq-field">
-                  <label id="iqPriceLabel" for="iqPrice">Budget per atleta</label>
+                  <label for="iqPrice">Budget per atleta</label>
                   <input id="iqPrice" inputmode="decimal" placeholder="79,00">
                 </div>
                 <div class="iq-field">
@@ -1662,25 +1695,37 @@
               </div>
               <div style="margin-top:14px">
                 <label style="font-size:11px;color:var(--muted)">Margine target</label>
-                <div class="iq-segments" id="iqMarginSegments">
-                  <button class="iq-segment" type="button" data-margin="0.45">45%</button>
-                  <button class="iq-segment" type="button" data-margin="0.50">50%</button>
-                  <button class="iq-segment" type="button" data-margin="0.65">65%</button>
-                </div>
+                <select class="iq-margin-select" id="iqMarginSelect">
+                  <option value="0.30">Promotional 30%</option><option value="0.35">Promotional 35%</option>
+                  <option value="0.40">Promotional 40%</option><option value="0.45">Club entry 45%</option>
+                  <option value="0.50">Club standard 50%</option><option value="0.58">Club recommended 58%</option>
+                  <option value="0.65">Online 65%</option><option value="0.72">Limited 72%</option>
+                  <option value="0.75">Limited Drop 75%</option>
+                </select>
               </div>
             </div>
 
             <div class="iq-card">
-              <div class="iq-section-label">Kit selezionato</div>
+              <div class="iq-section-label">Riepilogo kit</div>
               <div class="iq-kit-row">
                 <div>
                   <div class="iq-kit-main" id="iqKitMain">Nessun articolo configurato</div>
                   <div class="iq-kit-sub" id="iqKitSub">Aggiungi gli articoli e le quantità del kit.</div>
                 </div>
-                <button class="iq-link strong" id="iqModifyKit" type="button">Modifica</button>
               </div>
             </div>
 
+            <button class="iq-primary" id="iqShowResult" type="button">CONTROLLA IL RISULTATO →</button>
+          </section>
+
+          <section class="iq-screen" id="iqResultScreen">
+            <div class="iq-nav">
+              <button class="iq-link" id="iqBackPricing" type="button">‹ Modifica prezzo</button>
+              <button class="iq-link strong" id="iqResultEditKit" type="button">Modifica kit</button>
+            </div>
+            <div class="iq-kicker">PASSAGGIO 3 DI 4</div>
+            <div class="iq-title">Risultato della verifica</div>
+            <div class="iq-sub">Controlla subito margine, utile e sostenibilità.</div>
             <div class="iq-card iq-result" id="iqResultCard">
               <div class="iq-result-head"><span class="iq-check" id="iqResultIcon">✓</span><span id="iqResultStatus">Inserisci i dati</span></div>
               <div class="iq-result-grid">
@@ -1692,16 +1737,16 @@
               </div>
               <div class="iq-result-note" id="iqResultDetails">Configura il kit per vedere il risultato.</div>
             </div>
-
-            <button class="iq-primary" id="iqUseValue" type="button">USA IL BUDGET</button>
-            <button class="iq-secondary" id="iqGoDiscounts" type="button">SIMULA GLI SCONTI →</button>
+            <button class="iq-primary" id="iqOpenSummary" type="button">VAI AL RIEPILOGO</button>
+            <button class="iq-secondary" id="iqGoDiscounts" type="button">SIMULA UNO SCONTO →</button>
           </section>
 
           <section class="iq-screen" id="iqDiscountScreen">
             <div class="iq-nav">
-              <button class="iq-link" id="iqBackControl" type="button">‹ Budget</button>
+              <button class="iq-link" id="iqBackResult" type="button">‹ Risultato</button>
               <button class="iq-link strong" id="iqDiscountEdit" type="button">Modifica kit</button>
             </div>
+            <div class="iq-kicker">PASSAGGIO 4 DI 4 · FACOLTATIVO</div>
             <div class="iq-title">Simulazione sconti</div>
             <div class="iq-sub">Confronta le opzioni prima di trattare.</div>
 
@@ -1716,7 +1761,7 @@
             <div class="iq-discount-chips" id="iqDiscountChips"></div>
             <div class="iq-discount-list" id="iqDiscountList"><div class="iq-empty">Completa prima i dati del kit.</div></div>
             <button class="iq-primary" id="iqApplyDiscount" type="button">APPLICA SCONTO 0%</button>
-            <button class="iq-secondary" id="iqOpenSummary" type="button">APRI RIEPILOGO COMPLETO</button>
+            <button class="iq-secondary" id="iqDiscountSummary" type="button">CONTINUA SENZA SCONTO</button>
           </section>
         </div>
 
@@ -3651,14 +3696,20 @@ tr:last-child td{border-bottom:none}
   /* ─── Step navigation ─── */
   let currentStep = 1;
   let currentQuickFlow = "full";
-  let quickControlFlow = "budget";
+  let iphoneUnifiedActive = false;
+  let unifiedPriceMode = "budget";
   let quickSelectedDiscount = 0;
 
-  const QUICK_FLOW_LABELS = {
-    margin: "Verifica margine",
-    budget: "Budget cliente",
-    discounts: "Simulazione sconti",
-    full: "Kit Builder completo"
+  const isIphoneLayout = () => window.matchMedia("(max-width: 560px)").matches;
+
+  const updateGuideProgress = (step) => {
+    document.querySelectorAll("#iphoneGuideProgress [data-guide-step]").forEach(el => {
+      const n = Number(el.dataset.guideStep);
+      el.classList.toggle("active", n === step);
+      el.classList.toggle("done", n < step);
+      const badge = el.querySelector("b");
+      if(badge) badge.textContent = n < step ? "✓" : n;
+    });
   };
 
   const quickStats = () => {
@@ -3676,7 +3727,7 @@ tr:last-child td{border-bottom:none}
     const targetInvoice = vatOn ? targetNet * (1 + vatRate) : targetNet;
     let price = toNum(offerPrice.value);
     if(vatOn && !priceIncludesVAT.checked) price *= (1 + vatRate);
-    const invoice = price > 0 ? price * qtyBase : targetInvoice;
+    const invoice = unifiedPriceMode === "target" ? targetInvoice : (price > 0 ? price * qtyBase : 0);
     const net = vatOn ? invoice / (1 + vatRate) : invoice;
     const profit = net - totalCost;
     const realMargin = net > 0 ? profit / net : 0;
@@ -3707,26 +3758,30 @@ tr:last-child td{border-bottom:none}
     const builder = document.getElementById("builderView");
     if(!builder) return;
     const active = currentQuickFlow !== "full";
+    builder.classList.toggle("unified-active", iphoneUnifiedActive);
     builder.classList.toggle("quick-active", active);
     builder.dataset.quickFlow = currentQuickFlow;
-    if(!active) return;
+    if(!active) {
+      updateGuideProgress(currentStep === 3 ? 3 : 1);
+      return;
+    }
 
+    const onPricing = currentQuickFlow === "pricing";
+    const onResult = currentQuickFlow === "result";
     const onDiscounts = currentQuickFlow === "discounts";
-    document.getElementById("iqControlScreen")?.classList.toggle("active", !onDiscounts);
+    document.getElementById("iqPricingScreen")?.classList.toggle("active", onPricing);
+    document.getElementById("iqResultScreen")?.classList.toggle("active", onResult);
     document.getElementById("iqDiscountScreen")?.classList.toggle("active", onDiscounts);
+    updateGuideProgress(onPricing ? 2 : onResult ? 3 : 4);
 
-    const mode = onDiscounts ? quickControlFlow : currentQuickFlow;
-    const isBudget = mode === "budget";
+    const isBudget = unifiedPriceMode === "budget";
     const setText = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = value; };
-    setText("iqControlTitle", isBudget ? "Budget cliente" : "Verifica margine");
-    setText("iqControlSub", isBudget ? "Parti dal prezzo comunicato dal club." : "Controlla il prezzo prima di proporlo.");
-    setText("iqRequestLabel", isBudget ? "Dati della richiesta" : "Dati della verifica");
-    setText("iqPriceLabel", isBudget ? "Budget per atleta" : "Prezzo da verificare");
-    setText("iqBackControl", isBudget ? "‹ Budget" : "‹ Margine");
-    const useBtn = document.getElementById("iqUseValue");
-    if(useBtn) useBtn.textContent = isBudget
-      ? `USA IL BUDGET${toNum(offerPrice.value) > 0 ? " DI " + eur(toNum(offerPrice.value)) : ""}`
-      : "CONFERMA QUESTO PREZZO";
+    setText("iqPricingLabel", isBudget ? "Budget comunicato" : "Margine da applicare");
+    document.querySelectorAll("#iqModeList [data-price-mode]").forEach(el => el.classList.toggle("active", el.dataset.priceMode === unifiedPriceMode));
+    const budgetFields = document.getElementById("iqBudgetFields");
+    const vatRow = document.getElementById("iqVatIncludeRow");
+    if(budgetFields) budgetFields.style.display = isBudget ? "grid" : "none";
+    if(vatRow) vatRow.style.display = isBudget ? "flex" : "none";
 
     const priceProxy = document.getElementById("iqPrice");
     const qtyProxy = document.getElementById("iqQty");
@@ -3734,7 +3789,8 @@ tr:last-child td{border-bottom:none}
     if(priceProxy && document.activeElement !== priceProxy) priceProxy.value = offerPrice.value;
     if(qtyProxy && document.activeElement !== qtyProxy) qtyProxy.value = qtyEst.value;
     if(vatProxy) vatProxy.checked = priceIncludesVAT.checked;
-    document.querySelectorAll("#iqMarginSegments [data-margin]").forEach(el => el.classList.toggle("active", el.dataset.margin === margin.value));
+    const marginProxy = document.getElementById("iqMarginSelect");
+    if(marginProxy && document.activeElement !== marginProxy) marginProxy.value = margin.value;
 
     const articleCount = items.filter(it => toNum(it.qty) > 0).length;
     const s = quickStats();
@@ -3743,20 +3799,20 @@ tr:last-child td{border-bottom:none}
 
     const result = document.getElementById("iqResultCard");
     if(result) result.classList.remove("warn", "bad");
-    if(!s || toNum(offerPrice.value) <= 0) {
+    if(!s || (isBudget && toNum(offerPrice.value) <= 0)) {
       setText("iqResultIcon", "·"); setText("iqResultStatus", "INSERISCI I DATI");
       setText("iqResultMargin", "—"); setText("iqResultProfit", "—");
       setText("iqResultTarget", `Margine reale · target ${(parseFloat(margin.value)*100).toFixed(0)}%`);
       setText("iqResultDetails", "Configura il kit e inserisci il prezzo per vedere il risultato.");
     } else {
       if(result && s.state !== "good") result.classList.add(s.state);
-      const labels = { good:"BUDGET SOSTENIBILE", warn:"SOSTENIBILE, SOTTO TARGET", bad:"NON SOSTENIBILE" };
+      const labels = { good:isBudget ? "BUDGET SOSTENIBILE" : "PREZZO TARGET CORRETTO", warn:"SOSTENIBILE, SOTTO TARGET", bad:"NON SOSTENIBILE" };
       const icons = { good:"✓", warn:"!", bad:"×" };
       setText("iqResultIcon", icons[s.state]); setText("iqResultStatus", labels[s.state]);
       setText("iqResultMargin", (s.realMargin*100).toFixed(1).replace(".", ",") + "%");
       setText("iqResultProfit", eur(s.profit));
       setText("iqResultTarget", `Margine reale · target ${(s.m*100).toFixed(0)}%`);
-      setText("iqResultDetails", `Fatturato ${eur(s.invoice)} · imponibile ${eur(s.net)} · minimo ${eur(s.minPrice)} / atleta`);
+      setText("iqResultDetails", `Prezzo ${eur(s.pricePerAthlete)} / atleta · fatturato ${eur(s.invoice)} · minimo ${eur(s.minPrice)} / atleta`);
     }
 
     if(onDiscounts) {
@@ -3782,24 +3838,32 @@ tr:last-child td{border-bottom:none}
   };
 
   const setQuickFlow = (flow) => {
-    currentQuickFlow = QUICK_FLOW_LABELS[flow] ? flow : "full";
-    if(flow === "budget" || flow === "margin") quickControlFlow = flow;
-    const label = document.getElementById("iphoneFlowName");
-    if(label) label.textContent = QUICK_FLOW_LABELS[currentQuickFlow];
-
-    if(currentQuickFlow === "budget" || currentQuickFlow === "margin") {
-      useOffer.checked = true;
-    }
+    currentQuickFlow = ["pricing", "result", "discounts"].includes(flow) ? flow : "full";
+    useOffer.checked = unifiedPriceMode === "budget";
     calc();
     renderQuickWorkspace();
   };
 
-  const openQuickFlow = (flow) => {
-    setQuickFlow(flow);
+  const startUnifiedFlow = (reset = true) => {
+    if(reset) { resetAll(); discount.value = "0"; }
+    iphoneUnifiedActive = true;
+    unifiedPriceMode = reset ? "budget" : (toNum(offerPrice.value) > 0 ? "budget" : "target");
+    setQuickFlow("full");
     showView("builder");
-
     goToStep(1);
     renderQuickWorkspace();
+  };
+
+  const exitUnifiedFlow = () => {
+    iphoneUnifiedActive = false;
+    setQuickFlow("full");
+    showView("dashboard");
+  };
+
+  const openUnifiedPricing = () => {
+    const s = quickStats();
+    if(!s) { toast("Inserisci quantità, articoli e costi prima di continuare", "warn"); return; }
+    setQuickFlow("pricing");
   };
 
   const STEP_LABELS = ["Avanti: Prezzi →", "Avanti: Riepilogo →"];
@@ -3843,8 +3907,12 @@ tr:last-child td{border-bottom:none}
     if(resetBtn) resetBtn.style.display = currentStep === 1 ? "" : "none";
 
     if(currentStep < 3) {
-      navRight.innerHTML = `<button id="btnNext" class="primary">${STEP_LABELS[currentStep - 1]}</button>`;
-      document.getElementById("btnNext").addEventListener("click", () => goToStep(currentStep + 1));
+      const iphoneLabel = iphoneUnifiedActive && currentStep === 1 ? "Avanti: scegli il prezzo →" : STEP_LABELS[currentStep - 1];
+      navRight.innerHTML = `<button id="btnNext" class="primary">${iphoneLabel}</button>`;
+      document.getElementById("btnNext").addEventListener("click", () => {
+        if(iphoneUnifiedActive && isIphoneLayout() && currentStep === 1) openUnifiedPricing();
+        else goToStep(currentStep + 1);
+      });
     } else {
       navRight.innerHTML = `
         <button id="btnCopyStep" class="ghost">Copia riepilogo</button>
@@ -3863,6 +3931,7 @@ tr:last-child td{border-bottom:none}
   const goToStep = (n) => {
     currentStep = Math.max(1, Math.min(3, n));
     updateStepUI();
+    renderQuickWorkspace();
   };
 
   /* ─── View switching ─── */
@@ -4046,8 +4115,8 @@ tr:last-child td{border-bottom:none}
           applyPayload(kit.payload);
           toast("Kit caricato ✓", "ok");
         }
-        showView("builder");
-        goToStep(1);
+        if(isIphoneLayout()) startUnifiedFlow(false);
+        else { showView("builder"); goToStep(1); }
       });
     });
 
@@ -4137,8 +4206,8 @@ tr:last-child td{border-bottom:none}
               applyPayload(kit.payload);
               toast("Kit caricato ✓", "ok");
             }
-            showView("builder");
-            goToStep(1);
+            if(isIphoneLayout()) startUnifiedFlow(false);
+            else { showView("builder"); goToStep(1); }
           });
         });
 
@@ -4657,7 +4726,10 @@ tr:last-child td{border-bottom:none}
 
   const _btnNewKitDash = document.getElementById("btnNewKitDash");
   if(_btnNewKitDash) _btnNewKitDash.addEventListener("click", () => {
-    try { resetAll(); showView("builder"); goToStep(1); } catch(err) { console.error(err); }
+    try {
+      if(isIphoneLayout()) startUnifiedFlow(true);
+      else { resetAll(); showView("builder"); goToStep(1); }
+    } catch(err) { console.error(err); }
   });
 
   const _btnAnalisiGoBuilder = document.getElementById("btnAnalisiGoBuilder");
@@ -4722,42 +4794,58 @@ tr:last-child td{border-bottom:none}
         el.addEventListener("click", () => goToStep(parseInt(el.getAttribute("data-step"))));
       });
 
-      document.querySelectorAll("[data-quick-flow]").forEach(el => {
-        el.addEventListener("click", () => openQuickFlow(el.getAttribute("data-quick-flow")));
-      });
-      const iphoneFlowChange = document.getElementById("iphoneFlowChange");
-      if(iphoneFlowChange) iphoneFlowChange.addEventListener("click", () => showView("dashboard"));
+      document.getElementById("iphoneStartUnified")?.addEventListener("click", () => startUnifiedFlow(true));
 
-      const quickRefresh = () => { useOffer.checked = true; calc(); renderQuickWorkspace(); };
+      const quickRefresh = () => { useOffer.checked = unifiedPriceMode === "budget"; calc(); renderQuickWorkspace(); };
       const iqPrice = document.getElementById("iqPrice");
       if(iqPrice) iqPrice.addEventListener("input", () => { offerPrice.value = iqPrice.value; quickRefresh(); });
       const iqQty = document.getElementById("iqQty");
       if(iqQty) iqQty.addEventListener("input", () => { qtyEst.value = iqQty.value; quickRefresh(); });
       const iqPriceIncludesVAT = document.getElementById("iqPriceIncludesVAT");
       if(iqPriceIncludesVAT) iqPriceIncludesVAT.addEventListener("change", () => { priceIncludesVAT.checked = iqPriceIncludesVAT.checked; quickRefresh(); });
-      document.querySelectorAll("#iqMarginSegments [data-margin]").forEach(btn => {
-        btn.addEventListener("click", () => { margin.value = btn.dataset.margin; quickRefresh(); });
+      const iqMarginSelect = document.getElementById("iqMarginSelect");
+      if(iqMarginSelect) iqMarginSelect.addEventListener("change", () => { margin.value = iqMarginSelect.value; quickRefresh(); });
+      document.querySelectorAll("#iqModeList [data-price-mode]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          unifiedPriceMode = btn.dataset.priceMode;
+          if(unifiedPriceMode === "target") discount.value = "0";
+          useOffer.checked = unifiedPriceMode === "budget";
+          quickRefresh();
+        });
       });
 
-      const openFullKit = (step = 1) => { setQuickFlow("full"); showView("builder"); goToStep(step); };
-      document.getElementById("iqBackHome")?.addEventListener("click", () => showView("dashboard"));
-      document.getElementById("iqEditKit")?.addEventListener("click", () => openFullKit(1));
-      document.getElementById("iqModifyKit")?.addEventListener("click", () => openFullKit(1));
-      document.getElementById("iqDiscountEdit")?.addEventListener("click", () => openFullKit(1));
-      document.getElementById("iqBackControl")?.addEventListener("click", () => { setQuickFlow(quickControlFlow); renderQuickWorkspace(); });
-      document.getElementById("iqUseValue")?.addEventListener("click", () => {
-        useOffer.checked = true; calc(); renderQuickWorkspace();
-        toast(toNum(offerPrice.value) > 0 ? "Prezzo applicato al preventivo ✓" : "Inserisci prima il prezzo per atleta", toNum(offerPrice.value) > 0 ? "ok" : "warn");
+      const openUnifiedKit = () => { setQuickFlow("full"); showView("builder"); goToStep(1); };
+      const openUnifiedSummary = () => {
+        const s = quickStats();
+        if(!s || (unifiedPriceMode === "budget" && toNum(offerPrice.value) <= 0)) {
+          toast("Completa prima i dati del prezzo", "warn"); return;
+        }
+        useOffer.checked = unifiedPriceMode === "budget";
+        calc(); setQuickFlow("full"); showView("builder"); goToStep(3);
+      };
+      document.getElementById("iqBackKit")?.addEventListener("click", openUnifiedKit);
+      document.getElementById("iqExitFlow")?.addEventListener("click", exitUnifiedFlow);
+      document.getElementById("iqResultEditKit")?.addEventListener("click", openUnifiedKit);
+      document.getElementById("iqDiscountEdit")?.addEventListener("click", openUnifiedKit);
+      document.getElementById("iqBackPricing")?.addEventListener("click", () => setQuickFlow("pricing"));
+      document.getElementById("iqBackResult")?.addEventListener("click", () => setQuickFlow("result"));
+      document.getElementById("iqShowResult")?.addEventListener("click", () => {
+        const s = quickStats();
+        if(!s) { toast("Completa prima quantità, articoli e costi", "warn"); return; }
+        if(unifiedPriceMode === "budget" && toNum(offerPrice.value) <= 0) { toast("Inserisci il budget per atleta", "warn"); return; }
+        setQuickFlow("result");
       });
       document.getElementById("iqGoDiscounts")?.addEventListener("click", () => { setQuickFlow("discounts"); renderQuickWorkspace(); });
-      document.getElementById("iqOpenSummary")?.addEventListener("click", () => openFullKit(3));
+      document.getElementById("iqOpenSummary")?.addEventListener("click", openUnifiedSummary);
+      document.getElementById("iqDiscountSummary")?.addEventListener("click", openUnifiedSummary);
       document.getElementById("iqApplyDiscount")?.addEventListener("click", () => {
         const s = quickStats();
         const row = quickDiscountRows(s).find(r => r.pct === quickSelectedDiscount);
         if(!row){ toast("Completa prima i dati del kit", "warn"); return; }
         offerPrice.value = row.pricePerAthlete.toFixed(2).replace(".", ",");
+        unifiedPriceMode = "budget";
         useOffer.checked = true;
-        calc(); renderQuickWorkspace();
+        calc(); setQuickFlow("full"); showView("builder"); goToStep(3);
         toast(`Sconto ${quickSelectedDiscount}% applicato al prezzo ✓`, "ok");
       });
       document.getElementById("iphoneQuickWorkspace")?.addEventListener("click", (e) => {
@@ -4782,10 +4870,16 @@ tr:last-child td{border-bottom:none}
       });
 
       const _btnPrev = document.getElementById("btnPrev");
-      if(_btnPrev) _btnPrev.addEventListener("click", () => goToStep(currentStep - 1));
+      if(_btnPrev) _btnPrev.addEventListener("click", () => {
+        if(iphoneUnifiedActive && isIphoneLayout() && currentStep === 3) setQuickFlow("result");
+        else goToStep(currentStep - 1);
+      });
 
       const _btnResetStep = document.getElementById("btnResetStep");
-      if(_btnResetStep) _btnResetStep.addEventListener("click", () => { resetAll(); goToStep(1); });
+      if(_btnResetStep) _btnResetStep.addEventListener("click", () => {
+        if(iphoneUnifiedActive && isIphoneLayout()) startUnifiedFlow(true);
+        else { resetAll(); goToStep(1); }
+      });
 
       // Ripristina bozza se presente
       try {
@@ -4831,7 +4925,13 @@ tr:last-child td{border-bottom:none}
       document.querySelectorAll(".mobile-nav-item[data-view]").forEach(el => {
         el.addEventListener("click", (e) => {
           e.preventDefault();
-          try { showView(el.dataset.view); } catch(err) { console.error(err); }
+          try {
+            if(el.dataset.view === "builder") startUnifiedFlow(false);
+            else {
+              if(el.dataset.view === "dashboard") { iphoneUnifiedActive = false; setQuickFlow("full"); }
+              showView(el.dataset.view);
+            }
+          } catch(err) { console.error(err); }
         });
       });
 
