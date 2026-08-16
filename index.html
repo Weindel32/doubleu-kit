@@ -947,6 +947,13 @@
       .topbar-date { display: none; }
       .topbar-badge { display: none; }
       #btnLogoutMobile { display: block !important; }
+      #btnSettingsMobile { display: block !important; }
+      #btnSettingsMobile.active { color: var(--text); }
+      /* Icone della topbar: area di tocco piena, non solo l'icona da 20px */
+      #btnLogoutMobile, #btnSettingsMobile {
+        width: 44px; height: 44px; padding: 0;
+        display: flex !important; align-items: center; justify-content: center;
+      }
 
       /* Status bar — "sticky" su mobile: margine e prezzo restano sempre
          visibili in alto mentre scorri/modifichi (controllo al volo) */
@@ -994,8 +1001,16 @@
       .art-field { min-width: 68px; flex: 1; }
 
       /* Qty buttons touch targets */
-      .qty-btn { width: 36px; height: 36px; font-size: 16px; }
-      .art-qty input { width: 46px; height: 36px; }
+      .qty-btn { width: 44px; height: 44px; font-size: 16px; }
+      .art-qty input { width: 52px; height: 44px; }
+
+      /* Il subtotale di riga (.art-price) è nascosto qui sopra: la pill in basso
+         resta l'unico posto dove leggerlo, quindi va etichettata. */
+      .art-badge::before { content: "Subtotale "; font-weight: 700; opacity: .7; }
+
+      /* Molti pulsanti hanno padding inline da 4px: da soli restano alti 22–32px,
+         troppo poco per il pollice (Duplica, Rimuovi, Omaggio…). */
+      .content-area button { min-height: 44px; }
 
       /* KPI panel not sticky on mobile */
       .kpi-panel { position: static; }
@@ -1022,6 +1037,9 @@
       /* Row grids collapse */
       .row2, .row3 { grid-template-columns: 1fr; }
       .analisi-2col { grid-template-columns: 1fr; }
+      /* Le celle di .dash-table sono nowrap: senza min-width:0 la colonna grid
+         si allargava oltre lo schermo e trascinava tutta la pagina di lato. */
+      .analisi-2col > .card { min-width: 0; overflow-x: auto; }
     }
 
     @media (max-width: 380px) {
@@ -1044,7 +1062,8 @@
         color: #fff;
       }
       .topbar-title { color: #fff; font-size: 16px; }
-      #btnLogoutMobile { color: var(--sb-text) !important; }
+      #btnLogoutMobile, #btnSettingsMobile { color: var(--sb-text) !important; }
+      #btnSettingsMobile.active { color: #fff !important; }
       .content-area { padding-top: 12px; }
 
       .iphone-quick-home { display: block; }
@@ -1063,18 +1082,22 @@
         display: grid; grid-template-columns: 42px 1fr 18px;
         gap: 11px; align-items: center;
       }
-      .iphone-quick-card.recommended { border-color: var(--good-bd); background: var(--good-bg); }
+      /* Azione primaria, non "opzione consigliata": il verde qui confliggeva con
+         il verde che altrove significa "margine a target". */
+      .iphone-quick-card.recommended { border-color: var(--accent); background: var(--surface); }
       .iphone-quick-icon {
         width: 40px; height: 40px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
         background: var(--surface-2); color: var(--accent); font-size: 21px; font-weight: 850;
       }
-      .iphone-quick-card.recommended .iphone-quick-icon { background: var(--good); color: #fff; }
-      .iphone-quick-name { font-size: 16px; font-weight: 800; letter-spacing: -.15px; }
-      .iphone-quick-desc { font-size: 12px; line-height: 1.35; color: var(--muted); margin-top: 3px; }
+      .iphone-quick-card.recommended .iphone-quick-icon { background: var(--accent); color: #fff; }
+      /* Sono <span>: senza display:block titolo e descrizione finivano
+         accavallati sulla stessa riga. Il peso 700 arriva da `button`. */
+      .iphone-quick-name { display: block; font-size: 16px; font-weight: 800; letter-spacing: -.15px; }
+      .iphone-quick-desc { display: block; font-size: 12px; font-weight: 500; line-height: 1.35; color: var(--muted); margin-top: 3px; }
       .iphone-quick-meta {
         grid-column: 2 / 4; display: inline-flex; width: fit-content;
-        background: rgba(255,255,255,.72); border-radius: 999px;
+        background: var(--surface-2); border-radius: 999px;
         padding: 5px 9px; font-size: 10px; color: var(--text-2); font-weight: 700;
       }
       .iphone-quick-arrow { color: var(--accent); font-size: 22px; font-weight: 800; text-align: right; }
@@ -1110,20 +1133,36 @@
       .iphone-guide-progress span.done b { background: var(--good); color: #fff; }
 
       .iphone-flow-strip {
-        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        align-items: center; justify-content: space-between; gap: 10px;
         margin-bottom: 10px; padding: 10px 12px; border-radius: 12px;
         background: var(--surface); border: 1px solid var(--border);
       }
+      /* Visibile solo dentro il percorso guidato: dà contesto e una via d'uscita
+         anche al passo 1, dove la barra dei passi è nascosta. */
+      #builderView.unified-active .iphone-flow-strip { display: flex; }
       .iphone-flow-copy { min-width: 0; }
       .iphone-flow-label { font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
       .iphone-flow-name { margin-top: 2px; font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .iphone-flow-change { border: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: 800; cursor: pointer; padding: 6px; }
+      .iphone-flow-change {
+        flex: 0 0 auto; border: 1px solid var(--border-2); border-radius: 10px;
+        background: var(--surface-2); color: var(--accent); font-size: 13px; font-weight: 800;
+        cursor: pointer; padding: 0 14px; min-height: 44px;
+      }
 
       #builderView .step-bar { position: sticky; top: 0; z-index: 145; }
       #builderView .step-item { flex-direction: column; gap: 3px; padding: 8px 4px; font-size: 11px; }
       #builderView .step-num { width: 22px; height: 22px; }
       #builderView .card-title { font-size: 15px; }
       #builderView input, #builderView select { font-size: 16px; min-height: 44px; }
+
+      /* iOS ingrandisce la pagina quando si tocca un campo con font < 16px:
+         stessa protezione già attiva nel builder, estesa alle altre schermate. */
+      #authOverlay .auth-field input,
+      #catalogForm input:not([type="hidden"]), #catalogForm select,
+      #impostazioniView input:not([type="checkbox"]), #impostazioniView select {
+        font-size: 16px; min-height: 44px;
+      }
+      #catalogForm button, #impostazioniView button, .auth-card button { min-height: 44px; }
       #builderView .step-nav { gap: 8px; align-items: stretch; }
       #builderView .step-nav > div, #builderView .step-nav-right { width: 100%; margin-left: 0; }
       #builderView .step-nav button { min-height: 44px; flex: 1; }
@@ -1227,7 +1266,7 @@
       .iq-secondary { margin-top: 10px; background: var(--surface-2); color: var(--text); }
       .iq-discount-chips { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 5px; scrollbar-width: none; }
       .iq-disc-chip {
-        flex: 0 0 auto; min-width: 55px; min-height: 37px; padding: 0 13px;
+        flex: 0 0 auto; min-width: 55px; min-height: 44px; padding: 0 13px;
         border: 1px solid var(--border-2); border-radius: 999px; background: var(--surface);
         color: var(--text); font-weight: 850; cursor: pointer;
       }
@@ -1527,7 +1566,13 @@
             <span style="opacity:.35">|</span>
             <span id="buildTxt">build v16</span>
           </div>
-          <button id="btnLogoutMobile" title="Esci" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
+          <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="10" cy="10" r="2.5"/>
+              <path d="M10 3.5v2M10 14.5v2M3.5 10h2M14.5 10h2M5.4 5.4l1.4 1.4M13.2 13.2l1.4 1.4M5.4 14.6l1.4-1.4M13.2 6.8l1.4-1.4"/>
+            </svg>
+          </button>
+          <button id="btnLogoutMobile" title="Esci" aria-label="Esci" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
               <path d="M8 10h8M13 7l3 3-3 3"/>
               <path d="M12 4H5a1 1 0 00-1 1v10a1 1 0 001 1h7"/>
@@ -1649,6 +1694,14 @@
         <!-- ── Builder View ── -->
         <div id="builderView" style="display:none">
 
+        <div class="iphone-flow-strip" id="iphoneFlowStrip">
+          <div class="iphone-flow-copy">
+            <div class="iphone-flow-label">Percorso guidato</div>
+            <div class="iphone-flow-name" id="iphoneFlowName">Nuovo kit</div>
+          </div>
+          <button class="iphone-flow-change" id="iphoneFlowExit" type="button">Esci</button>
+        </div>
+
         <div class="iphone-guide-progress" id="iphoneGuideProgress" aria-label="Avanzamento verifica">
           <span class="active" data-guide-step="1"><b>1</b> Kit</span>
           <span data-guide-step="2"><b>2</b> Prezzo</span>
@@ -1690,8 +1743,8 @@
                 </div>
               </div>
               <div class="iq-toggle-row" id="iqVatIncludeRow">
-                <span>Il prezzo include IVA</span>
-                <label class="iq-switch"><input type="checkbox" id="iqPriceIncludesVAT"><span></span></label>
+                <span id="iqVatIncludeLabel">Il prezzo include IVA</span>
+                <label class="iq-switch"><input type="checkbox" id="iqPriceIncludesVAT" aria-labelledby="iqVatIncludeLabel"><span></span></label>
               </div>
               <div style="margin-top:14px">
                 <label style="font-size:11px;color:var(--muted)">Margine target</label>
@@ -2174,7 +2227,7 @@
           <div class="card" id="catalogForm" style="display:none;margin-bottom:16px">
             <div class="card-title" id="catalogFormTitle">Nuovo articolo</div>
             <input type="hidden" id="catalogEditId">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="row2" style="margin-bottom:12px">
               <div class="field">
                 <label class="lbl">Codice articolo <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
                 <input type="text" id="catalogCode" placeholder="es. TS-001" autocomplete="off">
@@ -2184,7 +2237,7 @@
                 <select id="catalogTipo"></select>
               </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="row2" style="margin-bottom:12px">
               <div class="field">
                 <label class="lbl">Genere</label>
                 <select id="catalogGenere">
@@ -2208,7 +2261,7 @@
               <label class="lbl">Nome / descrizione <span style="font-weight:400;color:var(--muted)">(opz. — utile per articoli LS24)</span></label>
               <input type="text" id="catalogName" placeholder="es. Maglia Pro Team" autocomplete="off">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div class="row2" style="margin-bottom:16px">
               <div class="field">
                 <label class="lbl">Costo base €</label>
                 <input type="number" id="catalogBase" placeholder="0.00" min="0" step="0.01">
@@ -3691,6 +3744,9 @@ tr:last-child td{border-bottom:none}
     sbName.textContent = pname || "—";
     sbSub.textContent  = cname || "Nuovo preventivo";
     if(sbReset) sbReset.style.display = (pname || cname) ? "inline" : "none";
+    // Fascia di contesto del percorso guidato (solo iPhone)
+    const flowName = document.getElementById("iphoneFlowName");
+    if(flowName) flowName.textContent = pname || cname || "Nuovo kit";
   };
 
   /* ─── Step navigation ─── */
@@ -3956,6 +4012,7 @@ tr:last-child td{border-bottom:none}
     document.querySelectorAll(".mobile-nav-item[data-view]").forEach(el => {
       el.classList.toggle("active", el.getAttribute("data-view") === view);
     });
+    document.getElementById("btnSettingsMobile")?.classList.toggle("active", view === "impostazioni");
     const titleEl = document.querySelector(".topbar-title");
     if(titleEl) titleEl.textContent = VIEW_TITLES[view] || view;
     const statusBarEl = document.getElementById("statusBar");
@@ -4795,6 +4852,7 @@ tr:last-child td{border-bottom:none}
       });
 
       document.getElementById("iphoneStartUnified")?.addEventListener("click", () => startUnifiedFlow(true));
+      document.getElementById("iphoneFlowExit")?.addEventListener("click", exitUnifiedFlow);
 
       const quickRefresh = () => { useOffer.checked = unifiedPriceMode === "budget"; calc(); renderQuickWorkspace(); };
       const iqPrice = document.getElementById("iqPrice");
@@ -4926,13 +4984,25 @@ tr:last-child td{border-bottom:none}
         el.addEventListener("click", (e) => {
           e.preventDefault();
           try {
-            if(el.dataset.view === "builder") startUnifiedFlow(false);
+            if(el.dataset.view === "builder") {
+              // Se il percorso guidato è già aperto, torna al punto in cui eravamo
+              // invece di ripartire dal passo 1.
+              if(iphoneUnifiedActive) { showView("builder"); renderQuickWorkspace(); }
+              else startUnifiedFlow(false);
+            }
             else {
               if(el.dataset.view === "dashboard") { iphoneUnifiedActive = false; setQuickFlow("full"); }
               showView(el.dataset.view);
             }
           } catch(err) { console.error(err); }
         });
+      });
+
+      // Impostazioni da mobile (la sidebar è nascosta sotto gli 860px)
+      const _btnSettingsMobile = document.getElementById("btnSettingsMobile");
+      if(_btnSettingsMobile) _btnSettingsMobile.addEventListener("click", () => {
+        if(currentView === "impostazioni") showView(iphoneUnifiedActive ? "builder" : "dashboard");
+        else showView("impostazioni");
       });
 
       updateStepUI();
