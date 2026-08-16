@@ -10,7 +10,7 @@
 
 // Da tenere allineato a BUILD in index.html: cambiando nome, l'activate qui
 // sotto elimina la cache precedente e la copia locale viene riscaricata.
-const CACHE = "doubleu-kit-v18";
+const CACHE = "doubleu-kit-v19";
 
 const SHELL = [
   "./",
