@@ -2619,6 +2619,9 @@
   };
 
   let cloudProjects = [];
+  // true quando l'ultima lettura dal cloud non è riuscita: serve a non dire
+  // "Nessun kit salvato" a chi i kit ce li ha ma non è riuscito a leggerli.
+  let cloudLoadFailed = false;
 
 
   let items = [];
@@ -3498,12 +3501,17 @@ tr:last-child td{border-bottom:none}
         .order("created_at", { ascending: false }));
       if(error){
         console.error("Cloud load error:", error);
+        cloudLoadFailed = true;
         if(errorEl)   errorEl.style.display   = "";
         if(refreshBtn) refreshBtn.style.display = "";
         if(loadingEl) loadingEl.style.display  = "none";
         toast("Errore caricamento kit cloud", "err");
         return;
       }
+      cloudLoadFailed = false;
+      // Il pulsante compare solo dopo un errore: se ora la lettura è riuscita
+      // va tolto, altrimenti resta lì a suggerire un guasto che non c'è più.
+      if(refreshBtn) refreshBtn.style.display = "none";
       const all = Array.isArray(data) ? data : [];
       // Righe speciali (catalogo, impostazioni): non sono kit, vanno separate
       cloudCatalogRow  = all.find(p => p.name === CLOUD_CATALOG_NAME)  || cloudCatalogRow;
@@ -3515,6 +3523,7 @@ tr:last-child td{border-bottom:none}
       else toast("☁ Nessun kit nel cloud", "warn");
     } catch(err) {
       console.error("Cloud load exception:", err);
+      cloudLoadFailed = true;
       if(errorEl)   errorEl.style.display   = "";
       if(refreshBtn) refreshBtn.style.display = "";
       toast("Errore connessione cloud", "err");
@@ -4129,8 +4138,23 @@ tr:last-child td{border-bottom:none}
     if(!tbody) return;
 
     if(rows.length === 0) {
-      if(empty) empty.style.display = "";
+      if(empty) {
+        empty.style.display = "";
+        // Zero righe non significa "non hai kit": può significare che non siamo
+        // riusciti a leggerli. Dirlo male fa credere all'utente di averli persi.
+        const ttl  = empty.querySelector(".dash-empty-ttl");
+        const hint = empty.querySelector(".hint");
+        if(ttl)  ttl.textContent  = cloudLoadFailed ? "Kit non caricati" : "Nessun kit salvato";
+        if(hint) hint.textContent = cloudLoadFailed
+          ? "Non è stato possibile leggere i kit dal cloud: nulla è andato perso. Premi ↻ Ricarica qui sopra per riprovare."
+          : "Crea il tuo primo kit per iniziare.";
+      }
       if(table) table.style.display = "none";
+      // Va svuotata anche la lista card usata su telefono, altrimenti dopo aver
+      // cancellato l'ultimo kit le vecchie card restano sullo schermo.
+      tbody.innerHTML = "";
+      const cardListEmpty = document.getElementById("dashCardList");
+      if(cardListEmpty) cardListEmpty.innerHTML = "";
       return;
     }
     if(empty) empty.style.display = "none";
