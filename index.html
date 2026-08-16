@@ -2463,6 +2463,14 @@
    build v17
 ========================= */
 
+// Registrato fuori dall'app: serve solo a rendere disponibile una copia
+// locale di riserva, e non deve mai ritardare l'avvio.
+if("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
 (async function(){
   const SUPABASE_URL = "https://bliljqmgzzxshvhyzzos.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsaWxqcW1nenp4c2h2aHl6em9zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDc3ODQsImV4cCI6MjA5MTUyMzc4NH0.zzYA2OuW0AJ7s8dQWNIBspkg-cUM2R64YWumPqYEXOU";
@@ -2619,6 +2627,11 @@
   };
 
   let cloudProjects = [];
+  // true quando l'ultima lettura dal cloud non è riuscita: serve a non dire
+  // "Nessun kit salvato" a chi i kit ce li ha ma non è riuscito a leggerli.
+  let cloudLoadFailed = false;
+  // true quando si lavora senza cloud (rete assente o CDN bloccato).
+  let offlineMode = false;
 
 
   let items = [];
@@ -3498,12 +3511,17 @@ tr:last-child td{border-bottom:none}
         .order("created_at", { ascending: false }));
       if(error){
         console.error("Cloud load error:", error);
+        cloudLoadFailed = true;
         if(errorEl)   errorEl.style.display   = "";
         if(refreshBtn) refreshBtn.style.display = "";
         if(loadingEl) loadingEl.style.display  = "none";
         toast("Errore caricamento kit cloud", "err");
         return;
       }
+      cloudLoadFailed = false;
+      // Il pulsante compare solo dopo un errore: se ora la lettura è riuscita
+      // va tolto, altrimenti resta lì a suggerire un guasto che non c'è più.
+      if(refreshBtn) refreshBtn.style.display = "none";
       const all = Array.isArray(data) ? data : [];
       // Righe speciali (catalogo, impostazioni): non sono kit, vanno separate
       cloudCatalogRow  = all.find(p => p.name === CLOUD_CATALOG_NAME)  || cloudCatalogRow;
@@ -3515,6 +3533,7 @@ tr:last-child td{border-bottom:none}
       else toast("☁ Nessun kit nel cloud", "warn");
     } catch(err) {
       console.error("Cloud load exception:", err);
+      cloudLoadFailed = true;
       if(errorEl)   errorEl.style.display   = "";
       if(refreshBtn) refreshBtn.style.display = "";
       toast("Errore connessione cloud", "err");
@@ -4129,8 +4148,29 @@ tr:last-child td{border-bottom:none}
     if(!tbody) return;
 
     if(rows.length === 0) {
-      if(empty) empty.style.display = "";
+      if(empty) {
+        empty.style.display = "";
+        // Zero righe non significa "non hai kit": può significare che non siamo
+        // riusciti a leggerli. Dirlo male fa credere all'utente di averli persi.
+        const ttl  = empty.querySelector(".dash-empty-ttl");
+        const hint = empty.querySelector(".hint");
+        if(offlineMode) {
+          if(ttl)  ttl.textContent  = "Nessun kit su questo dispositivo";
+          if(hint) hint.textContent = "Sei offline: i kit salvati solo sul cloud non sono leggibili ora. Puoi comunque comporre un kit e verificarne il margine.";
+        } else if(cloudLoadFailed) {
+          if(ttl)  ttl.textContent  = "Kit non caricati";
+          if(hint) hint.textContent = "Non è stato possibile leggere i kit dal cloud: nulla è andato perso. Premi ↻ Ricarica qui sopra per riprovare.";
+        } else {
+          if(ttl)  ttl.textContent  = "Nessun kit salvato";
+          if(hint) hint.textContent = "Crea il tuo primo kit per iniziare.";
+        }
+      }
       if(table) table.style.display = "none";
+      // Va svuotata anche la lista card usata su telefono, altrimenti dopo aver
+      // cancellato l'ultimo kit le vecchie card restano sullo schermo.
+      tbody.innerHTML = "";
+      const cardListEmpty = document.getElementById("dashCardList");
+      if(cardListEmpty) cardListEmpty.innerHTML = "";
       return;
     }
     if(empty) empty.style.display = "none";
@@ -5048,6 +5088,45 @@ tr:last-child td{border-bottom:none}
 
   let appInited = false;
 
+  // Cerca il token di sessione lasciato da un accesso precedente su QUESTO
+  // dispositivo. È il confine di sicurezza della modalità offline: non apre
+  // l'app a chiunque, riprende una sessione che era già stata autenticata.
+  const readStoredSession = () => {
+    try {
+      const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.includes("-auth-token"));
+      if(!key) return null;
+      const raw = JSON.parse(localStorage.getItem(key) || "null");
+      const email = raw?.user?.email || raw?.currentSession?.user?.email || null;
+      return { key, email };
+    } catch(_) { return null; }
+  };
+
+  // Striscia sempre visibile: senza, si rischia di credere che un kit salvato
+  // offline sia già finito sul cloud.
+  const showOfflineBar = () => {
+    if(document.getElementById("offlineBar")) return;
+    const bar = document.createElement("div");
+    bar.id = "offlineBar";
+    bar.style.cssText = "flex-shrink:0;margin:10px 16px 0;padding:9px 12px;border-radius:10px;" +
+      "background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn);" +
+      "font-size:12px;font-weight:700;line-height:1.35";
+    bar.textContent = "Modalità offline — i kit vengono salvati solo su questo dispositivo. Torna online e ricarica per sincronizzarli.";
+    const main = document.querySelector(".main-content");
+    const topbar = document.querySelector(".topbar");
+    if(main && topbar) main.insertBefore(bar, topbar.nextSibling);
+  };
+
+  const startOfflineMode = async (email) => {
+    offlineMode = true;
+    hideAuthOverlay();
+    updateSidebarUser({ email: email || "Offline" });
+    const sbUrole = document.getElementById("sbUrole");
+    if(sbUrole) sbUrole.textContent = "Modalità offline";
+    showOfflineBar();
+    if(!appInited) { appInited = true; await initApp(); }
+    toast("Modalità offline: kit locali e calcoli disponibili", "warn", 6000);
+  };
+
   if(supabase) {
     supabase.auth.onAuthStateChange(async (event, session) => {
       if(session) {
@@ -5065,15 +5144,34 @@ tr:last-child td{border-bottom:none}
       }
     });
   } else {
-    // Supabase non disponibile — mostra schermata di login con avviso
+    // Supabase non disponibile (rete assente o CDN bloccato). Tutti i calcoli
+    // e i kit locali sono già su questo dispositivo: bloccare l'accesso rende
+    // l'app inutile proprio quando serve, cioè in mobilità senza campo.
+    const sessionToken = readStoredSession();
+    const canWorkOffline = !!sessionToken;
     const loginSubtitle = document.querySelector(".auth-title");
     if(loginSubtitle) {
       const warn = document.createElement("div");
       warn.style.cssText = "margin-bottom:16px;padding:10px 12px;background:#FEF3EA;border:1px solid #F4BF8A;border-radius:8px;font-size:13px;color:#E87C2B;line-height:1.4";
-      warn.textContent = "Connessione al cloud non disponibile. Controlla la connessione o disattiva l'ad-blocker, poi ricarica la pagina.";
+      warn.textContent = canWorkOffline
+        ? "Connessione al cloud non disponibile. Puoi continuare offline: trovi i kit salvati su questo dispositivo e tutti i calcoli di margine funzionano normalmente."
+        : "Connessione al cloud non disponibile. Su questo dispositivo non risulta nessun accesso precedente, quindi serve la rete per il primo login.";
       loginSubtitle.parentNode.insertBefore(warn, loginSubtitle.nextSibling);
     }
     if(loginBtn) { loginBtn.disabled = true; loginBtn.textContent = "Non disponibile"; }
+
+    if(canWorkOffline && loginBtn) {
+      const offlineBtn = document.createElement("button");
+      offlineBtn.type = "button";
+      offlineBtn.className = "primary";
+      offlineBtn.textContent = "Continua offline";
+      offlineBtn.style.cssText = "width:100%;margin-top:10px;min-height:44px;justify-content:center";
+      offlineBtn.addEventListener("click", async () => {
+        offlineBtn.disabled = true;
+        await startOfflineMode(sessionToken.email);
+      });
+      loginBtn.parentNode.insertBefore(offlineBtn, loginBtn.nextSibling);
+    }
     showAuthOverlay();
   }
 
