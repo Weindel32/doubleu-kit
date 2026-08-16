@@ -1032,6 +1032,13 @@
          vinceva — lasciando i kit nel DOM ma invisibili sotto gli 860px. */
       #dashCardList { display: flex; }
 
+      /* Stesso motivo: la regola base viene dopo, quindi si punta all'id. */
+      #mobileBuild {
+        display: block; margin-top: 16px; text-align: center;
+        font-size: 12px; font-weight: 600; color: var(--muted);
+        letter-spacing: .02em;
+      }
+
       .dash-table { font-size: 13px; }
       .dash-table td { padding: 12px 12px; }
       .dash-table td:not(:first-child) { padding-left: 14px; padding-right: 14px; }
@@ -1300,6 +1307,11 @@
       .iq-disc-bottom strong { color: var(--text); font-size: 14px; }
       .iq-empty { padding: 25px 10px; color: var(--muted); text-align: center; font-size: 13px; line-height: 1.45; }
     }
+
+    /* ─── Versione app (solo mobile) ───
+       Sul desktop la versione sta già nella targhetta della topbar, che sotto
+       gli 860px viene nascosta. */
+    .mobile-build { display: none; }
 
     /* ─── Dashboard kit cards (mobile) ─── */
     .dash-card-list { display: none; flex-direction: column; gap: 10px; }
@@ -1577,7 +1589,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v16</span>
+            <span id="buildTxt">build v18</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1702,6 +1714,10 @@
             </div>
             <div class="dash-card-list" id="dashCardList"></div>
           </div>
+
+          <!-- Su telefono la targhetta della topbar è nascosta: senza questa
+               riga non c'è modo di sapere quale versione è stata caricata. -->
+          <div class="mobile-build" id="mobileBuild">doubleu kit</div>
         </div><!-- /dashboardView -->
 
         <!-- ── Builder View ── -->
@@ -2473,7 +2489,8 @@
 <script>
 /* =========================
    DOUBLEU Kit Builder PRO
-   build v17
+   La versione si cambia SOLO in BUILD, qui sotto: prima stava scritta a mano
+   in più punti ed erano già andati fuori sincrono (HTML v16, script v17).
 ========================= */
 
 // Registrato fuori dall'app: serve solo a rendere disponibile una copia
@@ -2518,8 +2535,13 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
+  const BUILD = "v18";
   const buildTxt = document.getElementById("buildTxt");
-  if(buildTxt) buildTxt.textContent = "build v17";
+  if(buildTxt) buildTxt.textContent = "build " + BUILD;
+  // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
+  // da telefono.
+  const mobileBuild = document.getElementById("mobileBuild");
+  if(mobileBuild) mobileBuild.textContent = "doubleu kit · build " + BUILD;
 
   const jsDot = document.getElementById("jsDot");
   const jsTxt = document.getElementById("jsTxt");
