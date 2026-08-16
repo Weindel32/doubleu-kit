@@ -1595,7 +1595,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v18</span>
+            <span id="buildTxt">build v19</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2549,7 +2549,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v18";
+  const BUILD = "v19";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3623,6 +3623,17 @@ tr:last-child td{border-bottom:none}
     } catch(err) { console.error("Cloud save exception:", err); return false; }
   };
 
+  // Nome proposto per un calcolo rapido: gli articoli usati sono l'unica cosa
+  // che lo distingue. La data evita che due calcoli sullo stesso articolo
+  // finiscano con lo stesso nome e il secondo sovrascriva il primo.
+  const suggestedNameFromItems = () => {
+    const used = items.filter(it => toNum(it.qty) > 0 && String(it.article || "").trim());
+    if(!used.length) return "";
+    const first = String(used[0].article).trim();
+    const capo  = used.length > 1 ? `${first} +${used.length - 1}` : first;
+    return `${capo} · ${new Date().toLocaleDateString("it-IT")}`;
+  };
+
   const saveProject = async () => {
     const client  = (clientName.value  || "").trim();
     let project   = (projectName.value || "").trim();
@@ -3630,7 +3641,7 @@ tr:last-child td{border-bottom:none}
       // Il campo vive nel passo 1: da qui (riepilogo, o calcolo rapido dove è
       // nascosto) non è né visibile né raggiungibile, quindi rimandarci
       // l'utente era un vicolo cieco. Il nome si chiede qui.
-      const asked = prompt("Dai un nome per salvare questo calcolo", client ? `${client} – Kit` : "");
+      const asked = prompt("Dai un nome per salvare questo calcolo", client ? `${client} – Kit` : suggestedNameFromItems());
       if(asked === null) return;
       project = asked.trim();
       if(!project){ toast("Serve un nome per salvare", "warn"); return; }
