@@ -1308,6 +1308,12 @@
       .iq-empty { padding: 25px 10px; color: var(--muted); text-align: center; font-size: 13px; line-height: 1.45; }
     }
 
+    /* ─── Calcolo rapido ───
+       Nessuna media query: la classe la mette solo il pulsante della home
+       iPhone, quindi su desktop non compare mai. */
+    #builderView.quickcalc-active .fld-client,
+    #builderView.quickcalc-active .fld-project { display: none; }
+
     /* ─── Versione app (solo mobile) ───
        Sul desktop la versione sta già nella targhetta della topbar, che sotto
        gli 860px viene nascosta. */
@@ -1635,6 +1641,14 @@
                 <span class="iphone-quick-arrow">›</span>
                 <span class="iphone-quick-meta">1. Kit → 2. Prezzo → 3. Risultato → 4. Sconti</span>
               </button>
+              <button class="iphone-quick-card" id="iphoneQuickCalc" type="button">
+                <span class="iphone-quick-icon">%</span>
+                <span>
+                  <span class="iphone-quick-name">Calcolo rapido</span>
+                </span>
+                <span class="iphone-quick-arrow">›</span>
+                <span class="iphone-quick-meta">Margine al volo, senza dati cliente</span>
+              </button>
             </div>
             <div class="iphone-saved-title">Kit salvati</div>
             <div class="iphone-full-note">Tocca un kit sotto per riprenderlo e continuare il percorso.</div>
@@ -1875,13 +1889,13 @@
             <!-- Cliente -->
             <div class="card" style="margin-bottom:14px">
               <div class="form-section" style="margin-bottom:0">
-                <div class="section-lbl">Cliente</div>
+                <div class="section-lbl" id="clienteSectionLbl">Cliente</div>
                 <div class="row2">
-                  <div>
+                  <div class="fld-client">
                     <label>Cliente / Club</label>
                     <input id="clientName" placeholder="es. Tennis Club Roma">
                   </div>
-                  <div>
+                  <div class="fld-project">
                     <label>Nome progetto</label>
                     <input id="projectName" placeholder="Es. Kit Club Roma – Stima">
                     <div class="hint">Solo per te: utile per salvare e ritrovare preventivi.</div>
@@ -3611,10 +3625,24 @@ tr:last-child td{border-bottom:none}
 
   const saveProject = async () => {
     const client  = (clientName.value  || "").trim();
-    const project = (projectName.value || "").trim();
-    if(!project){ toast("Inserisci un nome progetto prima di salvare", "warn"); projectName.focus(); return; }
+    let project   = (projectName.value || "").trim();
+    if(!project){
+      // Il campo vive nel passo 1: da qui (riepilogo, o calcolo rapido dove è
+      // nascosto) non è né visibile né raggiungibile, quindi rimandarci
+      // l'utente era un vicolo cieco. Il nome si chiede qui.
+      const asked = prompt("Dai un nome per salvare questo calcolo", client ? `${client} – Kit` : "");
+      if(asked === null) return;
+      project = asked.trim();
+      if(!project){ toast("Serve un nome per salvare", "warn"); return; }
+      projectName.value = project;
+      updateSidebarKit();
+      // Da qui in poi è un kit con un nome: i campi cliente tornano utili.
+      quickCalcMode = false;
+      renderQuickWorkspace();
+    }
     // Nome stabile (senza data): risalvare lo stesso kit aggiorna la voce esistente
-    const name    = `${client || "Cliente"} – ${project}`;
+    // Senza cliente il vecchio prefisso dava nomi come "Cliente – Prova – Kit".
+    const name    = client ? `${client} – ${project}` : project;
     const p       = payload();
     const store   = getStore();
     store[name]   = { payload: p, savedAt: Date.now() };
@@ -3809,6 +3837,9 @@ tr:last-child td{border-bottom:none}
   let currentStep = 1;
   let currentQuickFlow = "full";
   let iphoneUnifiedActive = false;
+  // Calcolo rapido: stesso percorso e stesso motore, ma senza i campi cliente.
+  // Il nome, se serve, viene chiesto al momento del salvataggio.
+  let quickCalcMode = false;
   let unifiedPriceMode = "budget";
   let quickSelectedDiscount = 0;
 
@@ -3872,6 +3903,11 @@ tr:last-child td{border-bottom:none}
     const active = currentQuickFlow !== "full";
     builder.classList.toggle("unified-active", iphoneUnifiedActive);
     builder.classList.toggle("quick-active", active);
+    builder.classList.toggle("quickcalc-active", quickCalcMode);
+    const secLbl = document.getElementById("clienteSectionLbl");
+    if(secLbl) secLbl.textContent = quickCalcMode ? "Quantità" : "Cliente";
+    const flowLbl = document.querySelector(".iphone-flow-label");
+    if(flowLbl) flowLbl.textContent = quickCalcMode ? "Calcolo rapido" : "Percorso guidato";
     builder.dataset.quickFlow = currentQuickFlow;
     if(!active) {
       updateGuideProgress(currentStep === 3 ? 3 : 1);
@@ -3956,8 +3992,23 @@ tr:last-child td{border-bottom:none}
     renderQuickWorkspace();
   };
 
+  // Il calcolo rapido non è un secondo percorso: è lo stesso, senza i campi
+  // cliente e senza pretendere un nome per partire.
+  const startQuickCalc = () => {
+    resetAll();
+    discount.value = "0";
+    quickCalcMode = true;
+    iphoneUnifiedActive = true;
+    unifiedPriceMode = "budget";
+    setQuickFlow("full");
+    showView("builder");
+    goToStep(1);
+    renderQuickWorkspace();
+  };
+
   const startUnifiedFlow = (reset = true) => {
     if(reset) { resetAll(); discount.value = "0"; }
+    quickCalcMode = false;
     iphoneUnifiedActive = true;
     unifiedPriceMode = reset ? "budget" : (toNum(offerPrice.value) > 0 ? "budget" : "target");
     setQuickFlow("full");
@@ -3968,6 +4019,7 @@ tr:last-child td{border-bottom:none}
 
   const exitUnifiedFlow = () => {
     iphoneUnifiedActive = false;
+    quickCalcMode = false;
     setQuickFlow("full");
     showView("dashboard");
   };
@@ -4029,7 +4081,7 @@ tr:last-child td{border-bottom:none}
       navRight.innerHTML = `
         <button id="btnCopyStep" class="ghost">Copia riepilogo</button>
         <button id="btnPrintStep" class="ghost">Stampa / PDF</button>
-        <button id="btnSaveStep" class="primary">Salva progetto</button>`;
+        <button id="btnSaveStep" class="primary">${quickCalcMode ? "Salva come kit" : "Salva progetto"}</button>`;
       document.getElementById("btnCopyStep").addEventListener("click",  copySummary);
       document.getElementById("btnPrintStep").addEventListener("click", printPDF);
       document.getElementById("btnSaveStep").addEventListener("click",  saveProject);
@@ -4929,6 +4981,7 @@ tr:last-child td{border-bottom:none}
       });
 
       document.getElementById("iphoneStartUnified")?.addEventListener("click", () => startUnifiedFlow(true));
+      document.getElementById("iphoneQuickCalc")?.addEventListener("click", startQuickCalc);
       document.getElementById("iphoneFlowExit")?.addEventListener("click", exitUnifiedFlow);
 
       const quickRefresh = () => { useOffer.checked = unifiedPriceMode === "budget"; calc(); renderQuickWorkspace(); };
