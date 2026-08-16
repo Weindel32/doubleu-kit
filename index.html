@@ -1595,7 +1595,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v19</span>
+            <span id="buildTxt">build v20</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1659,7 +1659,10 @@
               <div class="dash-welcome">Dashboard</div>
               <div class="dash-sub">Panoramica dei tuoi kit e delle performance economiche.</div>
             </div>
-            <button class="primary" id="btnNewKitDash">+ Nuovo kit</button>
+            <div style="display:flex;gap:8px">
+              <button class="secondary" id="btnQuickCalcDash">% Calcolo rapido</button>
+              <button class="primary" id="btnNewKitDash">+ Nuovo kit</button>
+            </div>
           </div>
 
           <div class="dash-kpis">
@@ -2549,7 +2552,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v19";
+  const BUILD = "v20";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4926,6 +4929,24 @@ tr:last-child td{border-bottom:none}
     try {
       if(isIphoneLayout()) startUnifiedFlow(true);
       else { resetAll(); showView("builder"); goToStep(1); }
+    } catch(err) { console.error(err); }
+  });
+
+  // "Calcolo rapido" su desktop/iPad: stesso flusso classico a step di
+  // "+ Nuovo kit", solo senza i campi Cliente/Nome progetto (nascosti dalla
+  // stessa classe quickcalc-active usata su iPhone, non legata a media query).
+  // Non riusa startQuickCalc() perché quella imposta iphoneUnifiedActive,
+  // pensato per le schermate guidate iq-* che su desktop non esistono.
+  const _btnQuickCalcDash = document.getElementById("btnQuickCalcDash");
+  if(_btnQuickCalcDash) _btnQuickCalcDash.addEventListener("click", () => {
+    try {
+      if(isIphoneLayout()) { startQuickCalc(); return; }
+      resetAll();
+      quickCalcMode = true;
+      iphoneUnifiedActive = false;
+      showView("builder");
+      goToStep(1);
+      renderQuickWorkspace();
     } catch(err) { console.error(err); }
   });
 
