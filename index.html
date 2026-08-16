@@ -1027,7 +1027,10 @@
 
       /* Dash table hidden on mobile → card list takes over */
       .dash-table-wrap { display: none; }
-      .dash-card-list  { display: flex; }
+      /* Sull'id, non sulla classe: più avanti nel foglio .dash-card-list viene
+         dichiarata display:none con la stessa specificità e, essendo dopo,
+         vinceva — lasciando i kit nel DOM ma invisibili sotto gli 860px. */
+      #dashCardList { display: flex; }
 
       .dash-table { font-size: 13px; }
       .dash-table td { padding: 12px 12px; }
@@ -1067,20 +1070,23 @@
       .content-area { padding-top: 12px; }
 
       .iphone-quick-home { display: block; }
-      .iphone-quick-head { margin: 4px 0 14px; }
+      .iphone-quick-head { margin: 0 0 10px; }
       .iphone-quick-title {
-        font-size: 23px; line-height: 1.12; font-weight: 850;
-        letter-spacing: -.5px; color: var(--text);
+        font-size: 20px; line-height: 1.15; font-weight: 850;
+        letter-spacing: -.4px; color: var(--text);
       }
-      .iphone-quick-sub { margin-top: 5px; font-size: 13px; line-height: 1.45; color: var(--muted); }
+      /* Testi da primo avvio: per chi usa l'app ogni giorno sono rumore che
+         spinge i kit sotto la piega. Restano su schermi più grandi. */
+      .iphone-quick-sub,
+      .iphone-full-note { display: none; }
       .iphone-quick-list { display: flex; flex-direction: column; gap: 10px; }
       .iphone-quick-card {
         appearance: none; width: 100%; text-align: left; cursor: pointer;
         border: 1px solid var(--border-2); border-radius: 17px;
-        background: var(--surface); padding: 15px 14px;
+        background: var(--surface); padding: 13px 14px;
         box-shadow: var(--shadow-sm); color: var(--text);
         display: grid; grid-template-columns: 42px 1fr 18px;
-        gap: 11px; align-items: center;
+        gap: 10px; align-items: center;
       }
       /* Azione primaria, non "opzione consigliata": il verde qui confliggeva con
          il verde che altrove significa "margine a target". */
@@ -1093,12 +1099,13 @@
       .iphone-quick-card.recommended .iphone-quick-icon { background: var(--accent); color: #fff; }
       /* Sono <span>: senza display:block titolo e descrizione finivano
          accavallati sulla stessa riga. Il peso 700 arriva da `button`. */
-      .iphone-quick-name { display: block; font-size: 16px; font-weight: 800; letter-spacing: -.15px; }
-      .iphone-quick-desc { display: block; font-size: 12px; font-weight: 500; line-height: 1.35; color: var(--muted); margin-top: 3px; }
+      .iphone-quick-name { display: block; font-size: 17px; font-weight: 800; letter-spacing: -.15px; }
+      /* La descrizione ripeteva i passaggi già elencati nel chip sotto. */
+      .iphone-quick-desc { display: none; }
       .iphone-quick-meta {
         grid-column: 2 / 4; display: inline-flex; width: fit-content;
         background: var(--surface-2); border-radius: 999px;
-        padding: 5px 9px; font-size: 10px; color: var(--text-2); font-weight: 700;
+        padding: 6px 11px; font-size: 12px; color: var(--text-2); font-weight: 700;
       }
       .iphone-quick-arrow { color: var(--accent); font-size: 22px; font-weight: 800; text-align: right; }
       .iphone-full-builder {
@@ -1107,7 +1114,13 @@
         font-weight: 800; letter-spacing: .02em; cursor: pointer;
       }
       .iphone-full-note { text-align: center; font-size: 10px; color: var(--muted); margin: 8px 4px 18px; }
-      .iphone-saved-title { margin-top: 22px; font-size: 16px; font-weight: 900; color: var(--text); }
+      .iphone-saved-title { margin-top: 18px; margin-bottom: 8px; font-size: 17px; font-weight: 900; color: var(--text); }
+      /* "Kit salvati" qui sopra dice già di cosa si tratta: il titolo dentro la
+         card era il terzo intestazione di fila con lo stesso significato. */
+      #dashKitsTitle { display: none; }
+      #dashboardView .dash-kit-name { font-size: 16px; }
+      #dashboardView .dash-kit-sub  { font-size: 13px; }
+      #dashboardView .dash-kit-card-meta span { font-size: 13px !important; }
 
       /* The regular dashboard remains available below, but starts compactly. */
       #dashboardView > .dash-header { display: none; }
@@ -1648,12 +1661,12 @@
 
           <div class="card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <div class="card-title" style="margin-bottom:0">I tuoi kit</div>
+              <div class="card-title" id="dashKitsTitle" style="margin-bottom:0">I tuoi kit</div>
               <button class="secondary" id="btnRefreshCloud" style="font-size:12px;padding:5px 10px;display:none">↻ Ricarica</button>
             </div>
 
-            <div id="dashCloudLoading" style="display:none;padding:12px 0;color:var(--muted);font-size:13px">
-              <span style="opacity:.6">Caricamento dal cloud…</span>
+            <div id="dashCloudLoading" style="display:none;padding:12px 0;color:var(--text-2);font-size:14px;font-weight:600">
+              Caricamento dei kit dal cloud…
             </div>
 
             <div id="dashCloudError" style="display:none;padding:10px 12px;background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:var(--r-sm);margin-bottom:12px;font-size:13px;color:var(--warn)">
@@ -3492,7 +3505,9 @@ tr:last-child td{border-bottom:none}
   };
 
   // Impedisce che una richiesta bloccata (ad-blocker / rete) resti "in caricamento" all'infinito
-  const withTimeout = (promise, ms = 12000) => Promise.race([
+  // 12 secondi sono un'eternità davanti a un cliente: se il cloud non risponde
+  // in fretta conviene dirlo subito e lasciare lavorare con i kit locali.
+  const withTimeout = (promise, ms = 6000) => Promise.race([
     promise,
     new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
   ]);
