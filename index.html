@@ -429,6 +429,11 @@
     .kpi.good { border-color: var(--good-bd); background: var(--good-bg); }
     .kpi.warn { border-color: var(--warn-bd); background: var(--warn-bg); }
     .kpi.bad  { border-color: var(--bad-bd);  background: var(--bad-bg);  }
+    /* "low" (sotto il minimo accettabile, ma non ancora in perdita) resta nella
+       stessa famiglia cromatica di "bad" — è comunque un rifiuto — ma a
+       contorno invece che a fondo pieno, come i badge delle scale. */
+    .kpi.low  { border: 1.5px solid var(--bad-bd); background: var(--surface); }
+    .kpi.low .val { color: var(--bad); }
 
     .kpi.dk-navy   { background: #0A4174; border-color: #001D39; }
     .kpi.dk-mid    { background: #49769F; border-color: #0A4174; }
@@ -846,6 +851,7 @@
     .mb-chip.good { color: var(--good); border-color: var(--good-bd); }
     .mb-chip.warn { color: var(--warn); border-color: var(--warn-bd); }
     .mb-chip.bad  { color: var(--bad);  border-color: var(--bad-bd);  }
+    .mb-chip.low  { color: var(--bad);  border-color: var(--bad-bd); box-shadow: inset 0 0 0 1px var(--bad-bd); }
 
     /* Griglia 2 colonne di Analisi — si impila su schermi stretti */
     .analisi-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -876,25 +882,34 @@
     .cmp-cap.sec { margin-top: 7px; }
     .cmp-profit { font-size: 15px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; margin-top: 1px; }
     .cmp-cost { font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 1px; font-variant-numeric: tabular-nums; }
+    .cmp-drivers { font-size: 12px; color: var(--muted); margin-bottom: 7px; }
+    .cmp-open {
+      margin-top: 9px; font-size: 11px; font-weight: 700; padding: 5px 10px;
+      border-radius: 8px; border: 1px solid var(--border-2); background: var(--surface);
+      color: var(--accent); cursor: pointer; box-shadow: none;
+    }
+    .cmp-open:hover { background: var(--surface-2); }
     @media (max-width: 560px) {
       .cmp-row { grid-template-columns: 22px 1fr; }
       .cmp-right { grid-column: 2; text-align: left; margin-top: 2px; }
     }
 
-    /* Scala prezzi (Analisi → Prezzi) */
-    .ps-wrap { position: relative; margin: 34px 6px 8px; }
-    .ps-track { position: relative; height: 14px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
-    .ps-zone { position: absolute; top: 0; bottom: 0; }
-    .ps-zone.bad  { background: var(--bad-bg); }
-    .ps-zone.warn { background: var(--warn-bg); }
-    .ps-zone.good { background: var(--good-bg); }
-    .ps-tick { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--border-2); border-radius: 2px; }
-    .ps-tick.target { background: var(--good); width: 3px; }
-    .ps-marker { position: absolute; top: -30px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 2; }
-    .ps-flag { font-size: 12px; font-weight: 800; background: var(--accent-2); color: #fff; padding: 2px 9px; border-radius: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .ps-arrow { width: 0; height: 0; border: 5px solid transparent; border-top-color: var(--accent-2); }
-    .ps-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); margin-top: 12px; }
-    .ps-legend strong { color: var(--text); font-variant-numeric: tabular-nums; }
+    /* Confronto kit — chip di stato, cliccabili per filtrare la classifica */
+    .cmp-state-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .cmp-state-chip {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 13px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface); cursor: pointer; box-shadow: none;
+      font-size: 12px; font-weight: 700; color: var(--muted); transition: border-color .13s, background .13s;
+    }
+    .cmp-state-chip:hover { background: var(--surface-2); }
+    .cmp-state-chip.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .cmp-state-chip .n { font-size: 15px; font-weight: 800; color: var(--text); }
+    .cmp-state-chip.good .n { color: var(--good); }
+    .cmp-state-chip.warn .n { color: var(--warn); }
+    .cmp-state-chip.low  .n { color: var(--bad); }
+    .cmp-state-chip.bad  .n { color: var(--bad); }
+
 
     /* Export cards */
     .export-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -1673,7 +1688,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v27</span>
+            <span id="buildTxt">build v28</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1755,9 +1770,9 @@
               <div class="note">In tutti i kit</div>
             </div>
             <div class="kpi dk-orange" id="dkMarginKpi">
-              <div class="lbl">Margine medio</div>
+              <div class="lbl">Margine di portafoglio</div>
               <div class="val" id="dkMargin">—</div>
-              <div class="note">Media su tutti i kit</div>
+              <div class="note">Profitto totale ÷ ricavo totale</div>
             </div>
             <div class="kpi dk-light">
               <div class="lbl">Costo/atleta medio</div>
@@ -2346,62 +2361,71 @@
 
           <!-- Tab bar -->
           <div class="tab-bar">
-            <button class="tab-btn active" data-analisi-tab="kit">Questo kit</button>
+            <button class="tab-btn active" data-analisi-tab="kit">Articoli &amp; linee</button>
             <button class="tab-btn"        data-analisi-tab="confronto">Confronto kit</button>
           </div>
 
-          <!-- Questo kit -->
+          <!-- Articoli & linee: l'unica analisi che il Builder non può dare,
+               perché guarda TUTTI i preventivi salvati insieme, non uno alla
+               volta. Il margine per atleta di un singolo kit è già nel
+               pannello live del Builder — qui interessa cosa succede sommando
+               tutto: quali articoli pesano di più, quali linee rendono
+               meglio. Il profitto per articolo è una stima: dentro un kit il
+               ricavo non è diviso articolo per articolo, quindi si assume che
+               ogni articolo contribuisca al margine in proporzione al proprio
+               costo (stesso ricarico % su tutte le righe del kit). -->
           <div class="tab-content active" data-analisi-tab="kit">
             <div class="dash-kpis" style="margin-bottom:16px">
-              <div class="kpi" id="kpiV_margin"><div class="lbl">Margine reale</div><div class="val" id="kvMargin">—</div><div class="note" id="kvMarginNote">—</div></div>
-              <div class="kpi" id="kpiV_price"><div class="lbl">Prezzo/atleta</div><div class="val" id="kvPrice">—</div><div class="note">Prezzo proposto</div></div>
-              <div class="kpi"><div class="lbl">Costo/atleta</div><div class="val" id="kvCostAthlete">—</div><div class="note">Costo produzione</div></div>
-              <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val" id="kvProfit">—</div><div class="note">Ricavo netto − costo</div></div>
-            </div>
-
-            <div class="card" style="margin-bottom:16px">
-              <div class="card-title">Margine vs target</div>
-              <div id="kitMarginBox"><div class="hint">Apri o crea un kit nel Builder per vedere il dettaglio.</div></div>
-            </div>
-
-            <div class="card" style="margin-bottom:16px">
-              <div class="card-title">Scala prezzi per atleta</div>
-              <div id="prezziScala"><div class="hint">Inserisci i dati nel Kit Builder per vedere la scala.</div></div>
+              <div class="kpi dk-navy"><div class="lbl">Articoli distinti</div><div class="val" id="aaArticleCount">—</div><div class="note">Usati nei kit salvati</div></div>
+              <div class="kpi dk-mid"><div class="lbl">Articolo più usato</div><div class="val" id="aaTopArticle" style="font-size:17px">—</div><div class="note" id="aaTopArticleNote">—</div></div>
+              <div class="kpi dk-orange"><div class="lbl">Linea più redditizia</div><div class="val" id="aaTopLine" style="font-size:17px">—</div><div class="note" id="aaTopLineNote">—</div></div>
+              <div class="kpi dk-light"><div class="lbl">Costo totale portafoglio</div><div class="val" id="aaTotalCost">—</div><div class="note">Somma di tutti i kit</div></div>
             </div>
 
             <div class="analisi-2col">
               <div class="card">
-                <div class="card-title">Composizione costo per articolo</div>
-                <div id="kitCompos" style="margin-top:4px"><div class="hint">Nessun articolo.</div></div>
+                <div class="card-title">Articoli più usati <span class="hint" style="font-weight:400">— quota sul costo totale</span></div>
+                <div id="aaArticleList"><div class="hint">Salva almeno un preventivo con articoli per vedere l'analisi.</div></div>
               </div>
               <div class="card">
-                <div class="card-title">Articoli nel kit</div>
-                <div style="overflow-x:auto">
-                  <table class="dash-table" style="display:table">
-                    <thead><tr><th>Articolo</th><th>Linea</th><th>Qtà</th><th>Costo tot.</th></tr></thead>
-                    <tbody id="kpiVItems"></tbody>
-                  </table>
-                </div>
+                <div class="card-title">Rendimento per linea <span class="hint" style="font-weight:400">— margine stimato su ogni linea</span></div>
+                <div id="aaLineList"><div class="hint">Salva almeno un preventivo con articoli per vedere l'analisi.</div></div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:16px">
+              <div class="card-title">Dettaglio articoli</div>
+              <div style="overflow-x:auto">
+                <table class="dash-table" style="display:table">
+                  <thead><tr><th>Articolo</th><th>Linea/e</th><th>Nei kit</th><th>Qtà totale</th><th>Costo totale</th><th>Margine stimato</th></tr></thead>
+                  <tbody id="aaArticleTable"></tbody>
+                </table>
               </div>
             </div>
           </div>
 
           <!-- Confronto kit -->
           <div class="tab-content" data-analisi-tab="confronto">
-            <div class="dash-kpis" id="cmpSummary" style="margin-bottom:16px">
-              <div class="kpi"><div class="lbl">Kit salvati</div><div class="val" id="cmpCount">—</div><div class="note">Totale preventivi</div></div>
-              <div class="kpi"><div class="lbl">Margine medio</div><div class="val" id="cmpAvgMargin">—</div><div class="note">Media su tutti i kit</div></div>
-              <div class="kpi"><div class="lbl">A target</div><div class="val" id="cmpOnTarget">—</div><div class="note">Kit che raggiungono il target</div></div>
-              <div class="kpi"><div class="lbl">Da rivedere</div><div class="val" id="cmpBelow">—</div><div class="note">Sotto target o in perdita</div></div>
+            <div class="dash-kpis" id="cmpSummary" style="margin-bottom:12px">
+              <div class="kpi dk-navy"><div class="lbl">Kit salvati</div><div class="val" id="cmpCount">—</div><div class="note">Totale preventivi</div></div>
+              <div class="kpi dk-orange"><div class="lbl">Margine di portafoglio</div><div class="val" id="cmpPortfolioMargin">—</div><div class="note">Profitto totale ÷ ricavo totale</div></div>
+              <div class="kpi dk-mid"><div class="lbl">Fatturato totale</div><div class="val" id="cmpRevenue">—</div><div class="note">Somma di tutti i kit</div></div>
+              <div class="kpi dk-light"><div class="lbl">Profitto totale</div><div class="val" id="cmpProfitTotal">—</div><div class="note">Margine in euro, sommato</div></div>
             </div>
+
+            <div class="cmp-state-row" id="cmpStateRow"></div>
 
             <div class="card">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
                 <div class="card-title" style="margin:0">Classifica kit</div>
-                <div class="cmp-sort">
-                  <span class="cmp-sort-lbl">Ordina per</span>
-                  <button class="cmp-sort-btn active" data-cmp-sort="margin">Margine %</button>
-                  <button class="cmp-sort-btn"        data-cmp-sort="profit">Margine €</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                  <input id="cmpSearch" placeholder="Cerca kit o cliente…" style="min-width:180px;font-size:13px;background:var(--surface-2)">
+                  <div class="cmp-sort">
+                    <span class="cmp-sort-lbl">Ordina per</span>
+                    <button class="cmp-sort-btn active" data-cmp-sort="margin">Margine %</button>
+                    <button class="cmp-sort-btn"        data-cmp-sort="profit">Margine €</button>
+                    <button class="cmp-sort-btn"        data-cmp-sort="date">Data</button>
+                  </div>
                 </div>
               </div>
               <div id="cmpList"><div class="hint">Nessun kit salvato con dati sufficienti.</div></div>
@@ -2900,7 +2924,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v27";
+  const BUILD = "v28";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4843,15 +4867,48 @@ tr:last-child td{border-bottom:none}
     }
     const revenueNet = vatOn ? invoiceTotal / (1 + vatRate) : invoiceTotal;
     const profit     = revenueNet - totalCost;
+    const margin     = revenueNet > 0 ? profit / revenueNet : 0;
+    const target     = parseFloat(p.margin ?? 0.5) || 0.5;
+    const mMin       = Math.min(0.95, Math.max(0, toNum(p.minMargin ?? 35) / 100));
     return {
-      margin:          revenueNet > 0 ? profit / revenueNet : 0,
+      margin,
       costPerAthlete:  totalCost / qtyBase,
       pricePerAthlete: invoiceTotal / qtyBase,
       profit:          profit,       // margine dell'ordine in €
       totalCost:       totalCost,
+      revenueNet:      revenueNet,
+      invoiceTotal:    invoiceTotal,
       qtyBase:         qtyBase,
-      target:          parseFloat(p.margin ?? 0.5) || 0.5,
+      target:          target,
+      minMargin:       mMin,
+      state:           kitState(margin, profit, mMin, target),
     };
+  };
+
+  /* ─── Stato di un preventivo salvato ───
+     Quattro esiti invece di "a target / da rivedere": un kit al 34% e uno in
+     perdita richiedono decisioni diverse e non vanno contati insieme. */
+  const KIT_STATES = {
+    ok:      { label:"A target",      cls:"good", icon:"✓" },
+    target:  { label:"Sotto target",  cls:"warn", icon:"⚠" },
+    min:     { label:"Sotto il minimo", cls:"low", icon:"✕" },
+    loss:    { label:"In perdita",    cls:"bad",  icon:"✕" },
+  };
+  const kitState = (margin, profit, mMin, target) => {
+    if(profit <= 0)                return "loss";
+    if(margin + 1e-9 < mMin)       return "min";
+    if(margin + 1e-9 < target)     return "target";
+    return "ok";
+  };
+
+  // Margine di portafoglio: profitto totale / ricavo netto totale, non la
+  // media dei margini percentuali. La media aritmetica pesa un kit da 20
+  // atleti come uno da 200: un piccolo kit in perdita può far sembrare
+  // "in difficoltà" un portafoglio che in realtà lavora bene.
+  const portfolioMargin = (statsList) => {
+    const totProfit = statsList.reduce((s, v) => s + v.profit, 0);
+    const totNet    = statsList.reduce((s, v) => s + v.revenueNet, 0);
+    return totNet > 0 ? totProfit / totNet : 0;
   };
 
   /* ─── Dashboard render ─── */
@@ -4890,9 +4947,8 @@ tr:last-child td{border-bottom:none}
 
     const stats = rows.map(k => calcKitStats(k.payload)).filter(Boolean);
     if(stats.length) {
-      const avgMargin = stats.reduce((s, v) => s + v.margin, 0) / stats.length;
-      const avgCost   = stats.reduce((s, v) => s + v.costPerAthlete, 0) / stats.length;
-      if(dkMargin) dkMargin.textContent = (avgMargin * 100).toFixed(1) + "%";
+      const avgCost = stats.reduce((s, v) => s + v.costPerAthlete, 0) / stats.length;
+      if(dkMargin) dkMargin.textContent = (portfolioMargin(stats) * 100).toFixed(1) + "%";
       if(dkCost)   dkCost.textContent   = eur(avgCost);
     } else {
       if(dkMargin) dkMargin.textContent = "—";
@@ -5113,18 +5169,18 @@ tr:last-child td{border-bottom:none}
     }
   };
 
-  /* ─── helper: read live DOM value ─── */
-  const domVal = (id) => document.getElementById(id)?.textContent?.trim() || "—";
-
   /* ─── helper: build a margin bar (tick = target, chip = stato con icona) ─── */
-  const marginBar = (label, pct, targetPct) => {
+  // forceState, se passato, sostituisce l'euristica interna (distanza dal
+  // target) con uno stato già deciso altrove — serve ad allineare questa
+  // barra ai quattro stati di kitState invece di ricalcolarne uno diverso.
+  const marginBar = (label, pct, targetPct, forceState) => {
     const w    = Math.min(100, Math.max(0, pct)).toFixed(1);
     const hasT = Number.isFinite(targetPct) && targetPct > 0;
-    const state = hasT ? (pct >= targetPct - 1e-9 ? "good" : (pct >= targetPct * 0.8 ? "warn" : "bad")) : "";
-    const icon  = { good:"✓", warn:"⚠", bad:"✕" }[state] || "";
+    const state = forceState || (hasT ? (pct >= targetPct - 1e-9 ? "good" : (pct >= targetPct * 0.8 ? "warn" : "bad")) : "");
+    const icon  = { good:"✓", warn:"⚠", low:"✕", bad:"✕" }[state] || "";
     const chip  = `<span class="mb-chip ${state}">${icon ? icon + " " : ""}${pct.toFixed(1)}%</span>`;
     const tick  = hasT ? `<div class="margin-bar-tick" style="left:${Math.min(100, targetPct).toFixed(1)}%" title="Target ${targetPct.toFixed(0)}%"></div>` : "";
-    const fill  = state || "neutral";
+    const fill  = state === "low" ? "bad" : (state || "neutral");
     return `<div class="margin-bar-row">
       <div class="margin-bar-label"><span>${esc(label)}</span>${chip}</div>
       <div class="margin-bar-track">${tick}<div class="margin-bar-fill ${fill}" style="width:${w}%"></div></div>
@@ -5140,134 +5196,175 @@ tr:last-child td{border-bottom:none}
     </div>`;
   };
 
-  /* ─── Margini render ─── */
-  /* ─── helper: parse "1.234,56 €" → 1234.56 ─── */
-  const parseEur = (s) => {
-    if(!s || s === "—") return NaN;
-    return parseFloat(String(s).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."));
+  /* ─── Tab "Articoli & linee": analisi trasversale sui kit salvati ─── */
+  const ANALISI_LINE_LABEL = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" };
+
+  // Somma gli articoli di tutti i kit salvati. Il ricavo non è diviso
+  // articolo per articolo dentro un kit (il builder applica un unico
+  // margine all'intero ordine), quindi si stima il contributo di ogni riga
+  // assumendo lo stesso ricarico % di tutte le altre righe dello stesso kit:
+  // ricavo_riga = costo_riga / costo_totale_kit × ricavo_netto_kit.
+  // I costi fissi restano fuori dalla somma per articolo di proposito: non
+  // sono un articolo, e forzarli su uno falserebbe il suo margine stimato.
+  const aggregatePortfolio = (kitsAll) => {
+    const articles = new Map();
+    const lines = new Map();
+    kitsAll.forEach(k => {
+      const items = Array.isArray(k.payload?.items) ? k.payload.items : [];
+      if(!(k.totalCost > 0)) return;
+      items.forEach(it => {
+        const qty  = toNum(it.qty);
+        const cost = (toNum(it.base) + toNum(it.extra)) * qty;
+        if(cost <= 0) return;
+        const revenue = cost / k.totalCost * k.revenueNet;
+        const profit  = revenue - cost;
+        const label = (it.article || "").trim() || "—";
+        const line  = it.line || "ALTRO";
+
+        if(!articles.has(label)) articles.set(label, { label, kitNames:new Set(), qty:0, cost:0, revenue:0, profit:0, lines:new Set() });
+        const a = articles.get(label);
+        a.kitNames.add(k.name); a.qty += qty; a.cost += cost; a.revenue += revenue; a.profit += profit; a.lines.add(line);
+
+        if(!lines.has(line)) lines.set(line, { line, kitNames:new Set(), qty:0, cost:0, revenue:0, profit:0 });
+        const l = lines.get(line);
+        l.kitNames.add(k.name); l.qty += qty; l.cost += cost; l.revenue += revenue; l.profit += profit;
+      });
+    });
+    return { articles: [...articles.values()], lines: [...lines.values()] };
   };
 
-  /* ─── Tab "Questo kit": dettaglio completo del kit attivo ─── */
   const renderKitAttivo = () => {
     const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-    const copyState = (srcId, dstId) => {
-      const src = document.getElementById(srcId), dst = document.getElementById(dstId);
-      if(!src || !dst) return;
-      dst.classList.remove("good","warn","bad");
-      ["good","warn","bad"].forEach(s => { if(src.classList.contains(s)) dst.classList.add(s); });
-    };
-    const rawMargin = domVal("kRealMargin");
-    const hasData   = rawMargin !== "—";
-    const targetPct = parseFloat(margin.value) * 100 || 50;
+    const kitsAll = getPortfolioKits();
+    const { articles, lines } = aggregatePortfolio(kitsAll);
+    const totalArticleCost = articles.reduce((s, a) => s + a.cost, 0);
+    const totalPortfolioCost = kitsAll.reduce((s, k) => s + k.totalCost, 0);
 
-    // KPI principali
-    set("kvMargin",      rawMargin);
-    set("kvMarginNote",  domVal("kTarget"));
-    set("kvPrice",       domVal("kPriceAthlete"));
-    set("kvCostAthlete", domVal("kCostAthlete"));
-    set("kvProfit",      domVal("kProfit"));
-    copyState("kpiMargin", "kpiV_margin");
-    copyState("kpiPrice",  "kpiV_price");
+    set("aaArticleCount", articles.length || "—");
+    set("aaTotalCost", totalPortfolioCost > 0 ? eur(totalPortfolioCost) : "—");
 
-    // Margine vs target
-    const marginBox = document.getElementById("kitMarginBox");
-    if(marginBox){
-      marginBox.innerHTML = hasData
-        ? `<div class="margin-bar-wrap">${marginBar(`Margine reale (target ${targetPct.toFixed(0)}%)`, parseFloat(rawMargin.replace(",", ".")) || 0, targetPct)}</div>`
-        : '<div class="hint">Apri o crea un kit nel Builder per vedere il dettaglio.</div>';
+    if(articles.length){
+      const top = [...articles].sort((a, b) => b.cost - a.cost)[0];
+      set("aaTopArticle", top.label);
+      set("aaTopArticleNote", `${top.kitNames.size} ${top.kitNames.size === 1 ? "kit" : "kit"} · ${eur(top.cost)}`);
+    } else {
+      set("aaTopArticle", "—"); set("aaTopArticleNote", "—");
     }
 
-    // Scala prezzi
-    const scalaEl = document.getElementById("prezziScala");
-    if(scalaEl){
-      const minSost  = parseEur(domVal("kMinSustainable"));
-      const minTratt = parseEur(domVal("kMinPrice"));
-      const target   = parseEur(domVal("kTargetPrice"));
-      const price    = parseEur(domVal("kPriceAthlete"));
-      if([minSost, minTratt, target, price].some(v => !Number.isFinite(v))){
-        scalaEl.innerHTML = '<div class="hint">Inserisci i dati nel Kit Builder per vedere la scala.</div>';
-      } else {
-        const maxV = Math.max(target, price, minTratt) * 1.12;
-        const pc   = (v) => Math.min(100, Math.max(0, v / maxV * 100));
-        const state = price < minSost ? "bad" : (price < minTratt ? "warn" : "good");
-        const stateTxt = { good:"✓ Prezzo nella zona sicura", warn:"⚠ Sotto il minimo trattativa", bad:"✕ Sotto il minimo sostenibile" }[state];
-        scalaEl.innerHTML = `
-          <div class="ps-wrap">
-            <div class="ps-track">
-              <div class="ps-zone bad"  style="left:0%;width:${pc(minSost)}%"></div>
-              <div class="ps-zone warn" style="left:${pc(minSost)}%;width:${(pc(minTratt)-pc(minSost)).toFixed(2)}%"></div>
-              <div class="ps-zone good" style="left:${pc(minTratt)}%;width:${(100-pc(minTratt)).toFixed(2)}%"></div>
-            </div>
-            <div class="ps-tick"        style="left:${pc(minSost)}%"  title="Minimo sostenibile"></div>
-            <div class="ps-tick"        style="left:${pc(minTratt)}%" title="Minimo trattativa"></div>
-            <div class="ps-tick target" style="left:${pc(target)}%"   title="Prezzo target"></div>
-            <div class="ps-marker" style="left:${pc(price)}%">
-              <div class="ps-flag">${eur(price)}</div>
-              <div class="ps-arrow"></div>
-            </div>
-          </div>
-          <div class="ps-legend">
-            <span>✕ Min. sostenibile <strong>${eur(minSost)}</strong></span>
-            <span>⚠ Min. trattativa <strong>${eur(minTratt)}</strong></span>
-            <span>✓ Target <strong>${eur(target)}</strong></span>
-          </div>
-          <div class="mb-chip ${state}" style="display:inline-block;margin-top:12px">${stateTxt}</div>`;
-      }
+    const profitableLines = lines.filter(l => l.revenue > 0).map(l => ({ ...l, marginPct: l.profit / l.revenue * 100 }));
+    if(profitableLines.length){
+      const top = [...profitableLines].sort((a, b) => b.marginPct - a.marginPct)[0];
+      set("aaTopLine", ANALISI_LINE_LABEL[top.line] || top.line);
+      set("aaTopLineNote", `margine stimato ${top.marginPct.toFixed(1)}%`);
+    } else {
+      set("aaTopLine", "—"); set("aaTopLineNote", "—");
     }
 
-    // Composizione costo per articolo
-    const composEl = document.getElementById("kitCompos");
-    if(composEl){
-      const fixedShare = Math.max(0, toNum(fixedCost.value));
-      const totCost = items.reduce((s, it) => s + (toNum(it.base) + toNum(it.extra)) * toNum(it.qty), 0) + fixedShare;
-      const compo = totCost > 0 ? [
-          ...items.map(it => ({ label: it.article + (it.isGift ? " (omaggio)" : ""), cost: (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) })),
-          { label: "Costi fissi una-tantum", cost: fixedShare },
-        ]
-        .filter(r => r.cost > 0)
-        .sort((a, b) => b.cost - a.cost)
-        .map(r => shareBar(r.label, `${eur(r.cost)} · ${(r.cost / totCost * 100).toFixed(0)}%`, r.cost / totCost * 100)).join("") : "";
-      composEl.innerHTML = compo ? `<div class="margin-bar-wrap">${compo}</div>` : '<div class="hint">Nessun articolo.</div>';
+    // Articoli più usati: quota sul totale costi-articolo (i costi fissi,
+    // fuori da questa somma, non "diluiscono" artificialmente le percentuali)
+    const artListEl = document.getElementById("aaArticleList");
+    if(artListEl){
+      const top = [...articles].sort((a, b) => b.cost - a.cost).slice(0, 8);
+      artListEl.innerHTML = top.length && totalArticleCost > 0
+        ? `<div class="margin-bar-wrap">${top.map(a =>
+            shareBar(a.label, `${eur(a.cost)} · ${(a.cost / totalArticleCost * 100).toFixed(0)}%`, a.cost / totalArticleCost * 100)).join("")}</div>`
+        : '<div class="hint">Salva almeno un preventivo con articoli per vedere l\'analisi.</div>';
     }
 
-    // Articoli nel kit
-    const itemsEl = document.getElementById("kpiVItems");
-    if(itemsEl){
-      itemsEl.innerHTML = items.length
-        ? items.map(it => {
-            const qty = toNum(it.qty), cost = (toNum(it.base) + toNum(it.extra)) * qty;
-            return `<tr><td>${esc(it.article)}</td><td>${esc(it.line)}</td><td>${qty || "—"}</td><td style="text-align:right">${cost > 0 ? eur(cost) : "—"}</td></tr>`;
+    // Rendimento per linea: barra sul margine %, non sul costo — qui interessa
+    // quanto rende, non quanto pesa (per il peso c'è la lista a sinistra).
+    const lineListEl = document.getElementById("aaLineList");
+    if(lineListEl){
+      const sorted = [...profitableLines].sort((a, b) => b.marginPct - a.marginPct);
+      lineListEl.innerHTML = sorted.length
+        ? `<div class="margin-bar-wrap">${sorted.map(l =>
+            shareBar(ANALISI_LINE_LABEL[l.line] || l.line, `${eur(l.profit)} · ${l.marginPct.toFixed(1)}%`, Math.max(0, Math.min(100, l.marginPct)))).join("")}</div>`
+        : '<div class="hint">Salva almeno un preventivo con articoli per vedere l\'analisi.</div>';
+    }
+
+    // Dettaglio completo
+    const tableEl = document.getElementById("aaArticleTable");
+    if(tableEl){
+      const sorted = [...articles].sort((a, b) => b.cost - a.cost);
+      tableEl.innerHTML = sorted.length
+        ? sorted.map(a => {
+            const lineTxt = [...a.lines].map(l => ANALISI_LINE_LABEL[l] || l).join(", ");
+            const marginTxt = a.revenue > 0 ? `${eur(a.profit)} · ${(a.profit / a.revenue * 100).toFixed(1)}%` : "—";
+            return `<tr><td>${esc(a.label)}</td><td>${esc(lineTxt)}</td><td>${a.kitNames.size}</td><td>${a.qty}</td><td>${eur(a.cost)}</td><td>${marginTxt}</td></tr>`;
           }).join("")
-        : '<tr><td colspan="4" class="hint" style="padding:12px">Nessun articolo.</td></tr>';
+        : '<tr><td colspan="6" class="hint" style="padding:12px">Nessun articolo nei kit salvati.</td></tr>';
     }
   };
 
   /* ─── Tab "Confronto kit": classifica di tutti i preventivi ─── */
-  let cmpSortMode = "margin"; // margin | profit | date
-  const renderConfronto = () => {
+  // Unisce kit locali e cloud (i cloud già presenti in locale non si contano
+  // due volte) e allega le statistiche calcolate. Condiviso da "Confronto
+  // kit" e da "Articoli & linee", che guardano entrambe l'intero portafoglio.
+  const getPortfolioKits = () => {
     const store = getStore();
     const all = [
       ...Object.entries(store).map(([name, d]) => ({ name, payload: d.payload, date: d.savedAt || 0, source:"locale" })),
-      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Kit cloud", payload: p.data, date: p.created_at ? new Date(p.created_at).getTime() : 0, source:"cloud" })),
+      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Kit cloud", payload: p.data, date: p.created_at ? new Date(p.created_at).getTime() : 0, source:"cloud", cloudId: p.id })),
     ];
-    const kits = all.map(k => {
+    return all.map(k => {
       const s = calcKitStats(k.payload);
       if(!s) return null;
-      return { ...k, marginPct: s.margin * 100, targetPct: (s.target || 0.5) * 100, profit: s.profit, costPerAthlete: s.costPerAthlete };
+      return {
+        ...k, stats: s,
+        marginPct: s.margin * 100, targetPct: (s.target || 0.5) * 100,
+        profit: s.profit, revenueNet: s.revenueNet, totalCost: s.totalCost,
+        costPerAthlete: s.costPerAthlete, pricePerAthlete: s.pricePerAthlete,
+        qtyBase: s.qtyBase, state: s.state,
+      };
     }).filter(Boolean);
+  };
 
-    // Sintesi
+  let cmpSortMode   = "margin"; // margin | profit | date
+  let cmpStateFilter = null;    // null = tutti, altrimenti una chiave di KIT_STATES
+  let cmpSearchText  = "";
+  let cmpKitsCache   = [];      // ultima lista renderizzata, per il click "Apri"
+
+  const renderConfronto = () => {
+    const kitsAll = getPortfolioKits();
+
+    // Sintesi: margine di portafoglio (non media), fatturato e profitto totali
     const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
-    if(kits.length){
-      const avg = kits.reduce((a, k) => a + k.marginPct, 0) / kits.length;
-      const onT = kits.filter(k => k.marginPct >= k.targetPct - 1e-9).length;
-      set("cmpCount", kits.length);
-      set("cmpAvgMargin", avg.toFixed(1) + "%");
-      set("cmpOnTarget", onT);
-      set("cmpBelow", kits.length - onT);
+    if(kitsAll.length){
+      set("cmpCount", kitsAll.length);
+      set("cmpPortfolioMargin", (portfolioMargin(kitsAll.map(k => k.stats)) * 100).toFixed(1) + "%");
+      set("cmpRevenue", eur(kitsAll.reduce((s, k) => s + k.revenueNet, 0)));
+      set("cmpProfitTotal", eur(kitsAll.reduce((s, k) => s + k.profit, 0)));
     } else {
-      ["cmpCount","cmpAvgMargin","cmpOnTarget","cmpBelow"].forEach(id => set(id, "—"));
+      ["cmpCount","cmpPortfolioMargin","cmpRevenue","cmpProfitTotal"].forEach(id => set(id, "—"));
     }
+
+    // Chip di stato: contano SEMPRE su tutto il portafoglio (non sul filtro
+    // testo), così restano un indice stabile mentre si cerca.
+    const stateRow = document.getElementById("cmpStateRow");
+    if(stateRow){
+      stateRow.innerHTML = Object.entries(KIT_STATES).map(([key, def]) => {
+        const n = kitsAll.filter(k => k.state === key).length;
+        return `<button type="button" class="cmp-state-chip ${def.cls}${cmpStateFilter === key ? " active" : ""}" data-cmp-state="${key}">
+          <span class="n">${n}</span> ${def.icon} ${def.label}
+        </button>`;
+      }).join("");
+      stateRow.querySelectorAll("[data-cmp-state]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-cmp-state");
+          cmpStateFilter = cmpStateFilter === key ? null : key;
+          renderConfronto();
+        });
+      });
+    }
+
+    // Filtro testo + stato
+    const txt = cmpSearchText.trim().toLowerCase();
+    let kits = kitsAll.filter(k => {
+      if(cmpStateFilter && k.state !== cmpStateFilter) return false;
+      if(!txt) return true;
+      const client = (k.payload?.clientName || "").toLowerCase();
+      return k.name.toLowerCase().includes(txt) || client.includes(txt);
+    });
 
     // Ordinamento
     const sorters = {
@@ -5276,20 +5373,24 @@ tr:last-child td{border-bottom:none}
       date:   (a, b) => b.date - a.date,
     };
     kits.sort(sorters[cmpSortMode] || sorters.margin);
+    cmpKitsCache = kits;
 
     const listEl = document.getElementById("cmpList");
     if(!listEl) return;
-    if(!kits.length){ listEl.innerHTML = '<div class="hint">Nessun kit salvato con dati sufficienti. Salva un preventivo dal Builder per confrontarlo qui.</div>'; return; }
+    if(!kitsAll.length){ listEl.innerHTML = '<div class="hint">Nessun kit salvato con dati sufficienti. Salva un preventivo dal Builder per confrontarlo qui.</div>'; return; }
+    if(!kits.length){ listEl.innerHTML = '<div class="hint">Nessun kit corrisponde alla ricerca o al filtro selezionato.</div>'; return; }
 
     listEl.innerHTML = kits.map((k, i) => {
       const client  = (k.payload?.clientName || "").trim();
       const dateStr = k.date ? new Date(k.date).toLocaleDateString("it-IT") : "—";
-      const bar     = marginBar("", k.marginPct, k.targetPct);
+      const stateDef= KIT_STATES[k.state];
+      const bar     = marginBar("", k.marginPct, k.targetPct, stateDef.cls);
       return `<div class="cmp-row">
         <div class="cmp-rank">${i + 1}</div>
         <div class="cmp-main">
           <div class="cmp-name">${k.source === "cloud" ? "☁ " : ""}${esc(k.name)}</div>
           <div class="cmp-sub">${client ? esc(client) + " · " : ""}${dateStr}</div>
+          <div class="cmp-drivers">${k.qtyBase} atleti · ${eur(k.pricePerAthlete)} / atleta</div>
           ${bar}
         </div>
         <div class="cmp-right">
@@ -5297,10 +5398,28 @@ tr:last-child td{border-bottom:none}
           <div class="cmp-profit">${eur(k.profit)}</div>
           <div class="cmp-cap sec">Costo / atleta</div>
           <div class="cmp-cost">${eur(k.costPerAthlete)}</div>
+          <button type="button" class="cmp-open" data-cmp-open="${i}">Apri →</button>
         </div>
       </div>`;
     }).join("");
+
+    listEl.querySelectorAll("[data-cmp-open]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const k = cmpKitsCache[+btn.getAttribute("data-cmp-open")];
+        if(!k) return;
+        activeCloudId = k.source === "cloud" ? k.cloudId : null;
+        applyPayload(k.payload);
+        toast(`"${k.name}" caricato ✓`, "ok");
+        if(isIphoneLayout()) startUnifiedFlow(false);
+        else { showView("builder"); goToStep(1); }
+      });
+    });
   };
+
+  document.getElementById("cmpSearch")?.addEventListener("input", (e) => {
+    cmpSearchText = e.target.value;
+    renderConfronto();
+  });
 
   /* ─── Custom catalog (localStorage + cloud) ─── */
   const CATALOG_KEY = "doubleu_catalog_v1";
