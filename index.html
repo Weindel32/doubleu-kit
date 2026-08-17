@@ -1673,7 +1673,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v26</span>
+            <span id="buildTxt">build v27</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2419,6 +2419,7 @@
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="secondary" id="btnRecoverCatalog" title="Ricrea il catalogo dagli articoli dei kit salvati">↺ Recupera dai kit</button>
+              <button class="secondary" id="btnImportListino" title="Rivedi e importa le righe del listino costi">⇩ Importa listino</button>
               <button class="primary" id="btnAddCatalogItem">+ Articolo</button>
             </div>
           </div>
@@ -2474,6 +2475,46 @@
             <div style="display:flex;gap:8px">
               <button class="primary" id="btnSaveCatalogItem">Salva</button>
               <button class="secondary" id="btnCancelCatalogItem">Annulla</button>
+            </div>
+          </div>
+
+          <!-- Import listino: revisione prima di scrivere in catalogo -->
+          <div class="card" id="importCard" style="display:none;margin-bottom:16px">
+            <div class="card-title">Importa listino costi 2025/26</div>
+            <div class="hint" style="margin-bottom:12px">
+              Righe lette dal listino. <b>Controlla prima di importare</b>: puoi correggere nome, tipo, linea e ogni voce di costo, e aggiungere il codice articolo.
+              Le righe marcate <span class="cat-badge" style="background:var(--warn);color:#fff">da verificare</span> hanno un nome o una voce che non sono riuscito a leggere con certezza.
+              Il totale si aggiorna mentre modifichi.
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <button class="secondary" id="btnImportAll" type="button" style="font-size:12px">Seleziona tutto</button>
+              <button class="secondary" id="btnImportNone" type="button" style="font-size:12px">Deseleziona tutto</button>
+              <button class="secondary" id="btnImportOk" type="button" style="font-size:12px">Solo quelle certe</button>
+            </div>
+            <div class="disc-scroll">
+              <table class="disc-table" id="importTable">
+                <thead><tr>
+                  <th style="width:28px"></th>
+                  <th>Articolo</th>
+                  <th>Codice</th>
+                  <th>Tipo</th>
+                  <th>Linea</th>
+                  <th>Tessuto</th>
+                  <th>Taglio</th>
+                  <th>Produz.</th>
+                  <th>Etichetta</th>
+                  <th>Access.</th>
+                  <th>Packaging</th>
+                  <th>Stampa</th>
+                  <th>Totale</th>
+                </tr></thead>
+                <tbody id="importBody"></tbody>
+              </table>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px">
+              <button class="primary" id="btnImportRun" type="button">Importa selezionati</button>
+              <button class="ghost" id="btnImportClose" type="button">Chiudi</button>
+              <span class="hint" id="importCount" style="margin:0"></span>
             </div>
           </div>
 
@@ -2859,7 +2900,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v26";
+  const BUILD = "v27";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5516,6 +5557,171 @@ tr:last-child td{border-bottom:none}
     document.getElementById("catalogForm").style.display = "none";
   });
 
+  /* ─── Import listino costi 2025/26 ───
+     Righe lette dal foglio costi usato finora. I valori sono verificati (ogni
+     riga somma al proprio "costo singolo"), mentre alcuni nomi e alcune
+     collocazioni di colonna non erano leggibili con certezza: quelle righe
+     sono marcate `check` e vanno confermate a mano prima dell'import.
+     Ordine colonne: tessuto, taglio, produzione, etichetta, accessori,
+     packaging, stampa. */
+  const LISTINO_2025 = [
+    ["Ts Premium Uomo/Donna",           "T-Shirt","PREMIUM", 6,    2,   3.5, 0,   0,   0.5, 2,   0],
+    ["Completino UOMO ONE",             "T-Shirt","PREMIUM", 12,   4,   8,   0,   0.3, 0.8, 4.5, 0],
+    ["Ts Premium Uomo STRIPE",          "T-Shirt","PREMIUM", 6,    2,   4.5, 0,   0,   0.5, 2,   0],
+    ["Completino UOMO STRIPE",          "T-Shirt","PREMIUM", 12,   4,   9,   0,   0.3, 0.8, 4.5, 0],
+    ["Pantaloncino PREMIUM",            "Short",  "PREMIUM", 6,    2,   4.5, 0,   0.3, 0.5, 1.5, 0],
+    ["Pantaloncino Premium SLIT",       "Short",  "PREMIUM", 4.5,  2,   5,   0,   0.3, 0.5, 1.5, 0],
+    ["Gonnellino PREMIUM",              "Skirt",  "PREMIUM", 6,    2,   4.5, 0,   0,   0.5, 1.5, 0],
+    ["Completino DONNA ONE",            "T-Shirt","PREMIUM", 12,   4,   8,   0,   0,   0.8, 4.5, 0],
+    ["Pantaloncino donna DDR PREMIUM",  "Short",  "PREMIUM", 6,    2,   6,   0,   0,   0.5, 1.5, 0],
+    ["Vestitino DRESS",                 "Dress",  "PREMIUM", 7.5,  2,   6,   0,   0,   0.5, 2,   0],
+    ["Polo Premium",                    "Polo",   "PREMIUM", 6,    2,   4.5, 0,   0,   0.5, 2,   0],
+    ["College Premium",                 "Polo",   "PREMIUM", 6,    2,   4.5, 0,   0,   0.5, 2,   0],
+    ["Completino UOMO POLO/CLLG",       "Polo",   "PREMIUM", 12,   4,   9,   0,   0.3, 0.8, 4.5, 0],
+    ["T-shirt Cotone",                  "T-Shirt","ALTRO",   3,    1,   1.8, 0,   0,   0.5, 1.5, 0],
+    ["T-shirt Cotone HOODIE",           "Hoodie", "ALTRO",   4,    1.5, 2.8, 0,   0,   0.5, 1.5, 0],
+    ["T-shirt Cotone Manica lunga",     "T-Shirt","ALTRO",   3.5,  1.5, 2.5, 0,   0,   0.5, 1.5, 0],
+    ["GILET (Nico felpa)",              "Jacket", "ALTRO",   3.24, 1.5, 3.5, 1.5, 0,   0.5, 2.5, 0],
+    ["Felpa cappuccio",                 "Hoodie", "ALTRO",   5.6,  1.5, 4,   1.5, 0,   0.5, 1.5, 0],
+    ["Felpa Cappuccio STRIPE",          "Hoodie", "ALTRO",   5.6,  2,   4.5, 1.5, 0,   0.8, 2.5, 0],
+    ["Felpa cappuccio CCourt",          "Hoodie", "ALTRO",   5.6,  1.5, 4,   1.5, 0,   0.5, 8,   0],
+    ["Felpa cappuccio DUE",             "Hoodie", "ALTRO",   5.6,  1.5, 4.5, 1.5, 0,   0.5, 1.5, 0],
+    ["Felpa cappuccio TRE",             "Hoodie", "ALTRO",   5.6,  1.5, 5,   1.5, 0,   0.5, 1.5, 0],
+    ["Felpa girocollo",                 "Sweatshirt","ALTRO",5.6,  1.5, 3.5, 1.5, 0,   0.5, 1.5, 0],
+    ["Felpa cappuccio SLIT",            "Hoodie", "ALTRO",   5.6,  2,   4.5, 1.5, 0,   0.5, 1.5, 1],
+    ["Felpa girocollo TRE",             "Sweatshirt","ALTRO",5.6,  2,   5,   1.5, 0,   0.5, 1.5, 0],
+    ["Felpa zip cappuccio",             "Zip Hoodie","ALTRO",5.6,  1.5, 5,   1.5, 0.9, 0.5, 1.5, 0],
+    ["Felpa Zip Cappuccio STRIPE",      "Zip Hoodie","ALTRO",6,    2,   4.5, 0.8, 0,   0.5, 2.5, 1],
+    ["Felpa zip cappuccio THREE",       "Zip Hoodie","ALTRO",5.6,  2,   6,   1.5, 0.9, 0.5, 1.5, 1],
+    ["Felpa cappuccio marsupio",        "Hoodie", "ALTRO",   5.6,  1.5, 5,   1.5, 0,   0.5, 1.5, 1],
+    ["Felpa girocollo TWO Arm",         "Sweatshirt","ALTRO",5.6,  1.5, 5,   1.5, 0,   0.5, 1.5, 1],
+    ["Pantalone felpa",                 "Sweatpants","ALTRO",5.6,  2,   4,   0,   0.3, 0.5, 1.5, 0],
+    ["Pantalone felpa STRIPE",          "Sweatpants","ALTRO",5.6,  2,   4.5, 0,   0.3, 0.5, 1.5, 0],
+    ["Pantalone felpa TWO Arm",         "Sweatpants","ALTRO",5.6,  2,   5,   0,   0.3, 0.5, 1.5, 1],
+    ["Pantaloncino WDL",                "Short",  "ALTRO",   5.6,  2,   4,   0.9, 0,   0.5, 2,   1],
+    ["Pantaloncino BASIC Polyestere",   "Short",  "BASIC",   2.2,  2,   2.8, 0,   0.3, 0.5, 1.5, 1],
+    ["Pantaloncino BASIC Polyestere RY","Short",  "BASIC",   4.5,  1.5, 0,   0,   0,   0.5, 0,   1],
+    ["Gonnellino BASIC",                "Skirt",  "BASIC",   2.8,  2,   4.5, 0,   0,   0.5, 1.5, 0],
+    ["T-shirt BASIC U/D RY",            "T-Shirt","BASIC",   2.2,  2.5, 0,   0,   0,   0.8, 0,   1],
+    ["T-shirt Termica RY",              "T-Shirt","BASIC",   6.8,  1.5, 0,   0,   0,   0.8, 0,   1],
+  ];
+
+  const IMPORT_COLS = ["tessuto","taglio","produzione","etichetta","accessori","packaging","stampa"];
+
+  const importRowTotal = (tr) => {
+    let capo = 0, stampa = 0;
+    IMPORT_COLS.forEach(k => {
+      const v = Math.max(0, toNum(tr.querySelector(`[data-ic="${k}"]`)?.value));
+      if(k === "stampa") stampa = v; else capo += v;
+    });
+    return { capo, stampa, tot: capo + stampa };
+  };
+
+  const refreshImportRow = (tr) => {
+    const { tot } = importRowTotal(tr);
+    const cell = tr.querySelector(".ic-tot");
+    if(cell) cell.textContent = tot > 0 ? eur(tot) : "—";
+  };
+
+  const refreshImportCount = () => {
+    const n = document.querySelectorAll("#importBody [data-ic='sel']:checked").length;
+    setText("importCount", n ? `${n} ${n === 1 ? "riga selezionata" : "righe selezionate"}` : "Nessuna riga selezionata");
+  };
+
+  const renderImport = () => {
+    const body = document.getElementById("importBody");
+    if(!body) return;
+    const tipoOpts = CATALOG_TIPI.map(t => `<option value="${t}">${t}</option>`).join("");
+    const lineOpts = LINES.map(l => `<option value="${l.value}">${l.label}</option>`).join("");
+    const num = (k, v) => `<td data-label="${k}"><input data-ic="${k}" value="${v || ""}" inputmode="decimal" style="width:64px;padding:4px 6px;font-size:12px;text-align:right"></td>`;
+
+    body.innerHTML = LISTINO_2025.map((r, i) => {
+      const [name, tipo, linea, tess, tag, prod, etic, acc, pack, stam, check] = r;
+      const badge = check ? ' <span class="cat-badge" style="background:var(--warn);color:#fff">da verificare</span>' : "";
+      return `<tr data-ir="${i}"${check ? ' class="disc-row warn"' : ""}>
+        <td data-label="Importa"><input type="checkbox" data-ic="sel" ${check ? "" : "checked"}></td>
+        <td data-label="Articolo"><input data-ic="name" value="${esc(name)}" style="min-width:170px;padding:4px 6px;font-size:12px">${badge}</td>
+        <td data-label="Codice"><input data-ic="code" placeholder="—" style="width:80px;padding:4px 6px;font-size:12px"></td>
+        <td data-label="Tipo"><select data-ic="tipo" style="padding:4px 6px;font-size:12px;min-width:104px">${tipoOpts}</select></td>
+        <td data-label="Linea"><select data-ic="linea" style="padding:4px 6px;font-size:12px;min-width:92px">${lineOpts}</select></td>
+        ${num("tessuto", tess)}${num("taglio", tag)}${num("produzione", prod)}
+        ${num("etichetta", etic)}${num("accessori", acc)}${num("packaging", pack)}${num("stampa", stam)}
+        <td data-label="Totale" class="strong ic-tot">—</td>
+      </tr>`;
+    }).join("");
+
+    body.querySelectorAll("tr").forEach(tr => {
+      const i = +tr.getAttribute("data-ir");
+      tr.querySelector('[data-ic="tipo"]').value  = LISTINO_2025[i][1];
+      tr.querySelector('[data-ic="linea"]').value = LISTINO_2025[i][2];
+      tr.querySelectorAll('input[data-ic]').forEach(el => el.addEventListener("input", () => refreshImportRow(tr)));
+      tr.querySelector('[data-ic="sel"]').addEventListener("change", refreshImportCount);
+      refreshImportRow(tr);
+    });
+    refreshImportCount();
+  };
+
+  const setImportSelection = (fn) => {
+    document.querySelectorAll("#importBody tr").forEach(tr => {
+      tr.querySelector('[data-ic="sel"]').checked = fn(tr);
+    });
+    refreshImportCount();
+  };
+
+  document.getElementById("btnImportListino")?.addEventListener("click", () => {
+    const card = document.getElementById("importCard");
+    if(!card) return;
+    const show = card.style.display === "none";
+    card.style.display = show ? "" : "none";
+    if(show){ renderImport(); card.scrollIntoView({ behavior:"smooth", block:"start" }); }
+  });
+  document.getElementById("btnImportClose")?.addEventListener("click", () => {
+    document.getElementById("importCard").style.display = "none";
+  });
+  document.getElementById("btnImportAll")?.addEventListener("click", () => setImportSelection(() => true));
+  document.getElementById("btnImportNone")?.addEventListener("click", () => setImportSelection(() => false));
+  document.getElementById("btnImportOk")?.addEventListener("click", () =>
+    setImportSelection(tr => !LISTINO_2025[+tr.getAttribute("data-ir")][10]));
+
+  document.getElementById("btnImportRun")?.addEventListener("click", () => {
+    const rows = [...document.querySelectorAll("#importBody tr")]
+      .filter(tr => tr.querySelector('[data-ic="sel"]').checked);
+    if(!rows.length){ toast("Seleziona almeno una riga", "warn"); return; }
+
+    const catalog = getCatalog();
+    const byName  = new Map(catalog.map(a => [catalogLabel(a).toLowerCase(), a]));
+    let added = 0, updated = 0, skipped = 0;
+
+    rows.forEach(tr => {
+      const val  = (k) => tr.querySelector(`[data-ic="${k}"]`).value;
+      const name = val("name").trim();
+      if(!name){ skipped++; return; }
+      const { capo, stampa, tot } = importRowTotal(tr);
+      if(tot <= 0){ skipped++; return; }
+
+      const costParts = { altroNome: "" };
+      IMPORT_COLS.forEach(k => { costParts[k === "packaging" ? "altro" : k] = Math.max(0, toNum(val(k))); });
+      costParts.altroNome = costParts.altro > 0 ? "Packaging" : "";
+
+      const fields = {
+        code: val("code").trim(), tipo: val("tipo"), genere: "Unisex", name,
+        categoria: val("linea"), base: capo, extra: stampa, costParts,
+      };
+      const existing = byName.get(name.toLowerCase());
+      if(existing){ Object.assign(existing, fields); updated++; }
+      else { const a = { id: uid(), ...fields }; catalog.push(a); byName.set(name.toLowerCase(), a); added++; }
+    });
+
+    setCatalog(catalog);
+    document.getElementById("importCard").style.display = "none";
+    renderArticoli();
+    const parts = [];
+    if(added)   parts.push(`${added} aggiunti`);
+    if(updated) parts.push(`${updated} aggiornati`);
+    if(skipped) parts.push(`${skipped} saltati`);
+    toast(`Listino importato: ${parts.join(" · ")} ✓`, "ok", 5000);
+  });
+
   const _btnRecoverCatalog = document.getElementById("btnRecoverCatalog");
   if(_btnRecoverCatalog) _btnRecoverCatalog.addEventListener("click", recoverCatalogFromKits);
 
@@ -5670,10 +5876,11 @@ tr:last-child td{border-bottom:none}
       document.getElementById("costoEditId").value = saved.id;
     }
     setCatalog(catalog);
-    renderCostoView();
-    const load = document.getElementById("costoLoad");
-    if(load) load.value = saved.id;
     toast(editId ? "Articolo aggiornato ✓" : "Articolo salvato in catalogo ✓", "ok");
+    // Campi azzerati: la scheda è pronta per il capo successivo, che è il
+    // modo in cui si usa davvero (se ne inseriscono diversi di fila).
+    resetCostoForm();
+    renderCostoView();
     return saved;
   };
 
