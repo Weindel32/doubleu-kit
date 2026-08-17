@@ -1688,7 +1688,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v28</span>
+            <span id="buildTxt">build v29</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2322,7 +2322,7 @@
                 <div class="kpi kpi-hero" id="kpiMinPriceLive">
                   <div class="lbl">Fin dove puoi scendere</div>
                   <div class="val" id="kMinPriceLive">—</div>
-                  <div class="note">Prezzo minimo trattativa per atleta</div>
+                  <div class="note" id="kMinPriceLiveNote">Prezzo minimo trattativa per atleta</div>
                 </div>
 
                 <!-- Riferimenti secondari: utili ma non da leggere per primi -->
@@ -2924,7 +2924,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v28";
+  const BUILD = "v29";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3722,6 +3722,8 @@ if("serviceWorker" in navigator) {
       kTargetPrice.textContent    = "—";
       kMinPrice.textContent       = "—";
       setText("kMinPriceLive", "—");
+      setText("kMinPriceLiveNote", "Prezzo minimo trattativa per atleta");
+      setText("kMinPriceNote", "Prezzo che lascia ancora il margine minimo accettabile. Sotto questo prezzo non si tratta.");
       kMinDeposit.textContent     = "—";
       kDepNote.textContent        = "Inserisci almeno 1 quantità > 0";
       kGrossNote.textContent      = "—";
@@ -3824,6 +3826,13 @@ if("serviceWorker" in navigator) {
     kTargetPrice.textContent    = eur(targetPricePerAthlete);
     kMinPrice.textContent       = eur(minAcceptablePerAthlete);
     setText("kMinPriceLive", eur(minAcceptablePerAthlete));
+    // Il prezzo minimo è sempre calcolato sul margine %, ma il numero
+    // mostrato è lordo se l'IVA è attiva: va detto esplicitamente, perché
+    // non è ovvio a colpo d'occhio quanto lo è per "Prezzo per atleta"
+    // (che ha già la sua nota kVatNote).
+    const minPriceVatTxt = vatOn ? "IVA inclusa" : "netto, no IVA";
+    setText("kMinPriceLiveNote", `Prezzo minimo trattativa per atleta · ${minPriceVatTxt}`);
+    setText("kMinPriceNote", `Prezzo che lascia ancora il margine minimo accettabile (${(mMin*100).toFixed(0)}%), ${minPriceVatTxt}. Sotto questo prezzo non si tratta.`);
     kMinDeposit.textContent     = eur(minDepositGross);
     if(totalBar) totalBar.textContent = eur(totalCost);
 
@@ -3988,9 +3997,10 @@ if("serviceWorker" in navigator) {
     lines.push(`Costo per atleta: ${kCostAthlete.textContent}`);
     lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${vatOn ? "IVA incl." : "netto"})`);
     lines.push(`Margine reale: ${kRealMargin.textContent}`);
-    lines.push(`Minimo sostenibile: ${kMinSustainable.textContent}`);
-    lines.push(`Prezzo target: ${kTargetPrice.textContent}`);
-    lines.push(`Prezzo minimo trattativa: ${kMinPrice.textContent}`);
+    const vatTag = vatOn ? " (IVA incl.)" : " (netto)";
+    lines.push(`Minimo sostenibile: ${kMinSustainable.textContent}${vatTag}`);
+    lines.push(`Prezzo target: ${kTargetPrice.textContent}${vatTag}`);
+    lines.push(`Prezzo minimo trattativa: ${kMinPrice.textContent}${vatTag}`);
     lines.push(`Acconto minimo sicuro (da richiedere): ${kMinDeposit.textContent}`);
     const text = lines.join("\n");
     try {
@@ -4144,7 +4154,7 @@ tr:last-child td{border-bottom:none}
     <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
     <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
     <div class="kpi"><div class="lbl">Margine per atleta</div><div class="val">${g("kProfitAthlete")}</div><div class="note">Margine ÷ quantità stimata</div></div>
-    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo trattativa</div><div class="val">${g("kMinPrice")}</div><div class="note">Al margine minimo accettabile</div></div>
+    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo trattativa</div><div class="val">${g("kMinPrice")}</div><div class="note">Al margine minimo accettabile · ${vatOn ? "IVA inclusa" : "netto, no IVA"}</div></div>
     <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Al netto IVA copre produzione + buffer</div></div>
   </div>
 </div>
