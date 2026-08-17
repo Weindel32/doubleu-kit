@@ -527,6 +527,11 @@
     }
     .pbar-fill-bad  { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bad-bg); }
     .pbar-fill-warn { position: absolute; top: 0; bottom: 0; background: var(--warn-bg); }
+    /* Breakeven + buffer: riferimento di servizio, non una soglia di vendita */
+    .pbar-tick {
+      position: absolute; top: 0; bottom: 0; width: 1px;
+      background: var(--muted); opacity: .5;
+    }
     .pbar-marker {
       position: absolute; top: -3px; width: 3px; height: 16px; border-radius: 2px;
       background: var(--text); transform: translateX(-1.5px);
@@ -1656,7 +1661,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v23</span>
+            <span id="buildTxt">build v24</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2086,6 +2091,11 @@
                     <div class="hint">Target sul netto (imponibile).</div>
                   </div>
                   <div>
+                    <label>Margine minimo accettabile %</label>
+                    <input id="minMargin" value="35" inputmode="decimal">
+                    <div class="hint">Il margine sotto cui non scendi mai. Definisce il prezzo minimo di trattativa.</div>
+                  </div>
+                  <div>
                     <label>Sconto trattativa %</label>
                     <input id="discount" value="0" inputmode="decimal">
                     <div class="hint">Sconto sul prezzo finale (solo modalità "target").</div>
@@ -2206,7 +2216,7 @@
                 <div class="kpi" id="kpiMinPrice">
                   <div class="lbl">Prezzo minimo trattativa (per atleta)</div>
                   <div class="val" id="kMinPrice">—</div>
-                  <div class="note">Prezzo target meno lo sconto trattativa massimo. Sotto il prezzo target il margine scende sotto il target.</div>
+                  <div class="note" id="kMinPriceNote">Prezzo che lascia ancora il margine minimo accettabile. Sotto questo prezzo non si tratta.</div>
                 </div>
                 <div class="kpi" id="kpiDeposit">
                   <div class="lbl">Acconto minimo sicuro (da richiedere)</div>
@@ -2544,9 +2554,16 @@
                 </select>
               </div>
               <div>
+                <label>Margine minimo accettabile %</label>
+                <input id="setMinMargin" inputmode="decimal">
+              </div>
+            </div>
+            <div class="row2" style="margin-bottom:12px">
+              <div>
                 <label>Sconto trattativa %</label>
                 <input id="setDiscount" inputmode="decimal">
               </div>
+              <div></div>
             </div>
             <div class="row3" style="margin-bottom:16px">
               <div>
@@ -2684,7 +2701,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v23";
+  const BUILD = "v24";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -2750,6 +2767,7 @@ if("serviceWorker" in navigator) {
   const margin      = document.getElementById("margin");
   const vat         = document.getElementById("vat");
   const discount    = document.getElementById("discount");
+  const minMargin   = document.getElementById("minMargin");
   const offerPrice  = document.getElementById("offerPrice");
   const useOffer    = document.getElementById("useOffer");
   const fixedCost   = document.getElementById("fixedCost");
@@ -3379,23 +3397,29 @@ if("serviceWorker" in navigator) {
     const box = document.getElementById("priceBarBox");
     if(!box) return;
     if(!ctx){ box.innerHTML = ""; box.style.display = "none"; return; }
-    const { pricePerAthlete, minSustainableDisplay, targetPricePerAthlete, realMargin, m } = ctx;
+    const { pricePerAthlete, minSustainableDisplay, minAcceptablePerAthlete,
+            targetPricePerAthlete, realMargin, m, mMin } = ctx;
     box.style.display = "";
 
-    // La scala parte poco sotto il minimo e finisce poco sopra il target (o
-    // sopra il prezzo attuale se lo supera), così i tre riferimenti sono
-    // sempre tutti visibili sulla barra.
+    // La scala parte poco sotto il riferimento più basso e finisce poco sopra
+    // il target (o sopra il prezzo attuale se lo supera), così i riferimenti
+    // sono sempre tutti visibili sulla barra.
     const hi     = Math.max(targetPricePerAthlete, pricePerAthlete) * 1.08;
-    const lo     = Math.min(minSustainableDisplay, pricePerAthlete) * 0.92;
+    const lo     = Math.min(minSustainableDisplay, minAcceptablePerAthlete, pricePerAthlete) * 0.92;
     const span   = hi - lo;
     const pos    = (v) => span > 0 ? Math.max(0, Math.min(100, ((v - lo) / span) * 100)) : 0;
-    const state  = pricePerAthlete + 1e-9 < minSustainableDisplay ? "bad"
+
+    // Il pavimento commerciale è il minimo di trattativa; sotto c'è ancora il
+    // breakeven, ma è una zona in cui non si vende, si perde soltanto meno.
+    const state  = pricePerAthlete + 1e-9 < minAcceptablePerAthlete ? "bad"
       : (realMargin + 1e-9 < m ? "warn" : "good");
-    const stateTxt = {
-      good: "Target raggiunto",
-      warn: "Sostenibile, sotto il target",
-      bad:  "Sotto il minimo sostenibile",
-    }[state];
+    const stateTxt = pricePerAthlete + 1e-9 < minSustainableDisplay
+      ? "Sotto il minimo sostenibile"
+      : {
+          good: "Target raggiunto",
+          warn: "Sopra il minimo, sotto il target",
+          bad:  `Sotto il margine minimo (${(mMin*100).toFixed(0)}%)`,
+        }[state];
 
     box.innerHTML = `
       <div class="pbar-head">
@@ -3403,12 +3427,13 @@ if("serviceWorker" in navigator) {
         <span class="pbar-state ${state}">${stateTxt}</span>
       </div>
       <div class="pbar-track">
-        <div class="pbar-fill-bad"  style="width:${pos(minSustainableDisplay)}%"></div>
-        <div class="pbar-fill-warn" style="left:${pos(minSustainableDisplay)}%;width:${Math.max(0, pos(targetPricePerAthlete) - pos(minSustainableDisplay))}%"></div>
+        <div class="pbar-fill-bad"  style="width:${pos(minAcceptablePerAthlete)}%"></div>
+        <div class="pbar-fill-warn" style="left:${pos(minAcceptablePerAthlete)}%;width:${Math.max(0, pos(targetPricePerAthlete) - pos(minAcceptablePerAthlete))}%"></div>
+        <div class="pbar-tick" style="left:${pos(minSustainableDisplay)}%" title="Minimo sostenibile (breakeven + buffer): ${eur(minSustainableDisplay)}"></div>
         <div class="pbar-marker ${state}" style="left:${pos(pricePerAthlete)}%"></div>
       </div>
       <div class="pbar-legend">
-        <span><b>${eur(minSustainableDisplay)}</b> minimo</span>
+        <span><b>${eur(minAcceptablePerAthlete)}</b> minimo trattativa</span>
         <span><b>${eur(targetPricePerAthlete)}</b> target</span>
       </div>`;
   };
@@ -3489,7 +3514,15 @@ if("serviceWorker" in navigator) {
     const invoiceAfterDiscount= invoiceTarget * (1 - disc);
 
     const targetPricePerAthlete  = invoiceTarget / qtyBase;
-    const minAcceptablePerAthlete= invoiceAfterDiscount / qtyBase;
+
+    // Prezzo minimo di trattativa: il pavimento vero, cioè il prezzo che lascia
+    // ancora il margine minimo che si è disposti ad accettare. Prima era il
+    // target meno lo sconto trattativa, che con sconto 0 coincideva col target
+    // e quindi non diceva nulla su quanto si può scendere.
+    const mMin = Math.min(0.95, Math.max(0, toNum(minMargin.value) / 100));
+    const revenueNetMin           = totalCost / (1 - mMin);
+    const invoiceMin              = vatOn ? revenueNetMin * (1 + vatRate) : revenueNetMin;
+    const minAcceptablePerAthlete = invoiceMin / qtyBase;
 
     const minSustainableNetPerAthlete = (totalCost * (1 + buf)) / qtyBase;
     const minSustainableDisplay = vatOn
@@ -3598,6 +3631,16 @@ if("serviceWorker" in navigator) {
       }
     }
 
+    // Un minimo più alto del target rende il "minimo trattativa" più caro del
+    // prezzo target: i due valori si scavalcano e non guidano più nulla.
+    if(mMin > m + 1e-9){
+      alerts.push({
+        level: "warn",
+        title: "Minimo sopra il target",
+        text: `Il margine minimo accettabile (${(mMin*100).toFixed(0)}%) è più alto del target (${(m*100).toFixed(0)}%): il prezzo minimo di trattativa risulta più caro del prezzo target. Abbassa il minimo o alza il target.`
+      });
+    }
+
     if(realMargin + 1e-9 < m){
       alerts.push({ level:"bad", title:"Margine sotto target", text:`Stai facendo ${(realMargin*100).toFixed(1)}% invece di ${(m*100).toFixed(0)}%.` });
       setBox(kpiMargin,"bad");
@@ -3606,7 +3649,7 @@ if("serviceWorker" in navigator) {
     }
 
     if(pricePerAthlete + 1e-9 < minAcceptablePerAthlete){
-      alerts.push({ level:"bad", title:"Prezzo sotto minimo trattativa", text:`Minimo trattativa: ${eur(minAcceptablePerAthlete)} / atleta (target meno sconto massimo).` });
+      alerts.push({ level:"bad", title:"Prezzo sotto minimo trattativa", text:`Sotto ${eur(minAcceptablePerAthlete)} / atleta il margine scende sotto il minimo accettabile (${(mMin*100).toFixed(0)}%).` });
       setBox(kpiPrice,"bad"); setBox(kpiMinPrice,"bad"); setBox(kpiMinPriceLive,"bad");
     } else {
       setBox(kpiPrice,"good"); setBox(kpiMinPrice,"good"); setBox(kpiMinPriceLive,"good");
@@ -3638,7 +3681,8 @@ if("serviceWorker" in navigator) {
 
     renderDiscountScale({ baseInvoice: invoiceTotal, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay });
     renderQtyScale({ variableCost, fixed, m, vatOn, vatRate, qtyBase, buf, pricePerAthlete, usingOffer, disc });
-    renderPriceBar({ pricePerAthlete, minSustainableDisplay, targetPricePerAthlete, realMargin, m });
+    renderPriceBar({ pricePerAthlete, minSustainableDisplay, minAcceptablePerAthlete,
+                     targetPricePerAthlete, realMargin, m, mMin });
 
     showAlerts(alerts);
     saveDraft();
@@ -3659,6 +3703,7 @@ if("serviceWorker" in navigator) {
     const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
     margin.value      = defs.margin; vat.value = "22"; discount.value = defs.discount;
+    minMargin.value   = defs.minMargin;
     offerPrice.value  = ""; useOffer.checked = false;
     priceIncludesVAT.checked = true;
     depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
@@ -3685,6 +3730,7 @@ if("serviceWorker" in navigator) {
     if(qtyEst.value.trim())      lines.push(`Quantità stimata: ${qtyEst.value.trim()}`);
     lines.push(`Margine target: ${margin.options[margin.selectedIndex].text}`);
     lines.push(`IVA: ${vatOn ? "SI" : "NO"} (${vat.value}%)`);
+    lines.push(`Margine minimo accettabile: ${minMargin.value}%`);
     lines.push(`Sconto: ${discount.value}%`);
     lines.push(`Acconto: ${depositPct.value}% · Buffer: ${bufferPct.value}%`);
     if(usingOff) lines.push(`Prezzo proposto: ${offerPrice.value} ${vatOn ? "(IVA incl.)" : "(netto)"}`);
@@ -3864,7 +3910,7 @@ tr:last-child td{border-bottom:none}
     <div class="kpi"><div class="lbl">Imponibile</div><div class="val">${g("kNet")}</div><div class="note">Netto senza IVA</div></div>
     <div class="kpi"><div class="lbl">Margine dell'ordine</div><div class="val">${g("kProfit")}</div><div class="note">Su imponibile</div></div>
     <div class="kpi"><div class="lbl">Margine per atleta</div><div class="val">${g("kProfitAthlete")}</div><div class="note">Margine ÷ quantità stimata</div></div>
-    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo trattativa</div><div class="val">${g("kMinPrice")}</div><div class="note">Target − sconto trattativa</div></div>
+    <div class="kpi ${kpiState("kpiMinPrice")}"><div class="lbl">Prezzo minimo trattativa</div><div class="val">${g("kMinPrice")}</div><div class="note">Al margine minimo accettabile</div></div>
     <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Al netto IVA copre produzione + buffer</div></div>
   </div>
 </div>
@@ -3910,6 +3956,7 @@ tr:last-child td{border-bottom:none}
     margin: margin.value,
     vat: vat.value,
     discount: discount.value,
+    minMargin: minMargin.value,
     offerPrice: offerPrice.value,
     useOffer: useOffer.checked,
     priceIncludesVAT: priceIncludesVAT.checked,
@@ -3927,6 +3974,7 @@ tr:last-child td{border-bottom:none}
     margin.value      = p.margin      ?? "0.50";
     vat.value         = p.vat         ?? "22";
     discount.value    = p.discount    ?? "0";
+    minMargin.value   = p.minMargin   ?? "35";
     offerPrice.value  = p.offerPrice  ?? "";
     useOffer.checked  = !!p.useOffer;
     priceIncludesVAT.checked = (p.priceIncludesVAT !== undefined) ? !!p.priceIncludesVAT : true;
@@ -4131,7 +4179,7 @@ tr:last-child td{border-bottom:none}
 
   /* ─── Impostazioni (predefiniti nuovi preventivi) ─── */
   const SETTINGS_KEY = "doubleu_settings_v1";
-  const DEFAULT_SETTINGS = { margin:"0.50", discount:"0", depositPct:"60", bufferPct:"5", applyVAT:true };
+  const DEFAULT_SETTINGS = { margin:"0.50", minMargin:"35", discount:"0", depositPct:"60", bufferPct:"5", applyVAT:true };
 
   const getSettings = () => {
     try {
@@ -4166,6 +4214,7 @@ tr:last-child td{border-bottom:none}
     const s = getSettings();
     const el = (id) => document.getElementById(id);
     if(el("setMargin"))   el("setMargin").value      = s.margin;
+    if(el("setMinMargin"))el("setMinMargin").value   = s.minMargin;
     if(el("setDiscount")) el("setDiscount").value    = s.discount;
     if(el("setDeposit"))  el("setDeposit").value     = s.depositPct;
     if(el("setBuffer"))   el("setBuffer").value      = s.bufferPct;
@@ -5288,6 +5337,7 @@ tr:last-child td{border-bottom:none}
   if(_btnSaveSettings) _btnSaveSettings.addEventListener("click", () => {
     saveSettings({
       margin:     document.getElementById("setMargin").value  || "0.50",
+      minMargin:  document.getElementById("setMinMargin").value || "35",
       discount:   document.getElementById("setDiscount").value || "0",
       depositPct: document.getElementById("setDeposit").value  || "60",
       bufferPct:  document.getElementById("setBuffer").value   || "5",
@@ -5385,6 +5435,7 @@ tr:last-child td{border-bottom:none}
       bindCalc(qtyEst);
       bindCalc(margin, "change");
       bindCalc(discount);
+      bindCalc(minMargin);
       bindCalc(offerPrice);
       bindCalc(useOffer,          "change");
       bindCalc(priceIncludesVAT,  "change");
