@@ -1606,6 +1606,14 @@
           Articoli
         </a>
 
+        <a class="nav-item" href="javascript:void(0)" data-view="costo">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="4" y="3" width="12" height="14" rx="2"/>
+            <path d="M7 7h6M7 10h6M7 13h3"/>
+          </svg>
+          Costo articolo
+        </a>
+
         <a class="nav-item" href="javascript:void(0)" data-view="esportazioni">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M10 3v10M6.5 9.5L10 13l3.5-3.5"/>
@@ -1665,7 +1673,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v25</span>
+            <span id="buildTxt">build v26</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2479,6 +2487,152 @@
 
         </div><!-- /articoliView -->
 
+        <!-- ── Costo articolo View: distinta di costo di un singolo capo ── -->
+        <div id="costoView" style="display:none">
+          <div class="dash-header">
+            <div>
+              <div class="dash-welcome">Costo articolo</div>
+              <div class="dash-sub">Componi il costo di un capo voce per voce, dal tessuto alla stampa. Il risultato può diventare un articolo di catalogo.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="costoLoad" style="min-width:180px"></select>
+              <button class="ghost" id="btnCostoNew" type="button">Nuovo</button>
+            </div>
+          </div>
+
+          <div class="main-grid">
+            <div>
+              <div class="card" style="margin-bottom:14px">
+                <div class="card-title">Identificazione</div>
+                <div class="row2" style="margin-bottom:12px">
+                  <div class="field">
+                    <label class="lbl">Nome / descrizione</label>
+                    <input type="text" id="costoName" placeholder="es. Felpa cappuccio" autocomplete="off">
+                  </div>
+                  <div class="field">
+                    <label class="lbl">Codice <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
+                    <input type="text" id="costoCode" placeholder="es. FC-001" autocomplete="off">
+                  </div>
+                </div>
+                <div class="row3">
+                  <div class="field">
+                    <label class="lbl">Tipo</label>
+                    <select id="costoTipo"></select>
+                  </div>
+                  <div class="field">
+                    <label class="lbl">Genere</label>
+                    <select id="costoGenere">
+                      <option value="Unisex">Unisex</option>
+                      <option value="Uomo">Uomo</option>
+                      <option value="Donna">Donna</option>
+                      <option value="Junior">Junior</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="lbl">Linea</label>
+                    <select id="costoCategoria">
+                      <option value="PREMIUM">Premium</option>
+                      <option value="BASIC">Basic</option>
+                      <option value="LS24">LS24</option>
+                      <option value="ALTRO">Altro</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card" style="margin-bottom:14px">
+                <div class="card-title">Voci di costo</div>
+
+                <div class="form-section">
+                  <div class="section-lbl">Capo</div>
+                  <div class="row2">
+                    <div class="field">
+                      <label class="lbl">Tessuto €</label>
+                      <input type="text" id="costoTessuto" placeholder="0,00" inputmode="decimal">
+                    </div>
+                    <div class="field">
+                      <label class="lbl">Taglio €</label>
+                      <input type="text" id="costoTaglio" placeholder="0,00" inputmode="decimal">
+                    </div>
+                  </div>
+                  <div class="row2" style="margin-top:10px">
+                    <div class="field">
+                      <label class="lbl">Produzione €</label>
+                      <input type="text" id="costoProduzione" placeholder="0,00" inputmode="decimal">
+                    </div>
+                    <div class="field">
+                      <label class="lbl">Accessori €</label>
+                      <input type="text" id="costoAccessori" placeholder="0,00" inputmode="decimal">
+                    </div>
+                  </div>
+                  <div class="row2" style="margin-top:10px">
+                    <div class="field">
+                      <label class="lbl">Etichetta stampata €</label>
+                      <input type="text" id="costoEtichetta" placeholder="0,00" inputmode="decimal">
+                    </div>
+                    <div class="field">
+                      <label class="lbl" id="costoAltroLbl">Altro €</label>
+                      <input type="text" id="costoAltro" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoAltroNome" placeholder="Descrizione (opz.)" autocomplete="off" style="margin-top:6px;font-size:12px">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-section">
+                  <div class="section-lbl">Personalizzazione</div>
+                  <div class="row2">
+                    <div class="field">
+                      <label class="lbl">Stampa / Ricamo €</label>
+                      <input type="text" id="costoStampa" placeholder="0,00" inputmode="decimal">
+                      <div class="hint">Tenuta separata: nel kit finisce nel campo "Extra", così puoi comporre lo stesso capo con o senza personalizzazione.</div>
+                    </div>
+                    <div></div>
+                  </div>
+                </div>
+
+                <div class="art-total">
+                  <span class="art-total-lbl">Costo singolo</span>
+                  <span class="art-total-val" id="costoTotale">—</span>
+                </div>
+              </div>
+
+              <div class="card" style="margin-bottom:14px">
+                <div class="card-title">Salva in catalogo</div>
+                <div class="hint" style="margin-bottom:12px">L'articolo viene salvato con il costo capo come <b>costo base</b> e la stampa/ricamo come <b>extra</b>. La distinta resta memorizzata: riaprendo l'articolo da qui ritrovi tutte le voci.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="primary" id="btnCostoSave" type="button">Salva in Articoli</button>
+                  <button class="secondary" id="btnCostoSaveAdd" type="button">Salva e aggiungi al kit</button>
+                </div>
+                <input type="hidden" id="costoEditId">
+              </div>
+            </div>
+
+            <div id="kpiColCosto">
+              <div class="kpi-panel">
+                <div class="card">
+                  <div class="card-title">Composizione</div>
+                  <div class="kpi kpi-hero">
+                    <div class="lbl">Costo singolo</div>
+                    <div class="val" id="costoTotaleKpi">—</div>
+                    <div class="note" id="costoTotaleNote">Somma di tutte le voci</div>
+                  </div>
+                  <div class="kpi-mini-list">
+                    <div class="kpi-mini">
+                      <span class="kpi-mini-lbl">Costo capo</span>
+                      <span class="kpi-mini-val" id="costoCapo">—</span>
+                    </div>
+                    <div class="kpi-mini">
+                      <span class="kpi-mini-lbl">Personalizzazione</span>
+                      <span class="kpi-mini-val" id="costoPers">—</span>
+                    </div>
+                  </div>
+                  <div id="costoBreakdown" style="margin-top:14px"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /costoView -->
+
         <!-- ── Esportazioni View ── -->
         <div id="esportazioniView" style="display:none">
           <div class="dash-header">
@@ -2705,7 +2859,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v25";
+  const BUILD = "v26";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4576,7 +4730,7 @@ tr:last-child td{border-bottom:none}
 
   const VIEW_TITLES = {
     dashboard:"Dashboard", builder:"Kit builder",
-    analisi:"Analisi", articoli:"Articoli", esportazioni:"Esportazioni",
+    analisi:"Analisi", articoli:"Articoli", costo:"Costo articolo", esportazioni:"Esportazioni",
     impostazioni:"Impostazioni"
   };
   const ALL_VIEWS = Object.keys(VIEW_TITLES);
@@ -4602,6 +4756,7 @@ tr:last-child td{border-bottom:none}
       dashboard:    renderDashboard,
       analisi:      renderAnalisi,
       articoli:     renderArticoli,
+      costo:        renderCostoView,
       impostazioni: renderImpostazioni,
     };
     if(renderFns[view]) renderFns[view]();
@@ -5200,13 +5355,15 @@ tr:last-child td{border-bottom:none}
           const meta  = catalogMeta(art);
           const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
+          const distintaBadge = art.costParts ? ' <span class="cat-badge">distinta</span>' : "";
           return `<div class="catalog-item">
             <div class="catalog-item-info">
-              <div class="catalog-item-name">${esc(label)}${inKitBadge}</div>
+              <div class="catalog-item-name">${esc(label)}${inKitBadge}${distintaBadge}</div>
               <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
               <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cact="add">+ Kit</button>
+              <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="costo">Distinta</button>
               <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="edit">Modifica</button>
               <button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-cid="${art.id}" data-cact="del">✕</button>
             </div>
@@ -5251,6 +5408,13 @@ tr:last-child td{border-bottom:none}
             // Resta nell'archivio così si possono aggiungere più articoli di seguito
             renderArticoli();
             toast(`"${label}" aggiunto al kit ✓`, "ok");
+          });
+        });
+
+        listEl.querySelectorAll("[data-cact='costo']").forEach(btn => {
+          btn.addEventListener("click", () => {
+            showView("costo");
+            loadCostoFromCatalog(btn.getAttribute("data-cid"));
           });
         });
 
@@ -5329,7 +5493,15 @@ tr:last-child td{border-bottom:none}
     const catalog   = getCatalog();
     if(editId) {
       const idx = catalog.findIndex(a => a.id === editId);
-      if(idx >= 0) catalog[idx] = { ...catalog[idx], code, tipo, genere, name, categoria, base, extra };
+      if(idx >= 0) {
+        const prev = catalog[idx];
+        catalog[idx] = { ...prev, code, tipo, genere, name, categoria, base, extra };
+        // Ritoccando base/extra a mano la distinta non somma più: tenerla
+        // significherebbe mostrare un badge "distinta" che dice il falso.
+        if(prev.costParts && (toNum(prev.base) !== base || toNum(prev.extra) !== extra)) {
+          delete catalog[idx].costParts;
+        }
+      }
     } else {
       catalog.push({ id: uid(), code, tipo, genere, name, categoria, base, extra });
     }
@@ -5346,6 +5518,188 @@ tr:last-child td{border-bottom:none}
 
   const _btnRecoverCatalog = document.getElementById("btnRecoverCatalog");
   if(_btnRecoverCatalog) _btnRecoverCatalog.addEventListener("click", recoverCatalogFromKits);
+
+  /* ─── Costo articolo: distinta di costo di un singolo capo ───
+     Le voci ricalcano il listino costi usato finora fuori dall'app (tessuto,
+     taglio, produzione, accessori, etichetta, stampa/ricamo). La stampa resta
+     separata perché nel catalogo e nel kit è il campo "extra": lo stesso capo
+     si compone con o senza personalizzazione. */
+  const COSTO_VOCI = [
+    { id:"costoTessuto",    key:"tessuto",    label:"Tessuto" },
+    { id:"costoTaglio",     key:"taglio",     label:"Taglio" },
+    { id:"costoProduzione", key:"produzione", label:"Produzione" },
+    { id:"costoAccessori",  key:"accessori",  label:"Accessori" },
+    { id:"costoEtichetta",  key:"etichetta",  label:"Etichetta stampata" },
+    { id:"costoAltro",      key:"altro",      label:"Altro" },
+  ];
+  const COSTO_STAMPA = { id:"costoStampa", key:"stampa", label:"Stampa / Ricamo" };
+
+  const costoParts = () => {
+    const out = {};
+    COSTO_VOCI.forEach(v => { out[v.key] = Math.max(0, toNum(document.getElementById(v.id)?.value)); });
+    out[COSTO_STAMPA.key] = Math.max(0, toNum(document.getElementById(COSTO_STAMPA.id)?.value));
+    out.altroNome = (document.getElementById("costoAltroNome")?.value || "").trim();
+    return out;
+  };
+
+  const renderCosto = () => {
+    const p = costoParts();
+    const capo   = COSTO_VOCI.reduce((s, v) => s + p[v.key], 0);
+    const stampa = p[COSTO_STAMPA.key];
+    const tot    = capo + stampa;
+
+    setText("costoTotale",    tot > 0 ? eur(tot) : "—");
+    setText("costoTotaleKpi", tot > 0 ? eur(tot) : "—");
+    setText("costoCapo",      capo > 0 ? eur(capo) : "—");
+    setText("costoPers",      stampa > 0 ? eur(stampa) : "—");
+    setText("costoTotaleNote", tot > 0
+      ? `${eur(capo)} capo + ${eur(stampa)} personalizzazione`
+      : "Somma di tutte le voci");
+
+    const box = document.getElementById("costoBreakdown");
+    if(box){
+      const rows = [
+        ...COSTO_VOCI.map(v => ({ label: v.key === "altro" && p.altroNome ? p.altroNome : v.label, cost: p[v.key] })),
+        { label: COSTO_STAMPA.label, cost: stampa },
+      ].filter(r => r.cost > 0).sort((a, b) => b.cost - a.cost);
+      box.innerHTML = rows.length
+        ? `<div class="margin-bar-wrap">${rows.map(r =>
+            shareBar(r.label, `${eur(r.cost)} · ${(r.cost / tot * 100).toFixed(0)}%`, r.cost / tot * 100)).join("")}</div>`
+        : '<div class="hint">Inserisci le voci di costo per vedere la composizione.</div>';
+    }
+  };
+
+  const resetCostoForm = () => {
+    ["costoName","costoCode","costoAltroNome","costoEditId"].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = "";
+    });
+    COSTO_VOCI.concat([COSTO_STAMPA]).forEach(v => {
+      const el = document.getElementById(v.id); if(el) el.value = "";
+    });
+    const tipo = document.getElementById("costoTipo");
+    if(tipo) tipo.value = CATALOG_TIPI[0];
+    const gen = document.getElementById("costoGenere");
+    if(gen) gen.value = "Unisex";
+    const cat = document.getElementById("costoCategoria");
+    if(cat) cat.value = "ALTRO";
+    const load = document.getElementById("costoLoad");
+    if(load) load.value = "";
+    renderCosto();
+  };
+
+  // Riapre un articolo di catalogo nella distinta. Se non ha una distinta
+  // salvata (creato prima, o a mano dalla schermata Articoli) il costo base
+  // finisce in "Altro": meglio un punto di partenza modificabile che vuoto.
+  const loadCostoFromCatalog = (id) => {
+    const art = getCatalog().find(a => a.id === id);
+    if(!art) return;
+    resetCostoForm();
+    document.getElementById("costoEditId").value    = art.id;
+    document.getElementById("costoName").value      = art.name || catalogLabel(art);
+    document.getElementById("costoCode").value      = art.code || "";
+    document.getElementById("costoTipo").value      = CATALOG_TIPI.includes(art.tipo) ? art.tipo : CATALOG_TIPI[0];
+    document.getElementById("costoGenere").value    = CATALOG_GENERI.includes(art.genere) ? art.genere : "Unisex";
+    document.getElementById("costoCategoria").value = art.categoria || "ALTRO";
+    const cp = art.costParts;
+    if(cp){
+      COSTO_VOCI.concat([COSTO_STAMPA]).forEach(v => {
+        const el = document.getElementById(v.id);
+        if(el) el.value = cp[v.key] ? String(cp[v.key]).replace(".", ",") : "";
+      });
+      document.getElementById("costoAltroNome").value = cp.altroNome || "";
+    } else {
+      document.getElementById("costoAltro").value  = toNum(art.base)  ? String(toNum(art.base)).replace(".", ",")  : "";
+      document.getElementById("costoStampa").value = toNum(art.extra) ? String(toNum(art.extra)).replace(".", ",") : "";
+      document.getElementById("costoAltroNome").value = "Costo base esistente";
+    }
+    const load = document.getElementById("costoLoad");
+    if(load) load.value = art.id;
+    renderCosto();
+  };
+
+  const renderCostoView = () => {
+    const tipoSel = document.getElementById("costoTipo");
+    if(tipoSel && !tipoSel.options.length)
+      tipoSel.innerHTML = CATALOG_TIPI.map(t => `<option value="${t}">${t}</option>`).join("");
+    const load = document.getElementById("costoLoad");
+    if(load){
+      const cur = load.value;
+      load.innerHTML = '<option value="">Riprendi un articolo…</option>'
+        + getCatalog()
+            .slice()
+            .sort((a, b) => catalogLabel(a).localeCompare(catalogLabel(b)))
+            .map(a => `<option value="${a.id}">${esc(catalogLabel(a))}</option>`).join("");
+      load.value = cur;
+    }
+    renderCosto();
+  };
+
+  // Scrive la distinta nel catalogo. Il costo capo diventa "base" e la
+  // stampa "extra": è la coppia che il kit builder già usa.
+  const saveCostoToCatalog = () => {
+    const p      = costoParts();
+    const capo   = COSTO_VOCI.reduce((s, v) => s + p[v.key], 0);
+    const stampa = p[COSTO_STAMPA.key];
+    if(capo + stampa <= 0){ toast("Inserisci almeno una voce di costo", "warn"); return null; }
+
+    const name = document.getElementById("costoName").value.trim();
+    const tipo = document.getElementById("costoTipo").value || CATALOG_TIPI[0];
+    if(!name && !tipo){ toast("Dai un nome all'articolo", "warn"); return null; }
+
+    const fields = {
+      code:      document.getElementById("costoCode").value.trim(),
+      tipo,
+      genere:    document.getElementById("costoGenere").value || "Unisex",
+      name,
+      categoria: document.getElementById("costoCategoria").value || "ALTRO",
+      base:      capo,
+      extra:     stampa,
+      costParts: p,
+    };
+
+    const editId  = document.getElementById("costoEditId").value;
+    const catalog = getCatalog();
+    let saved;
+    if(editId){
+      const idx = catalog.findIndex(a => a.id === editId);
+      if(idx >= 0){ catalog[idx] = { ...catalog[idx], ...fields }; saved = catalog[idx]; }
+    }
+    if(!saved){
+      saved = { id: uid(), ...fields };
+      catalog.push(saved);
+      document.getElementById("costoEditId").value = saved.id;
+    }
+    setCatalog(catalog);
+    renderCostoView();
+    const load = document.getElementById("costoLoad");
+    if(load) load.value = saved.id;
+    toast(editId ? "Articolo aggiornato ✓" : "Articolo salvato in catalogo ✓", "ok");
+    return saved;
+  };
+
+  document.getElementById("costoLoad")?.addEventListener("change", (e) => {
+    if(e.target.value) loadCostoFromCatalog(e.target.value);
+    else resetCostoForm();
+  });
+  document.getElementById("btnCostoNew")?.addEventListener("click", resetCostoForm);
+  document.getElementById("btnCostoSave")?.addEventListener("click", saveCostoToCatalog);
+  document.getElementById("btnCostoSaveAdd")?.addEventListener("click", () => {
+    const art = saveCostoToCatalog();
+    if(!art) return;
+    const line  = LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
+    const label = catalogLabel(art);
+    items.push({ id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
+                 line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value) || 1,
+                 costMode: "auto", isGift: false });
+    render();
+    toast(`"${label}" aggiunto al kit ✓`, "ok");
+    showView("builder");
+  });
+
+  COSTO_VOCI.concat([COSTO_STAMPA]).forEach(v => {
+    document.getElementById(v.id)?.addEventListener("input", renderCosto);
+  });
+  document.getElementById("costoAltroNome")?.addEventListener("input", renderCosto);
 
   /* ─── Impostazioni listeners ─── */
   const _btnSaveSettings = document.getElementById("btnSaveSettings");
