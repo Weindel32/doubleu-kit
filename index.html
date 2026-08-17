@@ -482,6 +482,67 @@
     .kpi-panel { position: sticky; top: 18px; }
     .kpis { display: flex; flex-direction: column; gap: 9px; }
 
+    /* I numeri che si leggono in trattativa hanno peso visivo maggiore;
+       i riferimenti di contorno scendono a riga compatta. */
+    .kpi-hero { margin-bottom: 9px; }
+    .kpi-hero .val { font-size: 30px; }
+
+    .kpi-mini-list {
+      border-top: 1px solid var(--border);
+      margin-top: 12px; padding-top: 4px;
+    }
+    .kpi-mini {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+      padding: 7px 2px;
+      border: none; background: none; border-radius: 0;
+    }
+    .kpi-mini + .kpi-mini { border-top: 1px solid var(--border); }
+    .kpi-mini-lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .kpi-mini-val { font-size: 14px; font-weight: 800; color: var(--text); }
+    .kpi-mini.good .kpi-mini-val { color: var(--good); }
+    .kpi-mini.warn .kpi-mini-val { color: var(--warn); }
+    .kpi-mini.bad  .kpi-mini-val { color: var(--bad);  }
+    /* Nelle righe compatte il chip di stato non ci sta: il colore basta,
+       lo stato per esteso resta sulle tessere grandi e sulla barra. */
+    .kpi-mini .kpi-flag { display: none; }
+
+    /* ─── Barra prezzo: minimo → target, con marcatore sul prezzo attuale ─── */
+    .pbar { margin: 4px 0 12px; }
+    .pbar-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px; margin-bottom: 7px;
+    }
+    .pbar-price { font-size: 15px; font-weight: 800; color: var(--text); }
+    .pbar-price.good { color: var(--good); }
+    .pbar-price.warn { color: var(--warn); }
+    .pbar-price.bad  { color: var(--bad);  }
+    .pbar-state { font-size: 11px; font-weight: 700; text-align: right; }
+    .pbar-state.good { color: var(--good); }
+    .pbar-state.warn { color: var(--warn); }
+    .pbar-state.bad  { color: var(--bad);  }
+    .pbar-track {
+      position: relative; height: 10px; border-radius: 999px;
+      background: var(--good-bg); border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .pbar-fill-bad  { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bad-bg); }
+    .pbar-fill-warn { position: absolute; top: 0; bottom: 0; background: var(--warn-bg); }
+    .pbar-marker {
+      position: absolute; top: -3px; width: 3px; height: 16px; border-radius: 2px;
+      background: var(--text); transform: translateX(-1.5px);
+    }
+    .pbar-marker.good { background: var(--good); }
+    .pbar-marker.warn { background: var(--warn); }
+    .pbar-marker.bad  { background: var(--bad);  }
+    .pbar-legend {
+      display: flex; justify-content: space-between; gap: 8px;
+      margin-top: 6px; font-size: 11px; color: var(--muted);
+    }
+    .pbar-legend b { color: var(--text-2); font-weight: 700; }
+
+    /* Riga della quantità attualmente stimata nella scala quantità */
+    .disc-row.is-current td { font-weight: 700; }
+
     /* ─── Articles ─── */
     .art-toolbar {
       display: flex; gap: 8px; align-items: center;
@@ -1595,7 +1656,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v22</span>
+            <span id="buildTxt">build v23</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1973,6 +2034,24 @@
 
               <div class="alertBox" id="alertsBox" style="display:none"></div>
 
+              <div class="form-section" style="margin:14px 0 0">
+                <div class="section-lbl">Costi fissi una-tantum</div>
+                <div class="row2">
+                  <div>
+                    <label>Costi fissi totali €</label>
+                    <input id="fixedCost" value="" placeholder="es. 150,00" inputmode="decimal">
+                    <div class="hint">Setup stampa/ricamo, grafica, campionario, spedizione: non dipendono dal numero di atleti.</div>
+                  </div>
+                  <div>
+                    <label>Incidenza per atleta</label>
+                    <div class="kpi" style="padding:10px 12px">
+                      <div class="val" id="kFixedPerAthlete" style="font-size:18px">—</div>
+                      <div class="note" id="kFixedNote">Costi fissi ÷ quantità stimata</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="art-total">
                 <span class="art-total-lbl">Totale costo acquisto</span>
                 <span class="art-total-val" id="kTotalCostBar">—</span>
@@ -2102,9 +2181,9 @@
 
               <div class="row2" style="margin-top:10px">
                 <div class="kpi">
-                  <div class="lbl">Costo articoli fatturati</div>
+                  <div class="lbl">Costo fatturato</div>
                   <div class="val" id="kPaidCost">—</div>
-                  <div class="note">Senza omaggi</div>
+                  <div class="note">Senza omaggi · costi fissi inclusi</div>
                 </div>
                 <div class="kpi">
                   <div class="lbl">Costo omaggi (assorbiti)</div>
@@ -2152,6 +2231,21 @@
                 <div class="hint">Inserisci i dati del kit (quantità e articoli) per vedere la scala sconti.</div>
               </div>
             </div>
+
+            <div class="card" id="qtyScaleCard" style="margin-top:14px">
+              <div class="card-title">Scala quantità — e se fossero di più?</div>
+              <div class="hint" style="margin-bottom:10px">A parità di prezzo per atleta, vedi come cambiano costo, margine e profitto al variare del numero di atleti. Con costi fissi a bilancio, più atleti significa costo per atleta più basso.</div>
+              <div class="row2" style="align-items:end">
+                <div>
+                  <label>Quantità da confrontare <span style="font-weight:400;color:var(--muted)">(separate da virgola)</span></label>
+                  <input id="qtyScale" value="30, 50, 80, 120" inputmode="text">
+                  <div class="hint">Ogni valore diventa una riga. La quantità stimata attuale viene sempre inclusa.</div>
+                </div>
+              </div>
+              <div id="qtyScaleBox" style="margin-top:12px">
+                <div class="hint">Inserisci quantità, articoli e costi per vedere la scala quantità.</div>
+              </div>
+            </div>
             </div><!-- /step-3 -->
 
             <!-- Step Navigation -->
@@ -2172,31 +2266,41 @@
             <div class="kpi-panel">
               <div class="card">
                 <div class="card-title">Analisi live</div>
-                <div class="kpis">
-                  <div class="kpi" id="kpiMargin">
-                    <div class="lbl">Margine reale</div>
-                    <div class="val" id="kRealMargin">—</div>
-                    <div class="note" id="kTarget">Target: —</div>
+
+                <!-- I due numeri che servono in trattativa, in evidenza -->
+                <div class="kpi kpi-hero" id="kpiMargin">
+                  <div class="lbl">Margine reale</div>
+                  <div class="val" id="kRealMargin">—</div>
+                  <div class="note" id="kTarget">Target: —</div>
+                </div>
+
+                <div class="kpi kpi-hero" id="kpiPrice">
+                  <div class="lbl">Prezzo per atleta</div>
+                  <div class="val" id="kPriceAthlete">—</div>
+                  <div class="note" id="kVatNote">—</div>
+                </div>
+
+                <div class="pbar" id="priceBarBox" style="display:none"></div>
+
+                <div class="kpi kpi-hero" id="kpiMinPriceLive">
+                  <div class="lbl">Fin dove puoi scendere</div>
+                  <div class="val" id="kMinPriceLive">—</div>
+                  <div class="note">Prezzo minimo trattativa per atleta</div>
+                </div>
+
+                <!-- Riferimenti secondari: utili ma non da leggere per primi -->
+                <div class="kpi-mini-list">
+                  <div class="kpi-mini" id="kpiCost">
+                    <span class="kpi-mini-lbl">Costo per atleta</span>
+                    <span class="kpi-mini-val" id="kCostAthlete">—</span>
                   </div>
-                  <div class="kpi" id="kpiCost">
-                    <div class="lbl">Costo per atleta</div>
-                    <div class="val" id="kCostAthlete">—</div>
-                    <div class="note">Media su quantità stimata</div>
+                  <div class="kpi-mini" id="kpiMinSustainable">
+                    <span class="kpi-mini-lbl">Minimo sostenibile</span>
+                    <span class="kpi-mini-val" id="kMinSustainable">—</span>
                   </div>
-                  <div class="kpi" id="kpiPrice">
-                    <div class="lbl">Prezzo per atleta</div>
-                    <div class="val" id="kPriceAthlete">—</div>
-                    <div class="note" id="kVatNote">—</div>
-                  </div>
-                  <div class="kpi" id="kpiMinSustainable">
-                    <div class="lbl">Minimo sostenibile</div>
-                    <div class="val" id="kMinSustainable">—</div>
-                    <div class="note">Breakeven + buffer</div>
-                  </div>
-                  <div class="kpi" id="kpiTargetPrice">
-                    <div class="lbl">Prezzo target</div>
-                    <div class="val" id="kTargetPrice">—</div>
-                    <div class="note">Per raggiungere margine target</div>
+                  <div class="kpi-mini" id="kpiTargetPrice">
+                    <span class="kpi-mini-lbl">Prezzo target</span>
+                    <span class="kpi-mini-val" id="kTargetPrice">—</span>
                   </div>
                 </div>
               </div>
@@ -2580,7 +2684,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v22";
+  const BUILD = "v23";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -2620,6 +2724,8 @@ if("serviceWorker" in navigator) {
 
   const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
 
+  const setText = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = value; };
+
   // Escaping per valori inseriti in innerHTML (nomi kit, cliente, articoli)
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c =>
     ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -2646,6 +2752,7 @@ if("serviceWorker" in navigator) {
   const discount    = document.getElementById("discount");
   const offerPrice  = document.getElementById("offerPrice");
   const useOffer    = document.getElementById("useOffer");
+  const fixedCost   = document.getElementById("fixedCost");
   const depositPct  = document.getElementById("depositPct");
   const bufferPct   = document.getElementById("bufferPct");
   const applyVAT    = document.getElementById("applyVAT");
@@ -2683,6 +2790,7 @@ if("serviceWorker" in navigator) {
   const kpiMargin      = document.getElementById("kpiMargin");
   const kpiPrice       = document.getElementById("kpiPrice");
   const kpiMinPrice    = document.getElementById("kpiMinPrice");
+  const kpiMinPriceLive= document.getElementById("kpiMinPriceLive");
   const kpiTargetPrice = document.getElementById("kpiTargetPrice");
   const kpiDeposit     = document.getElementById("kpiDeposit");
 
@@ -3189,6 +3297,122 @@ if("serviceWorker" in navigator) {
       <div class="hint" style="margin-top:8px">Sconti calcolati sul prezzo attuale dell'ordine (0% = fatturato ${eur(baseInvoice)} del Riepilogo). Riferimento margine target ${(m*100).toFixed(0)}%. <b style="color:var(--warn)">Sotto target</b> = ancora in utile ma sotto il margine voluto · <b style="color:var(--bad)">Non sostenibile</b> = prezzo sotto il minimo sostenibile (breakeven + buffer).</div>`;
   };
 
+  /* ─── Scala quantità: come cambiano costi e margine al variare degli atleti ───
+     I costi fissi non scalano, quindi il costo per atleta scende al crescere
+     della quantità: è la leva da mostrare quando il cliente chiede "e se
+     fossimo di più?". Il prezzo per atleta resta quello attuale. */
+  const parseQtyList = (raw) => {
+    const seen = new Set();
+    const out = [];
+    String(raw || "").split(/[,;\s]+/).forEach(tok => {
+      if(tok === "") return;
+      const v = Math.round(toNum(tok));
+      if(!Number.isFinite(v) || v <= 0 || v > 100000) return;
+      if(seen.has(v)) return;
+      seen.add(v);
+      out.push(v);
+    });
+    return out.sort((a, b) => a - b);
+  };
+
+  const renderQtyScale = (ctx) => {
+    const box = document.getElementById("qtyScaleBox");
+    if(!box) return;
+    if(!ctx){
+      box.innerHTML = '<div class="hint">Inserisci quantità, articoli e costi per vedere la scala quantità.</div>';
+      return;
+    }
+    const { variableCost, fixed, m, vatOn, vatRate, qtyBase, buf, pricePerAthlete } = ctx;
+    const input = document.getElementById("qtyScale");
+    let qtys = parseQtyList(input ? input.value : "");
+    if(!qtys.length) qtys = [qtyBase];
+    if(!qtys.includes(qtyBase)) { qtys.push(qtyBase); qtys.sort((a,b) => a-b); }
+
+    const varPerAthlete = variableCost / qtyBase;
+
+    const rows = qtys.map(qn => {
+      const cost        = varPerAthlete * qn + fixed;
+      const costPerAth  = cost / qn;
+      const invoice     = pricePerAthlete * qn;
+      const revenueNet  = vatOn ? invoice / (1 + vatRate) : invoice;
+      const profit      = revenueNet - cost;
+      const realMargin  = revenueNet > 0 ? profit / revenueNet : 0;
+      const minSustNet  = (cost * (1 + buf)) / qn;
+      const minSust     = vatOn ? minSustNet * (1 + vatRate) : minSustNet;
+      const state = pricePerAthlete + 1e-9 < minSust
+        ? "bad"
+        : (realMargin + 1e-9 < m ? "warn" : "good");
+      const stateTxt = { good:"✓ OK", warn:"⚠ Sotto target", bad:"✕ Non sostenibile" }[state];
+      return { qn, costPerAth, invoice, realMargin, profit, state, stateTxt, isCurrent: qn === qtyBase };
+    });
+
+    const body = rows.map(r => `<tr class="disc-row ${r.state}${r.isCurrent ? " is-current" : ""}">
+        <td data-label="Atleti">${r.qn}${r.isCurrent ? ' <span class="cat-badge">attuale</span>' : ""}</td>
+        <td data-label="Costo / atleta" class="strong">${eur(r.costPerAth)}</td>
+        <td data-label="Totale fatturato">${eur(r.invoice)}</td>
+        <td data-label="Margine reale">${(r.realMargin*100).toFixed(1)}%</td>
+        <td data-label="Profitto ordine">${eur(r.profit)}</td>
+        <td data-label="Stato" class="st"><span class="disc-badge ${r.state}">${r.stateTxt}</span></td>
+      </tr>`).join("");
+
+    box.innerHTML = `
+      <div class="disc-scroll">
+        <table class="disc-table">
+          <thead><tr>
+            <th>Atleti</th>
+            <th>Costo / atleta</th>
+            <th>Totale fatturato</th>
+            <th>Margine reale</th>
+            <th>Profitto ordine</th>
+            <th class="st">Stato</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+      <div class="hint" style="margin-top:8px">Prezzo per atleta tenuto fisso a <b>${eur(pricePerAthlete)}</b>: cambia solo la quantità. ${fixed > 0
+        ? `I ${eur(fixed)} di costi fissi si spalmano su più atleti, quindi il costo per atleta scende e il margine sale.`
+        : `Senza costi fissi il costo per atleta non cambia: il margine resta uguale e cresce solo il profitto totale.`}</div>`;
+  };
+
+  /* ─── Barra prezzo: dove cade il prezzo proposto tra minimo e target ─── */
+  const renderPriceBar = (ctx) => {
+    const box = document.getElementById("priceBarBox");
+    if(!box) return;
+    if(!ctx){ box.innerHTML = ""; box.style.display = "none"; return; }
+    const { pricePerAthlete, minSustainableDisplay, targetPricePerAthlete, realMargin, m } = ctx;
+    box.style.display = "";
+
+    // La scala parte poco sotto il minimo e finisce poco sopra il target (o
+    // sopra il prezzo attuale se lo supera), così i tre riferimenti sono
+    // sempre tutti visibili sulla barra.
+    const hi     = Math.max(targetPricePerAthlete, pricePerAthlete) * 1.08;
+    const lo     = Math.min(minSustainableDisplay, pricePerAthlete) * 0.92;
+    const span   = hi - lo;
+    const pos    = (v) => span > 0 ? Math.max(0, Math.min(100, ((v - lo) / span) * 100)) : 0;
+    const state  = pricePerAthlete + 1e-9 < minSustainableDisplay ? "bad"
+      : (realMargin + 1e-9 < m ? "warn" : "good");
+    const stateTxt = {
+      good: "Target raggiunto",
+      warn: "Sostenibile, sotto il target",
+      bad:  "Sotto il minimo sostenibile",
+    }[state];
+
+    box.innerHTML = `
+      <div class="pbar-head">
+        <span class="pbar-price ${state}">${eur(pricePerAthlete)}</span>
+        <span class="pbar-state ${state}">${stateTxt}</span>
+      </div>
+      <div class="pbar-track">
+        <div class="pbar-fill-bad"  style="width:${pos(minSustainableDisplay)}%"></div>
+        <div class="pbar-fill-warn" style="left:${pos(minSustainableDisplay)}%;width:${Math.max(0, pos(targetPricePerAthlete) - pos(minSustainableDisplay))}%"></div>
+        <div class="pbar-marker ${state}" style="left:${pos(pricePerAthlete)}%"></div>
+      </div>
+      <div class="pbar-legend">
+        <span><b>${eur(minSustainableDisplay)}</b> minimo</span>
+        <span><b>${eur(targetPricePerAthlete)}</b> target</span>
+      </div>`;
+  };
+
   /* ─── calc() ─── */
   const calc = () => {
     const q       = toNum(qtyEst.value);
@@ -3201,17 +3425,22 @@ if("serviceWorker" in navigator) {
     const dep    = toNum(depositPct.value) / 100;
     const buf    = toNum(bufferPct.value) / 100;
 
-    let totalCost = 0, giftCost = 0, hasQty = false;
+    let variableCost = 0, giftCost = 0, hasQty = false;
 
     items.forEach(it => {
       const qty = toNum(it.qty);
       if(qty > 0) hasQty = true;
       const itemCost = (toNum(it.base) + toNum(it.extra)) * qty;
-      totalCost += itemCost;
+      variableCost += itemCost;
       if(it.isGift) giftCost += itemCost;
     });
 
-    const paidCost = totalCost - giftCost;
+    // I costi fissi (setup, grafica, spedizione) non scalano con gli atleti:
+    // vanno nel costo totale ma restano fuori dal costo variabile usato per
+    // proiettare altre quantità.
+    const fixed     = Math.max(0, toNum(fixedCost.value));
+    const totalCost = variableCost + fixed;
+    const paidCost  = totalCost - giftCost;
 
     const statusBar   = document.getElementById("statusBar");
     const statusLabel = document.getElementById("statusLabel");
@@ -3233,6 +3462,7 @@ if("serviceWorker" in navigator) {
       kMinSustainable.textContent = "—";
       kTargetPrice.textContent    = "—";
       kMinPrice.textContent       = "—";
+      setText("kMinPriceLive", "—");
       kMinDeposit.textContent     = "—";
       kDepNote.textContent        = "Inserisci almeno 1 quantità > 0";
       kGrossNote.textContent      = "—";
@@ -3242,10 +3472,15 @@ if("serviceWorker" in navigator) {
       showAlerts([]);
       setBox(kpiMargin,null); setBox(kpiPrice,null);
       setBox(kpiMinPrice,null); setBox(kpiDeposit,null); setBox(kpiTargetPrice,null);
+      setBox(kpiMinPriceLive,null);
       statusBar.className    = "statusBar";
       statusLabel.textContent= "Inserisci i dati per calcolare";
       statusStats.innerHTML  = "";
+      setText("kFixedPerAthlete", "—");
+      setText("kFixedNote", "Costi fissi ÷ quantità stimata");
       renderDiscountScale(null);
+      renderQtyScale(null);
+      renderPriceBar(null);
       return;
     }
 
@@ -3321,8 +3556,14 @@ if("serviceWorker" in navigator) {
     kMinSustainable.textContent = eur(minSustainableDisplay);
     kTargetPrice.textContent    = eur(targetPricePerAthlete);
     kMinPrice.textContent       = eur(minAcceptablePerAthlete);
+    setText("kMinPriceLive", eur(minAcceptablePerAthlete));
     kMinDeposit.textContent     = eur(minDepositGross);
     if(totalBar) totalBar.textContent = eur(totalCost);
+
+    setText("kFixedPerAthlete", fixed > 0 ? eur(fixed / qtyBase) : "—");
+    setText("kFixedNote", fixed > 0
+      ? `${eur(fixed)} ÷ ${qtyBase} atleti · ${(fixed / totalCost * 100).toFixed(1)}% del costo totale`
+      : "Costi fissi ÷ quantità stimata");
 
     kGrossNote.textContent = usingOffer
       ? (vatOn ? "Modalità BUDGET (IVA incl.)" : "Modalità BUDGET (netto)")
@@ -3366,9 +3607,9 @@ if("serviceWorker" in navigator) {
 
     if(pricePerAthlete + 1e-9 < minAcceptablePerAthlete){
       alerts.push({ level:"bad", title:"Prezzo sotto minimo trattativa", text:`Minimo trattativa: ${eur(minAcceptablePerAthlete)} / atleta (target meno sconto massimo).` });
-      setBox(kpiPrice,"bad"); setBox(kpiMinPrice,"bad");
+      setBox(kpiPrice,"bad"); setBox(kpiMinPrice,"bad"); setBox(kpiMinPriceLive,"bad");
     } else {
-      setBox(kpiPrice,"good"); setBox(kpiMinPrice,"good");
+      setBox(kpiPrice,"good"); setBox(kpiMinPrice,"good"); setBox(kpiMinPriceLive,"good");
     }
 
     if(depositNet + 1e-9 < secureNeed){
@@ -3396,6 +3637,8 @@ if("serviceWorker" in navigator) {
     }
 
     renderDiscountScale({ baseInvoice: invoiceTotal, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay });
+    renderQtyScale({ variableCost, fixed, m, vatOn, vatRate, qtyBase, buf, pricePerAthlete, usingOffer, disc });
+    renderPriceBar({ pricePerAthlete, minSustainableDisplay, targetPricePerAthlete, realMargin, m });
 
     showAlerts(alerts);
     saveDraft();
@@ -3419,12 +3662,14 @@ if("serviceWorker" in navigator) {
     offerPrice.value  = ""; useOffer.checked = false;
     priceIncludesVAT.checked = true;
     depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
+    fixedCost.value   = "";
     items = [];
     render(); showAlerts([]);
     togglePicker(false);
     offerStatusBox.textContent = ""; offerStatusBox.style.color = "";
     setBox(kpiMargin,null); setBox(kpiPrice,null);
     setBox(kpiMinPrice,null); setBox(kpiTargetPrice,null); setBox(kpiDeposit,null);
+    setBox(kpiMinPriceLive,null);
     updateSidebarKit();
     try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
     toast("Nuovo preventivo pronto ✓", "ok");
@@ -3450,6 +3695,7 @@ if("serviceWorker" in navigator) {
       const codePrefix = it.code ? `[${it.code}] ` : "";
       lines.push(`- ${codePrefix}${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
     });
+    if(toNum(fixedCost.value) > 0) lines.push(`Costi fissi una-tantum: ${eur(toNum(fixedCost.value))}`);
     lines.push(``);
     lines.push(`RIEPILOGO:`);
     lines.push(`Costo totale reale: ${kTotalCost.textContent}`);
@@ -3497,7 +3743,8 @@ if("serviceWorker" in navigator) {
     const usingOff  = !!useOffer.checked && toNum(offerPrice.value) > 0;
 
     const giftCostPDF = items.reduce((a,it) => a + (it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0);
-    const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0);
+    const fixedPDF    = Math.max(0, toNum(fixedCost.value));
+    const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0) + fixedPDF;
     const itemsRows   = items.map(it => {
       const sub     = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
       const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
@@ -3593,6 +3840,7 @@ tr:last-child td{border-bottom:none}
     <thead><tr><th>Articolo</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Qtà</th><th>Subtotale</th></tr></thead>
     <tbody>${itemsRows}</tbody>
   </table>
+  ${fixedPDF > 0 ? `<div style="margin-top:8px;font-size:11px;color:#49769F">Costi fissi una-tantum (setup, grafica, spedizione): <b style="color:#001D39">${eur(fixedPDF)}</b> · incidenza ${g("kFixedPerAthlete")} per atleta</div>` : ""}
 </div>
 
 <div class="sec">
@@ -3668,6 +3916,7 @@ tr:last-child td{border-bottom:none}
     depositPct: depositPct.value,
     bufferPct: bufferPct.value,
     applyVAT: applyVAT.checked,
+    fixedCost: fixedCost.value || "",
     items
   });
 
@@ -3684,6 +3933,7 @@ tr:last-child td{border-bottom:none}
     depositPct.value  = p.depositPct  ?? "60";
     bufferPct.value   = p.bufferPct   ?? "5";
     applyVAT.checked  = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
+    fixedCost.value   = p.fixedCost   ?? "";
     items = Array.isArray(p.items) ? p.items : [];
     render();
     updateSidebarKit();
@@ -4022,7 +4272,7 @@ tr:last-child td{border-bottom:none}
     const vatRate = toNum(vat.value) / 100;
     const vatOn = !!applyVAT.checked;
     const buf = toNum(bufferPct.value) / 100;
-    let totalCost = 0;
+    let totalCost = Math.max(0, toNum(fixedCost.value));
     items.forEach(it => { totalCost += (toNum(it.base) + toNum(it.extra)) * toNum(it.qty); });
     if(q <= 0 || totalCost <= 0) return null;
 
@@ -4083,7 +4333,6 @@ tr:last-child td{border-bottom:none}
     updateGuideProgress(onPricing ? 2 : onResult ? 3 : 4);
 
     const isBudget = unifiedPriceMode === "budget";
-    const setText = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = value; };
     setText("iqPricingLabel", isBudget ? "Budget comunicato" : "Margine da applicare");
     document.querySelectorAll("#iqModeList [data-price-mode]").forEach(el => el.classList.toggle("active", el.dataset.priceMode === unifiedPriceMode));
     const budgetFields = document.getElementById("iqBudgetFields");
@@ -4316,7 +4565,7 @@ tr:last-child td{border-bottom:none}
     const qtyBase  = toNum(p.qtyEst) > 0 ? toNum(p.qtyEst) : 1;
     const vatRate  = toNum(p.vat ?? 22) / 100;
     const vatOn    = p.applyVAT !== false;
-    let totalCost  = 0;
+    let totalCost  = Math.max(0, toNum(p.fixedCost));
     p.items.forEach(it => {
       totalCost += (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
     });
@@ -4709,9 +4958,12 @@ tr:last-child td{border-bottom:none}
     // Composizione costo per articolo
     const composEl = document.getElementById("kitCompos");
     if(composEl){
-      const totCost = items.reduce((s, it) => s + (toNum(it.base) + toNum(it.extra)) * toNum(it.qty), 0);
-      const compo = totCost > 0 ? items
-        .map(it => ({ label: it.article + (it.isGift ? " (omaggio)" : ""), cost: (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) }))
+      const fixedShare = Math.max(0, toNum(fixedCost.value));
+      const totCost = items.reduce((s, it) => s + (toNum(it.base) + toNum(it.extra)) * toNum(it.qty), 0) + fixedShare;
+      const compo = totCost > 0 ? [
+          ...items.map(it => ({ label: it.article + (it.isGift ? " (omaggio)" : ""), cost: (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) })),
+          { label: "Costi fissi una-tantum", cost: fixedShare },
+        ]
         .filter(r => r.cost > 0)
         .sort((a, b) => b.cost - a.cost)
         .map(r => shareBar(r.label, `${eur(r.cost)} · ${(r.cost / totCost * 100).toFixed(0)}%`, r.cost / totCost * 100)).join("") : "";
@@ -5139,8 +5391,11 @@ tr:last-child td{border-bottom:none}
       bindCalc(depositPct);
       bindCalc(bufferPct);
       bindCalc(applyVAT,          "change");
+      bindCalc(fixedCost);
       const discountScaleEl = document.getElementById("discountScale");
       if(discountScaleEl) bindCalc(discountScaleEl);
+      const qtyScaleEl = document.getElementById("qtyScale");
+      if(qtyScaleEl) bindCalc(qtyScaleEl);
 
       if(btnReset) btnReset.addEventListener("click", resetAll);
       if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
