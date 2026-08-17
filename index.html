@@ -1595,7 +1595,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v20</span>
+            <span id="buildTxt">build v21</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1932,6 +1932,34 @@
                   <span class="filter-pill" data-line="ALTRO">Altro</span>
                 </div>
                 <button class="primary" id="btnAddItem" type="button">+ Aggiungi</button>
+              </div>
+
+              <!-- Catalog picker: cerca e aggiungi articoli dal catalogo senza uscire dal builder -->
+              <div class="card" id="catalogPickerCard" style="display:none; margin:0 0 14px; background:var(--surface-2)">
+                <div class="art-toolbar" style="margin-bottom:8px">
+                  <div class="art-search">
+                    <svg class="art-search-ico" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <circle cx="9" cy="9" r="6"/>
+                      <path d="M15 15l3 3"/>
+                    </svg>
+                    <input id="pickerSearch" placeholder="Cerca nel catalogo…" style="background:var(--surface)">
+                  </div>
+                  <div class="art-filters" id="pickerFilters">
+                    <span class="filter-pill active" data-line="ALL">Tutti</span>
+                    <span class="filter-pill" data-line="PREMIUM">Premium</span>
+                    <span class="filter-pill" data-line="BASIC">Basic</span>
+                    <span class="filter-pill" data-line="LS24">LS24</span>
+                    <span class="filter-pill" data-line="ALTRO">Altro</span>
+                  </div>
+                  <button class="ghost" id="btnPickerClose" type="button" style="font-size:12px">Chiudi ✕</button>
+                </div>
+                <div id="pickerList"></div>
+                <div class="hint" id="pickerEmpty" style="display:none">
+                  Nessun articolo in catalogo. <a href="javascript:void(0)" id="pickerGoToCatalog">Vai al catalogo per crearne uno</a>.
+                </div>
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+                  <button class="secondary" id="btnAddGeneric" type="button" style="font-size:12px">+ Articolo generico (manuale)</button>
+                </div>
               </div>
 
               <div style="margin-bottom:10px">
@@ -2552,7 +2580,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v20";
+  const BUILD = "v21";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -2960,6 +2988,127 @@ if("serviceWorker" in navigator) {
     calc();
   };
 
+  /* ─── Catalog picker (Step 1): cerca/aggiungi articoli di catalogo senza uscire dal builder ─── */
+  const catalogPickerCard  = document.getElementById("catalogPickerCard");
+  const pickerList         = document.getElementById("pickerList");
+  const pickerEmpty        = document.getElementById("pickerEmpty");
+  const pickerSearchInput  = document.getElementById("pickerSearch");
+  let pickerFilterLine = "ALL";
+  let pickerFilterText = "";
+
+  const renderPicker = () => {
+    if(!pickerList) return;
+    const catalog = getCatalog();
+    if(!catalog.length){
+      pickerList.innerHTML = "";
+      if(pickerEmpty) pickerEmpty.style.display = "";
+      return;
+    }
+    if(pickerEmpty) pickerEmpty.style.display = "none";
+
+    const LINE_ORDER = ["PREMIUM","BASIC","LS24","ALTRO"];
+    const LINE_LABEL = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" };
+    const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
+
+    const rowHtml = (art) => {
+      const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+      const label = catalogLabel(art);
+      const meta  = catalogMeta(art);
+      const inKit = items.filter(it => it.article === label).length;
+      const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
+      const line  = LINE_ORDER.includes(art.categoria) ? art.categoria : "ALTRO";
+      return `<div class="catalog-item" data-name="${esc(label.toLowerCase())}" data-line="${line}">
+        <div class="catalog-item-info">
+          <div class="catalog-item-name">${esc(label)}${inKitBadge}</div>
+          <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
+        </div>
+        <div class="catalog-item-actions">
+          <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}">+ Aggiungi</button>
+        </div>
+      </div>`;
+    };
+
+    const byLine = {};
+    catalog.forEach(a => {
+      const l = LINE_ORDER.includes(a.categoria) ? a.categoria : "ALTRO";
+      (byLine[l] = byLine[l] || []).push(a);
+    });
+
+    let html = "";
+    LINE_ORDER.forEach(line => {
+      const arts = byLine[line];
+      if(!arts || !arts.length) return;
+      arts.sort((a, b) => tipoIdx(a.tipo) - tipoIdx(b.tipo) || catalogLabel(a).localeCompare(catalogLabel(b)));
+      html += `<div class="catalog-group" data-pick-line="${line}">
+        <div class="catalog-group-head" style="cursor:default"><span class="catalog-group-title">${LINE_LABEL[line]}</span><span class="catalog-group-count">${arts.length}</span></div>
+        ${arts.map(rowHtml).join("")}
+      </div>`;
+    });
+    pickerList.innerHTML = html;
+
+    pickerList.querySelectorAll("[data-cid]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+        if(!art) return;
+        const line  = LINE_ORDER.includes(art.categoria) ? art.categoria : "ALTRO";
+        const label = catalogLabel(art);
+        items.push({ id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "", line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift:false });
+        render();
+        renderPicker();
+        toast(`"${label}" aggiunto al kit ✓`, "ok");
+      });
+    });
+
+    applyPickerFilter();
+  };
+
+  const applyPickerFilter = () => {
+    if(!pickerList) return;
+    const txt = pickerFilterText.trim().toLowerCase();
+    const visibleLine = {};
+    pickerList.querySelectorAll(".catalog-item").forEach(card => {
+      const name = card.getAttribute("data-name") || "";
+      const line = card.getAttribute("data-line") || "";
+      const show = (pickerFilterLine === "ALL" || line === pickerFilterLine) && (!txt || name.includes(txt));
+      card.style.display = show ? "" : "none";
+      if(show) visibleLine[line] = true;
+    });
+    pickerList.querySelectorAll(".catalog-group").forEach(group => {
+      group.style.display = visibleLine[group.getAttribute("data-pick-line")] ? "" : "none";
+    });
+  };
+
+  if(pickerSearchInput) pickerSearchInput.addEventListener("input", () => {
+    pickerFilterText = pickerSearchInput.value;
+    applyPickerFilter();
+  });
+
+  document.querySelectorAll("#pickerFilters .filter-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      pickerFilterLine = pill.getAttribute("data-line") || "ALL";
+      document.querySelectorAll("#pickerFilters .filter-pill").forEach(x => x.classList.toggle("active", x === pill));
+      applyPickerFilter();
+    });
+  });
+
+  const togglePicker = (show) => {
+    if(!catalogPickerCard) return;
+    const willShow = show !== undefined ? show : (catalogPickerCard.style.display === "none");
+    catalogPickerCard.style.display = willShow ? "" : "none";
+    if(willShow){
+      pickerFilterLine = "ALL";
+      pickerFilterText = "";
+      if(pickerSearchInput) pickerSearchInput.value = "";
+      document.querySelectorAll("#pickerFilters .filter-pill").forEach(x => x.classList.toggle("active", x.getAttribute("data-line") === "ALL"));
+      renderPicker();
+      catalogPickerCard.scrollIntoView({ behavior:"smooth", block:"nearest" });
+    }
+  };
+
+  document.getElementById("btnPickerClose")?.addEventListener("click", () => togglePicker(false));
+  document.getElementById("btnAddGeneric")?.addEventListener("click", () => addItem());
+  document.getElementById("pickerGoToCatalog")?.addEventListener("click", () => showView("articoli"));
+
   const showAlerts = (list) => {
     if(!list.length){ alertsBox.style.display = "none"; alertsBox.innerHTML = ""; return; }
     alertsBox.style.display = "block";
@@ -3276,6 +3425,7 @@ if("serviceWorker" in navigator) {
     depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
     items = [newItem()];
     render(); showAlerts([]);
+    togglePicker(false);
     offerStatusBox.textContent = ""; offerStatusBox.style.color = "";
     setBox(kpiMargin,null); setBox(kpiPrice,null);
     setBox(kpiMinPrice,null); setBox(kpiTargetPrice,null); setBox(kpiDeposit,null);
@@ -4981,7 +5131,7 @@ tr:last-child td{border-bottom:none}
   /* ─── App init (called after auth confirmed) ─── */
   const initApp = async () => {
     try {
-      btnAddItem.addEventListener("click",  addItem);
+      btnAddItem.addEventListener("click",  () => togglePicker());
       btnApplyQty.addEventListener("click", applyQtyToRows);
 
       bindCalc(qtyEst);
