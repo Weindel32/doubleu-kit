@@ -939,6 +939,9 @@
     .disc-badge.good { color: var(--good); background: var(--good-bg); }
     .disc-badge.warn { color: var(--warn); background: var(--warn-bg); }
     .disc-badge.bad  { color: var(--bad);  background: var(--bad-bg);  }
+    /* "Sotto il minimo" è un rifiuto come "non sostenibile", ma per un motivo
+       diverso: contorno pieno invece di fondo, così si distinguono a colpo d'occhio. */
+    .disc-badge.low  { color: var(--bad);  background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--bad-bd); }
 
     /* iPhone: la tabella diventa una lista di card (niente scroll orizzontale) */
     @media (max-width: 560px) {
@@ -950,7 +953,8 @@
         background: var(--surface); padding: 4px 12px; margin-bottom: 10px;
       }
       .disc-table tr.warn { border-color: var(--warn-bd); }
-      .disc-table tr.bad  { border-color: var(--bad-bd); }
+      .disc-table tr.bad,
+      .disc-table tr.low  { border-color: var(--bad-bd); }
       .disc-table td {
         display: flex; justify-content: space-between; align-items: center;
         gap: 12px; text-align: right; white-space: normal;
@@ -1661,7 +1665,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v24</span>
+            <span id="buildTxt">build v25</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2701,7 +2705,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v24";
+  const BUILD = "v25";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3242,6 +3246,22 @@ if("serviceWorker" in navigator) {
     `).join("");
   };
 
+  /* ─── Stato di una riga di scala (sconti e quantità) ───
+     Quattro esiti, dal peggiore al migliore. "Sotto il minimo" è tenuto
+     distinto da "Sotto target" perché sono decisioni diverse: il primo è un
+     affare da rifiutare, il secondo è ancora trattabile. */
+  const scaleLegend = (m, mMin) => `Target ${(m*100).toFixed(0)}%, minimo accettabile ${(mMin*100).toFixed(0)}%. `
+    + `<b style="color:var(--warn)">Sotto target</b> = trattabile, sotto il margine voluto · `
+    + `<b style="color:var(--bad)">Sotto il minimo</b> = sotto il margine che hai deciso di accettare · `
+    + `<b style="color:var(--bad)">Non sostenibile</b> = sotto breakeven + buffer, ci rimetti.`;
+
+  const scaleState = (pricePerAth, realMargin, minSustainableDisplay, mMin, m) => {
+    if(pricePerAth + 1e-9 < minSustainableDisplay) return { state:"bad",  txt:"✕ Non sostenibile" };
+    if(realMargin  + 1e-9 < mMin)                  return { state:"low",  txt:"✕ Sotto il minimo" };
+    if(realMargin  + 1e-9 < m)                     return { state:"warn", txt:"⚠ Sotto target" };
+    return { state:"good", txt:"✓ OK" };
+  };
+
   /* ─── Scala sconti: confronto opzioni di sconto sul kit corrente ─── */
   const parseDiscountList = (raw) => {
     const seen = new Set();
@@ -3267,7 +3287,7 @@ if("serviceWorker" in navigator) {
       box.innerHTML = '<div class="hint">Inserisci i dati del kit (quantità e articoli) per vedere la scala sconti.</div>';
       return;
     }
-    const { baseInvoice, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay } = ctx;
+    const { baseInvoice, totalCost, m, mMin, vatOn, vatRate, qtyBase, minSustainableDisplay } = ctx;
     const input = document.getElementById("discountScale");
     let discs = parseDiscountList(input ? input.value : "");
     if(!discs.length) discs = [0, 5, 10, 15, 20];
@@ -3279,10 +3299,7 @@ if("serviceWorker" in navigator) {
       const revenueNet  = vatOn ? invoice / (1 + vatRate) : invoice;
       const profit      = revenueNet - totalCost;
       const realMargin  = revenueNet > 0 ? (profit / revenueNet) : 0;
-      const state = pricePerAth + 1e-9 < minSustainableDisplay
-        ? "bad"
-        : (realMargin + 1e-9 < m ? "warn" : "good");
-      const stateTxt = { good:"✓ OK", warn:"⚠ Sotto target", bad:"✕ Non sostenibile" }[state];
+      const { state, txt: stateTxt } = scaleState(pricePerAth, realMargin, minSustainableDisplay, mMin, m);
       return { pct, pricePerAth, invoice, realMargin, profit, state, stateTxt };
     });
 
@@ -3312,7 +3329,7 @@ if("serviceWorker" in navigator) {
           <tbody>${body}</tbody>
         </table>
       </div>
-      <div class="hint" style="margin-top:8px">Sconti calcolati sul prezzo attuale dell'ordine (0% = fatturato ${eur(baseInvoice)} del Riepilogo). Riferimento margine target ${(m*100).toFixed(0)}%. <b style="color:var(--warn)">Sotto target</b> = ancora in utile ma sotto il margine voluto · <b style="color:var(--bad)">Non sostenibile</b> = prezzo sotto il minimo sostenibile (breakeven + buffer).</div>`;
+      <div class="hint" style="margin-top:8px">Sconti calcolati sul prezzo attuale dell'ordine (0% = fatturato ${eur(baseInvoice)} del Riepilogo). ${scaleLegend(m, mMin)}</div>`;
   };
 
   /* ─── Scala quantità: come cambiano costi e margine al variare degli atleti ───
@@ -3340,7 +3357,7 @@ if("serviceWorker" in navigator) {
       box.innerHTML = '<div class="hint">Inserisci quantità, articoli e costi per vedere la scala quantità.</div>';
       return;
     }
-    const { variableCost, fixed, m, vatOn, vatRate, qtyBase, buf, pricePerAthlete } = ctx;
+    const { variableCost, fixed, m, mMin, vatOn, vatRate, qtyBase, buf, pricePerAthlete } = ctx;
     const input = document.getElementById("qtyScale");
     let qtys = parseQtyList(input ? input.value : "");
     if(!qtys.length) qtys = [qtyBase];
@@ -3357,10 +3374,7 @@ if("serviceWorker" in navigator) {
       const realMargin  = revenueNet > 0 ? profit / revenueNet : 0;
       const minSustNet  = (cost * (1 + buf)) / qn;
       const minSust     = vatOn ? minSustNet * (1 + vatRate) : minSustNet;
-      const state = pricePerAthlete + 1e-9 < minSust
-        ? "bad"
-        : (realMargin + 1e-9 < m ? "warn" : "good");
-      const stateTxt = { good:"✓ OK", warn:"⚠ Sotto target", bad:"✕ Non sostenibile" }[state];
+      const { state, txt: stateTxt } = scaleState(pricePerAthlete, realMargin, minSust, mMin, m);
       return { qn, costPerAth, invoice, realMargin, profit, state, stateTxt, isCurrent: qn === qtyBase };
     });
 
@@ -3389,7 +3403,8 @@ if("serviceWorker" in navigator) {
       </div>
       <div class="hint" style="margin-top:8px">Prezzo per atleta tenuto fisso a <b>${eur(pricePerAthlete)}</b>: cambia solo la quantità. ${fixed > 0
         ? `I ${eur(fixed)} di costi fissi si spalmano su più atleti, quindi il costo per atleta scende e il margine sale.`
-        : `Senza costi fissi il costo per atleta non cambia: il margine resta uguale e cresce solo il profitto totale.`}</div>`;
+        : `Senza costi fissi il costo per atleta non cambia: il margine resta uguale e cresce solo il profitto totale.`}
+        <br>${scaleLegend(m, mMin)}</div>`;
   };
 
   /* ─── Barra prezzo: dove cade il prezzo proposto tra minimo e target ─── */
@@ -3679,8 +3694,8 @@ if("serviceWorker" in navigator) {
       offerStatusBox.style.color = offerStatusColor || "var(--muted)";
     }
 
-    renderDiscountScale({ baseInvoice: invoiceTotal, totalCost, m, vatOn, vatRate, qtyBase, minSustainableDisplay });
-    renderQtyScale({ variableCost, fixed, m, vatOn, vatRate, qtyBase, buf, pricePerAthlete, usingOffer, disc });
+    renderDiscountScale({ baseInvoice: invoiceTotal, totalCost, m, mMin, vatOn, vatRate, qtyBase, minSustainableDisplay });
+    renderQtyScale({ variableCost, fixed, m, mMin, vatOn, vatRate, qtyBase, buf, pricePerAthlete, usingOffer, disc });
     renderPriceBar({ pricePerAthlete, minSustainableDisplay, minAcceptablePerAthlete,
                      targetPricePerAthlete, realMargin, m, mMin });
 
