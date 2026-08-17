@@ -1595,7 +1595,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v21</span>
+            <span id="buildTxt">build v22</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2580,7 +2580,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v21";
+  const BUILD = "v22";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -2728,7 +2728,6 @@ if("serviceWorker" in navigator) {
     return { id: uid(), article:"T-shirt", line:"PREMIUM", base, extra:0, qty:q, costMode:"auto", isGift:false };
   };
 
-  const ensureOne = () => { if(!items.length) items = [newItem()]; };
 
   // Etichette di stato: icona + parola (accessibilità daltonismo — il colore da solo non basta)
   const STATE_FLAG = {
@@ -2794,8 +2793,6 @@ if("serviceWorker" in navigator) {
 
   /* ─── render() ─── */
   const render = () => {
-    ensureOne();
-
     let html = "";
 
     items.forEach(it => {
@@ -2867,7 +2864,7 @@ if("serviceWorker" in navigator) {
 </div>`;
     });
 
-    itemsBody.innerHTML = html;
+    itemsBody.innerHTML = html || '<div class="hint" style="padding:10px 0">Nessun articolo nel kit. Usa "+ Aggiungi" per cercarlo nel catalogo, o "+ Articolo generico (manuale)".</div>';
     applyArtFilter();
 
     itemsBody.querySelectorAll("[data-act]").forEach(el => {
@@ -2978,7 +2975,6 @@ if("serviceWorker" in navigator) {
       if(act === "rm"){
         el.addEventListener("click", () => {
           items = items.filter(x => x.id !== id);
-          ensureOne();
           render();
         });
         return;
@@ -3423,7 +3419,7 @@ if("serviceWorker" in navigator) {
     offerPrice.value  = ""; useOffer.checked = false;
     priceIncludesVAT.checked = true;
     depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
-    items = [newItem()];
+    items = [];
     render(); showAlerts([]);
     togglePicker(false);
     offerStatusBox.textContent = ""; offerStatusBox.style.color = "";
@@ -3688,7 +3684,7 @@ tr:last-child td{border-bottom:none}
     depositPct.value  = p.depositPct  ?? "60";
     bufferPct.value   = p.bufferPct   ?? "5";
     applyVAT.checked  = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
-    items = Array.isArray(p.items) && p.items.length ? p.items : [newItem()];
+    items = Array.isArray(p.items) ? p.items : [];
     render();
     updateSidebarKit();
   };
@@ -5260,13 +5256,13 @@ tr:last-child td{border-bottom:none}
             applyPayload(draft);
             toast("Bozza ripristinata ✓", "ok");
           } else {
-            items = [newItem()]; render();
+            items = []; render();
           }
         } else {
-          items = [newItem()]; render();
+          items = []; render();
         }
       } catch(e) {
-        items = [newItem()]; render();
+        items = []; render();
       }
 
       // Sidebar toggle
