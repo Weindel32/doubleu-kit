@@ -1,0 +1,792 @@
+{
+ "type": "catalog",
+ "items": [
+  {
+   "id": "8de8d10fd655f819f43a442dd",
+   "base": 2.73,
+   "code": "LS304",
+   "name": "Slam",
+   "tipo": "T-Shirt",
+   "extra": 0.1,
+   "genere": "Uomo",
+   "categoria": "LS24"
+  },
+  {
+   "id": "c9e209a98b84b19f43a442de",
+   "base": 9.08,
+   "name": "Pantaloncino",
+   "extra": 0.1,
+   "categoria": "LS24"
+  },
+  {
+   "id": "c19ffd8738aa19f43a442de",
+   "base": 9.71,
+   "name": "Gonnellino",
+   "extra": 0.1,
+   "categoria": "LS24"
+  },
+  {
+   "id": "2befae405a119819f43a442de",
+   "base": 11.18,
+   "name": "Zip Hoodie",
+   "extra": 0.1,
+   "categoria": "ALTRO"
+  },
+  {
+   "id": "ae944ce87603d819f43a442de",
+   "base": 9.39,
+   "name": "Pantalone",
+   "extra": 0.1,
+   "categoria": "LS24"
+  },
+  {
+   "id": "a0a4bc83211da19f43a442de",
+   "base": 15,
+   "name": "Polo",
+   "extra": 0,
+   "categoria": "PREMIUM"
+  },
+  {
+   "id": "7cba9fca45352819efde27792",
+   "base": 2.73,
+   "name": "LS304 T-shirt SLAM",
+   "extra": 0,
+   "categoria": "LS24"
+  },
+  {
+   "id": "46f3b07f5258f819efde34a03",
+   "base": 2.73,
+   "name": "LS305 T-Shirt SLAM donna",
+   "extra": 0,
+   "categoria": "LS24"
+  },
+  {
+   "id": "c257e7ebc21c219efde41bd6",
+   "base": 2.1,
+   "name": "LS427 T-shirt IMOLA",
+   "extra": 0,
+   "categoria": "LS24"
+  },
+  {
+   "id": "465cd1706a77381a010073595",
+   "base": 7.6,
+   "code": "DUSP31",
+   "name": "T-Shirt Cotone Premium",
+   "tipo": "T-Shirt",
+   "extra": 0,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0,
+    "stampa": 0,
+    "taglio": 1.5,
+    "tessuto": 3.5,
+    "accessori": 0,
+    "altroNome": "",
+    "etichetta": 0.1,
+    "produzione": 2.5
+   }
+  },
+  {
+   "id": "cc518c27d80691a0101a804c",
+   "base": 12,
+   "code": "",
+   "name": "Ts Premium Uomo/Donna",
+   "tipo": "T-Shirt",
+   "extra": 2,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 3.5
+   }
+  },
+  {
+   "id": "67afc4359e9211a0101a804c",
+   "base": 25.1,
+   "code": "",
+   "name": "Completino UOMO ONE",
+   "tipo": "T-Shirt",
+   "extra": 4.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.8,
+    "stampa": 4.5,
+    "taglio": 4,
+    "tessuto": 12,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 8
+   }
+  },
+  {
+   "id": "876a0a15838d31a0101a804d",
+   "base": 13,
+   "code": "",
+   "name": "Ts Premium Uomo STRIPE",
+   "tipo": "T-Shirt",
+   "extra": 2,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "12ab125c560351a0101a804d",
+   "base": 26.1,
+   "code": "",
+   "name": "Completino UOMO STRIPE",
+   "tipo": "T-Shirt",
+   "extra": 4.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.8,
+    "stampa": 4.5,
+    "taglio": 4,
+    "tessuto": 12,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 9
+   }
+  },
+  {
+   "id": "988710ce9c791a0101a804d",
+   "base": 13.3,
+   "code": "",
+   "name": "Pantaloncino PREMIUM",
+   "tipo": "Short",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "a8befbd020a391a0101a804d",
+   "base": 12.3,
+   "code": "",
+   "name": "Pantaloncino Premium SLIT",
+   "tipo": "Short",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 4.5,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "696a0f09aec591a0101a804d",
+   "base": 13,
+   "code": "",
+   "name": "Gonnellino PREMIUM",
+   "tipo": "Skirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "b8bad51dfeef981a0101a804d",
+   "base": 24.8,
+   "code": "",
+   "name": "Completino DONNA ONE",
+   "tipo": "T-Shirt",
+   "extra": 4.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.8,
+    "stampa": 4.5,
+    "taglio": 4,
+    "tessuto": 12,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 8
+   }
+  },
+  {
+   "id": "c477e7066f6cb1a0101a804e",
+   "base": 14.5,
+   "code": "",
+   "name": "Pantaloncino donna DDR PREMIUM",
+   "tipo": "Short",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 6
+   }
+  },
+  {
+   "id": "7abdc4fd10eed1a0101a804e",
+   "base": 16,
+   "code": "",
+   "name": "Vestitino DRESS",
+   "tipo": "Dress",
+   "extra": 2,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2,
+    "taglio": 2,
+    "tessuto": 7.5,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 6
+   }
+  },
+  {
+   "id": "397d824dcf31d1a0101a804e",
+   "base": 13,
+   "code": "",
+   "name": "Polo Premium",
+   "tipo": "Polo",
+   "extra": 2,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "3c462d82271991a0101a804e",
+   "base": 13,
+   "code": "",
+   "name": "College Premium",
+   "tipo": "Polo",
+   "extra": 2,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "5bf0943b5bb2d1a0101a804f",
+   "base": 26.1,
+   "code": "",
+   "name": "Completino UOMO POLO/CLLG",
+   "tipo": "Polo",
+   "extra": 4.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.8,
+    "stampa": 4.5,
+    "taglio": 4,
+    "tessuto": 12,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 9
+   }
+  },
+  {
+   "id": "debd9cd8781f11a0101a804f",
+   "base": 6.3,
+   "code": "",
+   "name": "T-shirt Cotone",
+   "tipo": "T-Shirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "ALTRO",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1,
+    "tessuto": 3,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 1.8
+   }
+  },
+  {
+   "id": "671af40311cb71a0101a804f",
+   "base": 8.8,
+   "code": "",
+   "name": "T-shirt Cotone HOODIE",
+   "tipo": "Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 4,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 2.8
+   }
+  },
+  {
+   "id": "2c99a451019da1a0101a804f",
+   "base": 10,
+   "code": "",
+   "name": "T-shirt Cotone Manica lunga",
+   "tipo": "T-Shirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 4.5,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 3.5
+   }
+  },
+  {
+   "id": "c32757b1366d41a0101a804f",
+   "base": 10.24,
+   "code": "",
+   "name": "GILET (Nico felpa)",
+   "tipo": "Jacket",
+   "extra": 2.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2.5,
+    "taglio": 1.5,
+    "tessuto": 3.24,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 3.5
+   }
+  },
+  {
+   "id": "5f0f5bd59c4871a0101a804f",
+   "base": 13.1,
+   "code": "",
+   "name": "Felpa cappuccio",
+   "tipo": "Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 4
+   }
+  },
+  {
+   "id": "0572e0fe428cb81a0101a804f",
+   "base": 14.4,
+   "code": "",
+   "name": "Felpa Cappuccio STRIPE",
+   "tipo": "Hoodie",
+   "extra": 2.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.8,
+    "stampa": 2.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "bd19bd5c21b3e1a0101a804f",
+   "base": 13.1,
+   "code": "",
+   "name": "Felpa cappuccio CCourt",
+   "tipo": "Hoodie",
+   "extra": 8,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 8,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 4
+   }
+  },
+  {
+   "id": "32c99b186608981a0101a804f",
+   "base": 13.6,
+   "code": "",
+   "name": "Felpa cappuccio DUE",
+   "tipo": "Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "33c0b859a385181a0101a804f",
+   "base": 14.1,
+   "code": "",
+   "name": "Felpa cappuccio TRE",
+   "tipo": "Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "9c43f3863de241a0101a804f",
+   "base": 12.6,
+   "code": "",
+   "name": "Felpa girocollo",
+   "tipo": "Sweatshirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 3.5
+   }
+  },
+  {
+   "id": "55391c0d25e221a0101a804f",
+   "base": 14.1,
+   "code": "",
+   "name": "Felpa cappuccio SLIT",
+   "tipo": "Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "79d67d9867cad81a0101a804f",
+   "base": 14.6,
+   "code": "",
+   "name": "Felpa girocollo TRE",
+   "tipo": "Sweatshirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "3240767385c951a0101a804f",
+   "base": 15,
+   "code": "",
+   "name": "Felpa zip cappuccio",
+   "tipo": "Zip Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0.9,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "8bb5f25cbe0bd1a0101a804f",
+   "base": 13.8,
+   "code": "",
+   "name": "Felpa Zip Cappuccio STRIPE",
+   "tipo": "Zip Hoodie",
+   "extra": 2.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2.5,
+    "taglio": 2,
+    "tessuto": 6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0.8,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "17b8e387d1e7581a0101a8050",
+   "base": 16.5,
+   "code": "",
+   "name": "Felpa zip cappuccio THREE",
+   "tipo": "Zip Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0.9,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 6
+   }
+  },
+  {
+   "id": "3cd45cd9c4c7a1a0101a8050",
+   "base": 14.1,
+   "code": "",
+   "name": "Felpa cappuccio marsupio",
+   "tipo": "Hoodie",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "e942dbe4185b681a0101a8050",
+   "base": 14.1,
+   "code": "",
+   "name": "Felpa girocollo TWO Arm",
+   "tipo": "Sweatshirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 1.5,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 1.5,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "5195271b2e9f91a0101a8050",
+   "base": 12.4,
+   "code": "",
+   "name": "Pantalone felpa",
+   "tipo": "Sweatpants",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4
+   }
+  },
+  {
+   "id": "565e957c23481a0101a8050",
+   "base": 12.9,
+   "code": "",
+   "name": "Pantalone felpa STRIPE",
+   "tipo": "Sweatpants",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  },
+  {
+   "id": "9c711f8ea911c81a0101a8050",
+   "base": 13.4,
+   "code": "",
+   "name": "Pantalone felpa TWO Arm",
+   "tipo": "Sweatpants",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0.3,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 5
+   }
+  },
+  {
+   "id": "8020484519b231a0101a8050",
+   "base": 13,
+   "code": "",
+   "name": "Pantaloncino WDL",
+   "tipo": "Short",
+   "extra": 2,
+   "genere": "Unisex",
+   "categoria": "PREMIUM",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 2,
+    "taglio": 2,
+    "tessuto": 5.6,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0.9,
+    "produzione": 4
+   }
+  },
+  {
+   "id": "1c9bf00bc2fc21a0101a8050",
+   "base": 9.8,
+   "code": "",
+   "name": "Gonnellino BASIC",
+   "tipo": "Skirt",
+   "extra": 1.5,
+   "genere": "Unisex",
+   "categoria": "BASIC",
+   "costParts": {
+    "altro": 0.5,
+    "stampa": 1.5,
+    "taglio": 2,
+    "tessuto": 2.8,
+    "accessori": 0,
+    "altroNome": "Packaging",
+    "etichetta": 0,
+    "produzione": 4.5
+   }
+  }
+ ],
+ "updatedAt": 1786980997314
+}
