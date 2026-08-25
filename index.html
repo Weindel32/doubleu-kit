@@ -1688,7 +1688,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v35</span>
+            <span id="buildTxt">build v36</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2945,7 +2945,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v35";
+  const BUILD = "v36";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3134,6 +3134,17 @@ if("serviceWorker" in navigator) {
     return Number.isFinite(r) ? r : null;
   };
 
+  // Riga del kit da un articolo di catalogo. La distinta (costParts) viene
+  // copiata sulla riga così il tessuto si può cambiare per questo preventivo
+  // senza toccare l'articolo: cambiarlo qui non deve riscrivere il catalogo.
+  const kitItemFromCatalog = (art, line, label) => {
+    const it = { id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
+      line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value) || 1,
+      costMode: "auto", isGift: false };
+    if(art.costParts) it.costParts = { ...art.costParts };
+    return it;
+  };
+
   const newItem = () => {
     const q = toNum(qtyEst.value) || 0;
     const base = refCost("PREMIUM","T-shirt") ?? 0;
@@ -3219,6 +3230,21 @@ if("serviceWorker" in navigator) {
 
       const costLabel  = (it.line === "ALTRO") ? "Manuale" : (it.costMode === "auto" ? "Auto" : "Manuale");
       const unitCost   = toNum(it.base) + toNum(it.extra);
+
+      // Il cambio tessuto vale solo per questo preventivo: la riga tiene una
+      // copia della distinta, l'articolo di catalogo non viene mai toccato.
+      const cp = it.costParts;
+      const tessutoRow = cp ? (() => {
+        const nomi = getTessuti().map(t => t.nome).filter(Boolean);
+        const cur  = (cp.tessuto_default || "").trim();
+        if(cur && !nomi.some(n => n.toLowerCase() === cur.toLowerCase())) nomi.push(cur);
+        const opts = nomi.map(n => `<option value="${esc(n)}" ${n===cur ? "selected" : ""}>${esc(n)}</option>`).join("");
+        const consumoStr = cp.consumo_default ? String(cp.consumo_default).replace(".", ",") : "";
+        return `<div class="art-tessuto" style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          <select data-act="tessuto" data-id="${it.id}" style="font-size:11px;padding:3px 6px;flex:1;min-width:0">${opts}</select>
+          <input data-act="consumo" data-id="${it.id}" value="${esc(consumoStr)}" inputmode="decimal" placeholder="m" title="Consumo in metri" style="width:48px;font-size:11px;padding:3px 6px">
+        </div>`;
+      })() : "";
       const subtot     = unitCost * toNum(it.qty);
       const subtotStr  = subtot > 0 ? eur(subtot) + (it.isGift ? " · omaggio" : "") : "—";
       const giftClass  = it.isGift ? " is-gift" : "";
@@ -3239,6 +3265,7 @@ if("serviceWorker" in navigator) {
         <select data-act="line"    data-id="${it.id}" style="min-width:110px">${optsL}</select>
       </div>
       <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costLabel}</div>
+      ${tessutoRow}
     </div>
 
     <div class="art-fields">
@@ -3312,6 +3339,25 @@ if("serviceWorker" in navigator) {
         return;
       }
 
+      if(act === "tessuto" || act === "consumo"){
+        el.addEventListener("change", () => {
+          const it = find(); if(!it || !it.costParts) return;
+          if(act === "tessuto") it.costParts.tessuto_default = el.value;
+          if(act === "consumo") it.costParts.consumo_default = Math.max(0, toNum(el.value));
+          const t = tessutoByNome(it.costParts.tessuto_default);
+          const m = toNum(it.costParts.consumo_default);
+          if(t && m > 0){
+            const cent = (n) => Math.round(n * 100) / 100;
+            it.costParts.tessuto = cent(toNum(t.prezzoMetro) * m);
+            const altreVoci = ["taglio","produzione","accessori","etichetta","altro"]
+              .reduce((s, k) => s + toNum(it.costParts[k]), 0);
+            it.base = cent(altreVoci + it.costParts.tessuto);
+          }
+          render();
+        });
+        return;
+      }
+
       if(["base","extra","qty"].includes(act)){
         el.addEventListener("input", () => {
           const it = find(); if(!it) return;
@@ -3378,7 +3424,11 @@ if("serviceWorker" in navigator) {
         el.addEventListener("click", () => {
           const idx = items.findIndex(x => x.id === id);
           if(idx < 0) return;
-          items.splice(idx + 1, 0, { ...items[idx], id: uid() });
+          const copy = { ...items[idx], id: uid() };
+          // Senza la copia profonda, cambiare tessuto su una riga ritoccava
+          // anche l'altra: condividevano lo stesso oggetto costParts.
+          if(copy.costParts) copy.costParts = { ...copy.costParts };
+          items.splice(idx + 1, 0, copy);
           render();
         });
         return;
@@ -3459,7 +3509,7 @@ if("serviceWorker" in navigator) {
         if(!art) return;
         const line  = LINE_ORDER.includes(art.categoria) ? art.categoria : "ALTRO";
         const label = catalogLabel(art);
-        items.push({ id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "", line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift:false });
+        items.push(kitItemFromCatalog(art, line, label));
         render();
         renderPicker();
         toast(`"${label}" aggiunto al kit ✓`, "ok");
@@ -5700,7 +5750,7 @@ tr:last-child td{border-bottom:none}
             if(!art) return;
             const line = art.categoria && LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
             const label = catalogLabel(art);
-            items.push({ id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "", line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value)||1, costMode:"auto", isGift: false });
+            items.push(kitItemFromCatalog(art, line, label));
             render();
             // Resta nell'archivio così si possono aggiungere più articoli di seguito
             renderArticoli();
@@ -6273,9 +6323,7 @@ tr:last-child td{border-bottom:none}
     if(!art) return;
     const line  = LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
     const label = catalogLabel(art);
-    items.push({ id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
-                 line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value) || 1,
-                 costMode: "auto", isGift: false });
+    items.push(kitItemFromCatalog(art, line, label));
     render();
     toast(`"${label}" aggiunto al kit ✓`, "ok");
     showView("builder");
