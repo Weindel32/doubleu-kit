@@ -1688,7 +1688,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v32</span>
+            <span id="buildTxt">build v33</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2914,7 +2914,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v32";
+  const BUILD = "v33";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4436,13 +4436,35 @@ tr:last-child td{border-bottom:none}
     if(row) cloudCatalogRow = row;
   };
 
+  /* Migrazione una tantum del catalogo.
+     Fino alla v32 nel merge vinceva sempre il locale: un articolo cancellato o
+     rinominato sul cloud tornava a comparire al primo avvio e veniva pure
+     risincronizzato, annullando la modifica. Dopo l'import del listino 2026 il
+     cloud deve fare testo una volta sola, su ogni dispositivo. */
+  const CATALOG_MIGRATION_KEY = "doubleu_catalog_migrated_v33";
+  const catalogMigrationPending = () => {
+    // Se lo storage non è leggibile meglio non migrare: si finirebbe per
+    // rifarlo a ogni avvio, sovrascrivendo ogni volta il lavoro locale.
+    try { return localStorage.getItem(CATALOG_MIGRATION_KEY) !== "1"; } catch(e){ return false; }
+  };
+
   // Unione catalogo cloud + locale per nome (il locale, se presente, vince)
   const mergeCatalogFromCloud = () => {
     const cloudItems = Array.isArray(cloudCatalogRow?.data?.items) ? cloudCatalogRow.data.items : [];
     const local = getCatalog();
     if(!cloudItems.length){
+      // Cloud vuoto: non è una migrazione riuscita, il flag resta da fare così
+      // il prossimo avvio riprova invece di lasciare il dispositivo indietro.
       if(local.length) syncCatalogToCloud();
       return;
+    }
+    if(catalogMigrationPending()){
+      try {
+        localStorage.setItem(CATALOG_KEY, JSON.stringify(cloudItems));
+        localStorage.setItem(CATALOG_MIGRATION_KEY, "1");
+      } catch(e) {}
+      renderArticoli();
+      return; // niente merge e niente risincronizzazione: il cloud è la verità
     }
     const byName = new Map();
     cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
