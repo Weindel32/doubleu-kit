@@ -1688,7 +1688,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v29</span>
+            <span id="buildTxt">build v30</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2474,12 +2474,7 @@
               </div>
               <div class="field">
                 <label class="lbl">Categoria / linea</label>
-                <select id="catalogCategoria">
-                  <option value="PREMIUM">Premium</option>
-                  <option value="BASIC">Basic</option>
-                  <option value="LS24">LS24</option>
-                  <option value="ALTRO">Altro</option>
-                </select>
+                <select id="catalogCategoria"></select>
               </div>
             </div>
             <div class="field" style="margin-bottom:12px">
@@ -2595,12 +2590,7 @@
                   </div>
                   <div class="field">
                     <label class="lbl">Linea</label>
-                    <select id="costoCategoria">
-                      <option value="PREMIUM">Premium</option>
-                      <option value="BASIC">Basic</option>
-                      <option value="LS24">LS24</option>
-                      <option value="ALTRO">Altro</option>
-                    </select>
+                    <select id="costoCategoria"></select>
                   </div>
                 </div>
               </div>
@@ -2924,7 +2914,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v29";
+  const BUILD = "v30";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -2971,12 +2961,38 @@ if("serviceWorker" in navigator) {
     ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 
   const ARTICLES = ["T-shirt","T-Shirt Cot.","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone","Cappellino"];
+  // Linee di catalogo. Le prime tre sono storiche; quelle che seguono vengono
+  // dal listino costi DOUBLEU, dove la "Categoria" identifica la famiglia di
+  // capo. Senza elencarle qui finirebbero tutte nella sezione "Altro".
   const LINES = [
     { value:"PREMIUM", label:"Premium" },
     { value:"BASIC",   label:"Basic" },
     { value:"LS24",    label:"LS24" },
+    { value:"T-Shirt PRF", label:"T-Shirt PRF" },
+    { value:"T-Shirt WS", label:"T-Shirt WS" },
+    { value:"T-Shirt Cotone", label:"T-Shirt Cotone" },
+    { value:"Polo", label:"Polo" },
+    { value:"Short", label:"Short" },
+    { value:"Skirt", label:"Skirt" },
+    { value:"Dress", label:"Dress" },
+    { value:"Sweatshirt", label:"Sweatshirt" },
+    { value:"Hoodie", label:"Hoodie" },
+    { value:"Zip Hoodie", label:"Zip Hoodie" },
+    { value:"Sweatpants", label:"Sweatpants" },
     { value:"ALTRO",   label:"Altro" }
   ];
+
+  // I <select> delle linee si riempiono da qui: elencarle a mano nell'HTML
+  // significava che un articolo importato con una categoria nuova, riaperto
+  // nel form, si ritrovava selezionata la prima linea della lista e veniva
+  // riassegnato in silenzio al primo salvataggio.
+  const fillLineSelect = (id) => {
+    const sel = document.getElementById(id);
+    if(!sel || sel.options.length === LINES.length) return;
+    const cur = sel.value;
+    sel.innerHTML = LINES.map(l => `<option value="${esc(l.value)}">${esc(l.label)}</option>`).join("");
+    if(cur) sel.value = cur;
+  };
 
   const REF_COST = {
     PREMIUM: {"T-shirt":15,"T-Shirt Cot.":12,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
@@ -3351,7 +3367,7 @@ if("serviceWorker" in navigator) {
     }
     if(pickerEmpty) pickerEmpty.style.display = "none";
 
-    const LINE_ORDER = ["PREMIUM","BASIC","LS24","ALTRO"];
+    const LINE_ORDER = LINES.map(l => l.value);
     const LINE_LABEL = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" };
     const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
 
@@ -5504,6 +5520,7 @@ tr:last-child td{border-bottom:none}
 
   /* ─── Articoli render ─── */
   const renderArticoli = () => {
+    fillLineSelect("catalogCategoria");
     const catalog = getCatalog();
     const listEl  = document.getElementById("catalogList");
     const emptyEl = document.getElementById("catalogEmpty");
@@ -5515,7 +5532,7 @@ tr:last-child td{border-bottom:none}
       } else {
         if(emptyEl) emptyEl.style.display = "none";
 
-        const LINE_ORDER = ["PREMIUM","BASIC","LS24","ALTRO"];
+        const LINE_ORDER = LINES.map(l => l.value);
         const LINE_LABEL = { PREMIUM:"Premium", BASIC:"Basic", LS24:"LS24", ALTRO:"Altro" };
         const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
 
@@ -5953,6 +5970,7 @@ tr:last-child td{border-bottom:none}
   };
 
   const renderCostoView = () => {
+    fillLineSelect("costoCategoria");
     const tipoSel = document.getElementById("costoTipo");
     if(tipoSel && !tipoSel.options.length)
       tipoSel.innerHTML = CATALOG_TIPI.map(t => `<option value="${t}">${t}</option>`).join("");
