@@ -1695,7 +1695,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v38</span>
+            <span id="buildTxt">build v39</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2748,7 +2748,10 @@
                 <label class="lbl">Larghezza cm</label>
                 <input type="text" id="matLarghezza" placeholder="es. 190" inputmode="decimal">
               </div>
-              <div></div>
+              <div class="field">
+                <label class="lbl">Note <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
+                <input type="text" id="matNote" placeholder="es. felpa garzata, invernale" autocomplete="off">
+              </div>
             </div>
 
             <div class="form-section">
@@ -3022,7 +3025,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v38";
+  const BUILD = "v39";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4634,7 +4637,7 @@ tr:last-child td{border-bottom:none}
 
   const resetMaterialeForm = () => {
     materialeEditId = null;
-    ["matNome","matCodice","matComposizione","matLarghezza","matFornitore","matPeso","matPrezzoKg"].forEach(id => {
+    ["matNome","matCodice","matComposizione","matLarghezza","matFornitore","matPeso","matPrezzoKg","matNote"].forEach(id => {
       const el = document.getElementById(id); if(el) el.value = "";
     });
     const costoEl = document.getElementById("matCostoMetro"); if(costoEl) costoEl.value = "";
@@ -4689,7 +4692,8 @@ tr:last-child td{border-bottom:none}
     const unita = (m.unitaMisura || "metro").toLowerCase().includes("kg") ? "kg" : "metro";
     document.getElementById("matUnita").value = unita;
     document.getElementById("matPeso").value = unita === "kg" ? (m.peso || "") : "";
-    document.getElementById("matPrezzoKg").value = "";
+    document.getElementById("matPrezzoKg").value = Number.isFinite(m.prezzoKg) ? String(m.prezzoKg).replace(".", ",") : "";
+    document.getElementById("matNote").value = m.note || "";
     document.getElementById("matCostoMetro").value = Number.isFinite(m.costoMetro) ? String(m.costoMetro).replace(".", ",") : "";
     aggiornaRigheUnita();
     aggiornaCalcoloPeso();
@@ -4724,12 +4728,13 @@ tr:last-child td{border-bottom:none}
       fornitore: document.getElementById("matFornitore").value.trim() || null,
       unitaMisura: unita === "kg" ? "kg" : "metro",
       peso: unita === "kg" ? (document.getElementById("matPeso").value.trim() || null) : null,
+      // costoMetro è sempre e solo euro al metro: il prezzo al kg ha un campo
+      // suo, perché tenerli nella stessa colonna faceva leggere un prezzo al
+      // kg come se fosse al metro, raddoppiando i costi.
       costoMetro,
+      prezzoKg: unita === "kg" ? (toNum(document.getElementById("matPrezzoKg").value) || null) : null,
+      note: document.getElementById("matNote").value.trim() || null,
     };
-    if(unita === "kg"){
-      const prezzoKg = toNum(document.getElementById("matPrezzoKg").value);
-      if(prezzoKg > 0) row.note = `${String(prezzoKg).replace(".", ",")} €/kg`;
-    }
 
     try {
       if(materialeEditId){
@@ -4770,7 +4775,7 @@ tr:last-child td{border-bottom:none}
       return `<div class="catalog-item">
         <div class="catalog-item-info">
           <div class="catalog-item-name">${titolo}${m.codice ? "" : ' <span class="cat-badge" style="background:var(--warn);color:#fff">senza codice</span>'}</div>
-          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m</div>
+          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m${Number.isFinite(m.prezzoKg) ? ` <span style="color:var(--muted)">(${eur(m.prezzoKg)}/kg × ${esc(String(m.peso || "?"))} g/m)</span>` : ""}</div>
         </div>
         <div class="catalog-item-actions">
           <button class="secondary" style="font-size:12px;padding:5px 10px" data-mact="edit" data-mid="${m.id}">Modifica</button>
