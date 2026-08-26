@@ -1695,7 +1695,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v40</span>
+            <span id="buildTxt">build v41</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2062,10 +2062,15 @@
                 </div>
               </div>
 
-              <div style="margin-bottom:10px">
+              <div style="margin-bottom:10px;display:flex;gap:10px;align-items:end;flex-wrap:wrap">
                 <button class="secondary" id="btnApplyQty" type="button" style="font-size:12px">
                   Usa quantità stimata per tutti
                 </button>
+                <div class="field" style="max-width:210px">
+                  <label class="lbl">Kit staff in omaggio</label>
+                  <input type="text" id="staffOmaggio" placeholder="es. 12" inputmode="numeric">
+                  <div class="hint" id="staffOmaggioNota">Kit completi regalati oltre agli atleti paganti.</div>
+                </div>
               </div>
 
               <!-- Article list rendered by JS -->
@@ -3034,7 +3039,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v40";
+  const BUILD = "v41";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3146,6 +3151,7 @@ if("serviceWorker" in navigator) {
   const offerPrice  = document.getElementById("offerPrice");
   const useOffer    = document.getElementById("useOffer");
   const fixedCost   = document.getElementById("fixedCost");
+  const staffOmaggio= document.getElementById("staffOmaggio");
   const depositPct  = document.getElementById("depositPct");
   const bufferPct   = document.getElementById("bufferPct");
   const applyVAT    = document.getElementById("applyVAT");
@@ -3898,6 +3904,21 @@ if("serviceWorker" in navigator) {
       if(it.isGift){ giftCost += itemCost; if(qty > giftMaxQty) giftMaxQty = qty; }
     });
 
+    /* Kit staff in omaggio: un numero, non delle righe. Il kit dello staff ha
+       la stessa composizione di quello degli atleti, quindi duplicare ogni
+       riga e marcarla a mano voleva dire una dozzina di clic per un dato che
+       è uno solo. Le righe marcate "Omaggio" restano per gli omaggi parziali
+       (solo la t-shirt, solo la felpa), che sono un caso diverso. */
+    const staffInfo      = staffOmaggioInfo();
+    const costoKitBase   = staffInfo.costoKit;
+    const staffKit       = staffInfo.kit;
+    const staffGiftCost  = staffInfo.valore;
+    if(staffGiftCost > 0){
+      variableCost += staffGiftCost;
+      giftCost     += staffGiftCost;
+      if(staffKit > giftMaxQty) giftMaxQty = staffKit;
+    }
+
     // I costi fissi (setup, grafica, spedizione) non scalano con gli atleti:
     // vanno nel costo totale ma restano fuori dal costo variabile usato per
     // proiettare altre quantità.
@@ -3951,11 +3972,19 @@ if("serviceWorker" in navigator) {
       return;
     }
 
-    const revenueNetTarget    = totalCost / (1 - m);
+    /* Il prezzo target nasce dai soli capi fatturati, non dal costo totale.
+       Includendo gli omaggi, il prezzo saliva da solo per farli pagare al
+       club e il margine restava inchiodato al target: aggiungere omaggi non
+       muoveva il margine di un millimetro, e la domanda "quanto mi costa
+       questo regalo" non trovava risposta. Quanto servirebbe chiedere per
+       coprirli resta disponibile in targetPriceCoperto, mostrato a parte. */
+    const revenueNetTarget    = paidCost / (1 - m);
+    const revenueNetCoperto   = totalCost / (1 - m);
     const invoiceTarget       = vatOn ? revenueNetTarget * (1 + vatRate) : revenueNetTarget;
     const invoiceAfterDiscount= invoiceTarget * (1 - disc);
 
     const targetPricePerAthlete  = invoiceTarget / qtyBase;
+    const targetPriceCoperto     = (vatOn ? revenueNetCoperto * (1 + vatRate) : revenueNetCoperto) / qtyBase;
 
     // Prezzo minimo di trattativa: il pavimento vero, cioè il prezzo che lascia
     // ancora il margine minimo che si è disposti ad accettare. Prima era il
@@ -4052,6 +4081,12 @@ if("serviceWorker" in navigator) {
     // mostrato è lordo se l'IVA è attiva: va detto esplicitamente, perché
     // non è ovvio a colpo d'occhio quanto lo è per "Prezzo per atleta"
     // (che ha già la sua nota kVatNote).
+    // L'effetto va detto dove si digita il numero, non solo tre schermate più
+    // in là: è lì che si sta decidendo quanti kit regalare.
+    setText("staffOmaggioNota", staffKit > 0
+      ? `${staffKit} kit × ${eur(costoKitBase)} = ${eur(staffGiftCost)} · margine ${(realMargin*100).toFixed(1)}% · per restare al ${(m*100).toFixed(0)}% servirebbero ${eur(targetPriceCoperto)}/atleta`
+      : "Kit completi regalati oltre agli atleti paganti.");
+
     const minPriceVatTxt = vatOn ? "IVA inclusa" : "netto, no IVA";
     setText("kMinPriceLiveNote", `Prezzo minimo trattativa per atleta · ${minPriceVatTxt}`);
 
@@ -4060,9 +4095,26 @@ if("serviceWorker" in navigator) {
     const boxOmaggi = document.getElementById("kpiOmaggi");
     if(boxOmaggi){
       const plur = (n, s, p) => `${n} ${n === 1 ? s : p}`;
-      if(budgetOmaggi <= 0.005){
-        // Niente margine di manovra: mostrarlo a zero sarebbe solo rumore,
-        // e il prezzo minimo dice già che non c'è spazio.
+      // Quanto si è oltre: negativo finché c'è spazio, positivo quando gli
+      // omaggi hanno già sfondato il margine minimo.
+      const sforo = totalCost - ricavoRiferimento * (1 - mMin);
+      if(budgetOmaggi <= 0.005 && giftCost > 0){
+        /* Sopra il limite il riquadro non va nascosto: è proprio il momento in
+           cui serve. Sparendo, l'unico segnale sarebbe il margine in rosso
+           qualche riquadro più su, senza dire di quanto si è esagerato né
+           quanti kit togliere per rientrare. */
+        boxOmaggi.style.display = "";
+        const daTogliere = omaggioPerPersona > 0 ? Math.ceil(sforo / omaggioPerPersona - 1e-9) : 0;
+        setText("kOmaggiVal", sforo > 0.005 ? "hai esagerato" : "sei al limite");
+        setText("kOmaggiNote", sforo > 0.005
+          ? `Stai omaggiando ${plur(giftMaxQty, "persona", "persone")} per ${eur(giftCost)}: sono ${eur(sforo)} di troppo, il margine è sceso al ${(realMargin*100).toFixed(1)}%`
+          : `Stai omaggiando ${plur(giftMaxQty, "persona", "persone")} per ${eur(giftCost)}: sei esattamente al minimo del ${(mMin*100).toFixed(0)}%`);
+        setText("kOmaggiDettaglio", sforo > 0.005 && daTogliere > 0
+          ? `Togline ${daTogliere} per rientrare, oppure chiedi ${eur(targetPriceCoperto)} per atleta.`
+          : `Per restare al ${(m*100).toFixed(0)}% dovresti chiedere ${eur(targetPriceCoperto)} per atleta.`);
+      } else if(budgetOmaggi <= 0.005){
+        // Nessun omaggio e nessuno spazio: il prezzo minimo lo dice già,
+        // ripeterlo a zero sarebbe solo rumore.
         boxOmaggi.style.display = "none";
       } else if(omaggioPerPersona > 0){
         boxOmaggi.style.display = "";
@@ -4071,7 +4123,7 @@ if("serviceWorker" in navigator) {
         setText("kOmaggiNote",
           `Stai omaggiando ${plur(giftMaxQty, "persona", "persone")} × ${eur(omaggioPerPersona)} = ${eur(giftCost)} · restano ${eur(budgetOmaggi)}`);
         setText("kOmaggiDettaglio",
-          `Stesso margine di manovra del prezzo minimo (${(mMin*100).toFixed(0)}%): se scendi col prezzo, questo spazio si riduce.`);
+          `Te li stai prendendo tu: per restare al ${(m*100).toFixed(0)}% dovresti chiedere ${eur(targetPriceCoperto)} per atleta invece di ${eur(pricePerAthlete)}.`);
       } else {
         boxOmaggi.style.display = "";
         setText("kOmaggiVal", costoKitCompleto > 0
@@ -4188,6 +4240,17 @@ if("serviceWorker" in navigator) {
     saveDraft();
   };
 
+  /* Valore dei kit staff in omaggio. Riepilogo testuale e PDF ricalcolano i
+     costi per conto loro: senza un punto solo da cui leggerlo, il regalo
+     sparirebbe dai documenti che si mandano al club. */
+  const staffOmaggioInfo = () => {
+    const q       = toNum(qtyEst.value) > 0 ? toNum(qtyEst.value) : 1;
+    const nonGift = items.reduce((a, it) => a + (!it.isGift ? (toNum(it.base) + toNum(it.extra)) * toNum(it.qty) : 0), 0);
+    const kit     = Math.max(0, Math.floor(toNum(staffOmaggio?.value)));
+    const costoKit= nonGift / q;
+    return { kit, costoKit, valore: kit * costoKit };
+  };
+
   const addItem = () => { items.push(newItem()); render(); };
 
   const applyQtyToRows = () => {
@@ -4208,6 +4271,7 @@ if("serviceWorker" in navigator) {
     priceIncludesVAT.checked = true;
     depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
     fixedCost.value   = "";
+    if(staffOmaggio) staffOmaggio.value = "";
     items = [];
     render(); showAlerts([]);
     togglePicker(false);
@@ -4241,6 +4305,9 @@ if("serviceWorker" in navigator) {
       const codePrefix = it.code ? `[${it.code}] ` : "";
       lines.push(`- ${codePrefix}${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
     });
+    const staffCopy = staffOmaggioInfo();
+    if(staffCopy.kit > 0)
+      lines.push(`- Kit staff in omaggio | qty ${staffCopy.kit} | ${eur(staffCopy.costoKit)} cad. | OMAGGIO (valore ${eur(staffCopy.valore)})`);
     if(toNum(fixedCost.value) > 0) lines.push(`Costi fissi una-tantum: ${eur(toNum(fixedCost.value))}`);
     lines.push(``);
     lines.push(`RIEPILOGO:`);
@@ -4289,7 +4356,9 @@ if("serviceWorker" in navigator) {
     const vatOn     = !!applyVAT.checked;
     const usingOff  = !!useOffer.checked && toNum(offerPrice.value) > 0;
 
-    const giftCostPDF = items.reduce((a,it) => a + (it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0);
+    const staffPDF    = staffOmaggioInfo();
+    const giftCostPDF = items.reduce((a,it) => a + (it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0)
+                        + staffPDF.valore;
     const fixedPDF    = Math.max(0, toNum(fixedCost.value));
     const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0) + fixedPDF;
     const itemsRows   = items.map(it => {
@@ -4304,7 +4373,14 @@ if("serviceWorker" in navigator) {
         <td style="font-weight:700">${toNum(it.qty)}</td>
         <td style="font-weight:800;color:${it.isGift ? '#E87C2B' : '#0A4174'}">${sub > 0 ? eur(sub) : "—"}</td>
       </tr>`;
-    }).join("");
+    }).join("") + (staffPDF.kit > 0 ? `<tr style="background:rgba(232,124,43,.04)">
+        <td>Kit staff completo<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span></td>
+        <td>—</td>
+        <td>${eur(staffPDF.costoKit)}</td>
+        <td>${eur(0)}</td>
+        <td style="font-weight:700">${staffPDF.kit}</td>
+        <td style="font-weight:800;color:#E87C2B">${eur(staffPDF.valore)}</td>
+      </tr>` : "");
 
     const offerPill   = usingOff
       ? `<div class="pill"><span>Prezzo proposto</span>${esc(offerPrice.value)} € ${vatOn ? "(IVA incl.)" : "(netto)"}</div>` : "";
@@ -4465,6 +4541,7 @@ tr:last-child td{border-bottom:none}
     bufferPct: bufferPct.value,
     applyVAT: applyVAT.checked,
     fixedCost: fixedCost.value || "",
+    staffOmaggio: staffOmaggio?.value || "",
     items
   });
 
@@ -4483,6 +4560,7 @@ tr:last-child td{border-bottom:none}
     bufferPct.value   = p.bufferPct   ?? "5";
     applyVAT.checked  = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
     fixedCost.value   = p.fixedCost   ?? "";
+    if(staffOmaggio) staffOmaggio.value = p.staffOmaggio ?? "";
     items = Array.isArray(p.items) ? p.items : [];
     render();
     updateSidebarKit();
@@ -6701,6 +6779,7 @@ tr:last-child td{border-bottom:none}
       bindCalc(bufferPct);
       bindCalc(applyVAT,          "change");
       bindCalc(fixedCost);
+      bindCalc(staffOmaggio);
       const discountScaleEl = document.getElementById("discountScale");
       if(discountScaleEl) bindCalc(discountScaleEl);
       const qtyScaleEl = document.getElementById("qtyScale");
