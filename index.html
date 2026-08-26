@@ -1629,6 +1629,13 @@
           Costo articolo
         </a>
 
+        <a class="nav-item" href="javascript:void(0)" data-view="materiali">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M4 4l12 12M4 4v5.5M4 4h5.5M16 16v-5.5M16 16h-5.5"/>
+          </svg>
+          Materiali
+        </a>
+
         <a class="nav-item" href="javascript:void(0)" data-view="esportazioni">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M10 3v10M6.5 9.5L10 13l3.5-3.5"/>
@@ -1688,7 +1695,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v36</span>
+            <span id="buildTxt">build v37</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2700,6 +2707,88 @@
           </div>
         </div><!-- /costoView -->
 
+        <!-- ── Materiali View ── -->
+        <div id="materialiView" style="display:none">
+          <div class="dash-header">
+            <div>
+              <div class="dash-welcome">Materiali</div>
+              <div class="dash-sub">Anagrafica tessuti condivisa con le schede tecniche: nome, composizione, peso, fornitore. Il costo al metro si può calcolare da solo per i tessuti venduti a peso.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="ghost" id="btnMaterialiRefresh" type="button">Aggiorna</button>
+            </div>
+          </div>
+
+          <div class="hint" id="materialiError" style="display:none;margin-bottom:14px"></div>
+
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-title">Nuovo tessuto</div>
+            <div class="row2" style="margin-bottom:12px">
+              <div class="field">
+                <label class="lbl">Nome</label>
+                <input type="text" id="matNome" placeholder="es. Diego Felpa" autocomplete="off">
+              </div>
+              <div class="field">
+                <label class="lbl">Composizione</label>
+                <input type="text" id="matComposizione" placeholder="es. 100% Cotone" autocomplete="off">
+              </div>
+            </div>
+            <div class="row2" style="margin-bottom:12px">
+              <div class="field">
+                <label class="lbl">Larghezza cm</label>
+                <input type="text" id="matLarghezza" placeholder="es. 190" inputmode="decimal">
+              </div>
+              <div class="field">
+                <label class="lbl">Fornitore</label>
+                <input type="text" id="matFornitore" placeholder="es. CTA" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-lbl">Costo al metro</div>
+              <div class="row2" style="margin-bottom:10px">
+                <div class="field">
+                  <label class="lbl">Venduto a</label>
+                  <select id="matUnita">
+                    <option value="metro">Metro</option>
+                    <option value="kg">Peso (kg)</option>
+                  </select>
+                </div>
+                <div></div>
+              </div>
+              <div class="row2" id="matRigaMetro">
+                <div class="field">
+                  <label class="lbl">Costo al metro €</label>
+                  <input type="text" id="matCostoMetro" placeholder="0,00" inputmode="decimal">
+                </div>
+                <div></div>
+              </div>
+              <div class="row2" id="matRigaKg" style="display:none">
+                <div class="field">
+                  <label class="lbl">Peso g/m lineare</label>
+                  <input type="text" id="matPeso" placeholder="es. 660" inputmode="decimal">
+                </div>
+                <div class="field">
+                  <label class="lbl">Prezzo al kg €</label>
+                  <input type="text" id="matPrezzoKg" placeholder="es. 9,50" inputmode="decimal">
+                </div>
+              </div>
+              <div class="hint" id="matCalcNota" style="margin-top:6px"></div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:14px">
+              <button class="primary" id="btnMaterialeSave" type="button">Salva tessuto</button>
+              <button class="ghost" id="btnMaterialeNew" type="button" style="display:none">Nuovo</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Tessuti registrati</div>
+            <div id="materialiEmpty" class="hint" style="display:none">Nessun tessuto registrato.</div>
+            <div id="materialiList"></div>
+          </div>
+        </div><!-- /materialiView -->
+
         <!-- ── Esportazioni View ── -->
         <div id="esportazioniView" style="display:none">
           <div class="dash-header">
@@ -2945,7 +3034,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v36";
+  const BUILD = "v37";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4560,6 +4649,191 @@ tr:last-child td{border-bottom:none}
   const tessutoByNome = (nome) =>
     getTessuti().find(t => (t.nome || "").toLowerCase() === String(nome || "").toLowerCase()) || null;
 
+  /* ─── Materiali (tabella "Materiale", condivisa con le schede tecniche) ───
+     A differenza di catalogo/impostazioni/tessuti — righe speciali dentro
+     "projects" — questa è una tabella Supabase vera e propria, già usata
+     dall'altra app. Niente localStorage: si legge e scrive sempre dal cloud. */
+  let materiali = [];
+  let materialeEditId = null;
+
+  const loadMateriali = async () => {
+    if(!supabase) return;
+    const errEl = document.getElementById("materialiError");
+    try {
+      const { data, error } = await supabase.from("Materiale").select("*").order("nome");
+      if(error){
+        console.error("Materiale load error:", error);
+        if(errEl){ errEl.textContent = "Errore caricamento tessuti: " + error.message; errEl.style.display = ""; }
+        return;
+      }
+      if(errEl) errEl.style.display = "none";
+      materiali = Array.isArray(data) ? data : [];
+    } catch(e){
+      console.error("Materiale load exception:", e);
+      if(errEl){ errEl.textContent = "Errore di connessione al caricare i tessuti"; errEl.style.display = ""; }
+    }
+  };
+
+  const resetMaterialeForm = () => {
+    materialeEditId = null;
+    ["matNome","matComposizione","matLarghezza","matFornitore","matPeso","matPrezzoKg"].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = "";
+    });
+    const costoEl = document.getElementById("matCostoMetro"); if(costoEl) costoEl.value = "";
+    const unitaEl = document.getElementById("matUnita"); if(unitaEl) unitaEl.value = "metro";
+    const btnNew = document.getElementById("btnMaterialeNew"); if(btnNew) btnNew.style.display = "none";
+    const btnSave = document.getElementById("btnMaterialeSave"); if(btnSave) btnSave.textContent = "Salva tessuto";
+    aggiornaRigheUnita();
+    aggiornaCalcoloPeso();
+  };
+
+  const aggiornaRigheUnita = () => {
+    const unita = document.getElementById("matUnita")?.value || "metro";
+    const rMetro = document.getElementById("matRigaMetro");
+    const rKg    = document.getElementById("matRigaKg");
+    if(rMetro) rMetro.style.display = unita === "metro" ? "" : "none";
+    if(rKg)    rKg.style.display    = unita === "kg"    ? "" : "none";
+  };
+
+  // Il tessuto venduto a peso non ha un €/m fisso: dipende da quanto pesa un
+  // metro lineare. Il €/kg non è una colonna della tabella condivisa, quindi
+  // il risultato finisce in costoMetro (come fa già chi la popola a mano) e il
+  // €/kg resta leggibile nella nota, senza toccare lo schema di Materiale.
+  const aggiornaCalcoloPeso = () => {
+    const unita = document.getElementById("matUnita")?.value || "metro";
+    const nota  = document.getElementById("matCalcNota");
+    if(unita !== "kg"){ if(nota) nota.textContent = ""; return; }
+    const pesoG   = toNum(document.getElementById("matPeso")?.value);
+    const prezzoKg= toNum(document.getElementById("matPrezzoKg")?.value);
+    const costoEl = document.getElementById("matCostoMetro");
+    if(pesoG > 0 && prezzoKg > 0){
+      const costoMetro = Math.round((pesoG / 1000) * prezzoKg * 100) / 100;
+      if(costoEl) costoEl.value = String(costoMetro).replace(".", ",");
+      if(nota) nota.textContent = `${String(pesoG).replace(".", ",")} g/m ÷ 1000 × ${eur(prezzoKg)}/kg = ${eur(costoMetro)}/m`;
+    } else if(nota){
+      nota.textContent = "Inserisci peso e prezzo al kg per calcolarlo.";
+    }
+  };
+
+  document.getElementById("matUnita")?.addEventListener("change", () => { aggiornaRigheUnita(); aggiornaCalcoloPeso(); });
+  document.getElementById("matPeso")?.addEventListener("input", aggiornaCalcoloPeso);
+  document.getElementById("matPrezzoKg")?.addEventListener("input", aggiornaCalcoloPeso);
+
+  const loadMaterialeInForm = (id) => {
+    const m = materiali.find(x => x.id === id);
+    if(!m) return;
+    materialeEditId = id;
+    document.getElementById("matNome").value = m.nome || "";
+    document.getElementById("matComposizione").value = m.composizione || "";
+    document.getElementById("matLarghezza").value = m.larghezza || "";
+    document.getElementById("matFornitore").value = m.fornitore || "";
+    const unita = (m.unitaMisura || "metro").toLowerCase().includes("kg") ? "kg" : "metro";
+    document.getElementById("matUnita").value = unita;
+    document.getElementById("matPeso").value = unita === "kg" ? (m.peso || "") : "";
+    document.getElementById("matPrezzoKg").value = "";
+    document.getElementById("matCostoMetro").value = Number.isFinite(m.costoMetro) ? String(m.costoMetro).replace(".", ",") : "";
+    aggiornaRigheUnita();
+    aggiornaCalcoloPeso();
+    document.getElementById("btnMaterialeNew").style.display = "";
+    document.getElementById("btnMaterialeSave").textContent = "Aggiorna tessuto";
+    document.getElementById("materialiView")?.scrollIntoView({ behavior:"smooth", block:"start" });
+  };
+
+  document.getElementById("btnMaterialeNew")?.addEventListener("click", resetMaterialeForm);
+
+  document.getElementById("btnMaterialeSave")?.addEventListener("click", async () => {
+    if(!supabase){ toast("Cloud non disponibile", "err"); return; }
+    const nome = document.getElementById("matNome").value.trim();
+    if(!nome){ toast("Dai un nome al tessuto", "warn"); return; }
+    const unita = document.getElementById("matUnita").value;
+    const costoMetro = toNum(document.getElementById("matCostoMetro").value);
+    if(costoMetro <= 0){ toast("Manca il costo al metro (o i dati per calcolarlo)", "warn"); return; }
+
+    const row = {
+      nome,
+      tipo: "Tessuto",
+      composizione: document.getElementById("matComposizione").value.trim() || null,
+      larghezza: document.getElementById("matLarghezza").value.trim() || null,
+      fornitore: document.getElementById("matFornitore").value.trim() || null,
+      unitaMisura: unita === "kg" ? "kg" : "metro",
+      peso: unita === "kg" ? (document.getElementById("matPeso").value.trim() || null) : null,
+      costoMetro,
+    };
+    if(unita === "kg"){
+      const prezzoKg = toNum(document.getElementById("matPrezzoKg").value);
+      if(prezzoKg > 0) row.note = `${String(prezzoKg).replace(".", ",")} €/kg`;
+    }
+
+    try {
+      if(materialeEditId){
+        const { error } = await supabase.from("Materiale").update(row).eq("id", materialeEditId);
+        if(error){ console.error("Materiale update:", error); toast("Errore salvataggio: " + error.message, "err"); return; }
+        toast("Tessuto aggiornato ✓", "ok");
+      } else {
+        row.id = uid();
+        const { error } = await supabase.from("Materiale").insert([row]);
+        if(error){ console.error("Materiale insert:", error); toast("Errore salvataggio: " + error.message, "err"); return; }
+        toast("Tessuto aggiunto ✓", "ok");
+      }
+      await loadMateriali();
+      resetMaterialeForm();
+      renderMaterialiList();
+    } catch(e){
+      console.error("Materiale save exception:", e);
+      toast("Errore di connessione", "err");
+    }
+  });
+
+  const renderMaterialiList = () => {
+    const list  = document.getElementById("materialiList");
+    const empty = document.getElementById("materialiEmpty");
+    if(!list) return;
+    if(!materiali.length){
+      list.innerHTML = "";
+      if(empty) empty.style.display = "";
+      return;
+    }
+    if(empty) empty.style.display = "none";
+    list.innerHTML = materiali.map(m => {
+      const dettagli = [m.composizione, m.larghezza ? `${m.larghezza} cm` : "", m.fornitore]
+        .filter(Boolean).join(" · ");
+      return `<div class="catalog-item">
+        <div class="catalog-item-info">
+          <div class="catalog-item-name">${esc(m.nome)}</div>
+          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m</div>
+        </div>
+        <div class="catalog-item-actions">
+          <button class="secondary" style="font-size:12px;padding:5px 10px" data-mact="edit" data-mid="${m.id}">Modifica</button>
+          <button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-mact="del" data-mid="${m.id}">✕</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    list.querySelectorAll("[data-mact='edit']").forEach(btn => {
+      btn.addEventListener("click", () => loadMaterialeInForm(btn.getAttribute("data-mid")));
+    });
+    list.querySelectorAll("[data-mact='del']").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-mid");
+        const m  = materiali.find(x => x.id === id);
+        if(!m) return;
+        if(!confirm(`Eliminare il tessuto "${m.nome}"? È condiviso con le schede tecniche: se è in uso lì, sparirebbe anche da quelle schede.`)) return;
+        const { error } = await supabase.from("Materiale").delete().eq("id", id);
+        if(error){ console.error("Materiale delete:", error); toast("Errore eliminazione: " + error.message, "err"); return; }
+        await loadMateriali();
+        renderMaterialiList();
+        toast("Tessuto eliminato ✓", "ok");
+      });
+    });
+  };
+
+  const renderMateriali = async () => {
+    await loadMateriali();
+    renderMaterialiList();
+  };
+
+  document.getElementById("btnMaterialiRefresh")?.addEventListener("click", renderMateriali);
+
   /* Migrazione una tantum del catalogo.
      Fino alla v32 nel merge vinceva sempre il locale: un articolo cancellato o
      rinominato sul cloud tornava a comparire al primo avvio e veniva pure
@@ -4983,8 +5257,8 @@ tr:last-child td{border-bottom:none}
 
   const VIEW_TITLES = {
     dashboard:"Dashboard", builder:"Kit builder",
-    analisi:"Analisi", articoli:"Articoli", costo:"Costo articolo", esportazioni:"Esportazioni",
-    impostazioni:"Impostazioni"
+    analisi:"Analisi", articoli:"Articoli", costo:"Costo articolo", materiali:"Materiali",
+    esportazioni:"Esportazioni", impostazioni:"Impostazioni"
   };
   const ALL_VIEWS = Object.keys(VIEW_TITLES);
 
@@ -5010,6 +5284,7 @@ tr:last-child td{border-bottom:none}
       analisi:      renderAnalisi,
       articoli:     renderArticoli,
       costo:        renderCostoView,
+      materiali:    renderMateriali,
       impostazioni: renderImpostazioni,
     };
     if(renderFns[view]) renderFns[view]();
