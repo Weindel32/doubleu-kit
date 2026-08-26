@@ -312,6 +312,19 @@
 
     .form-section:last-child { margin-bottom: 0; }
 
+    /* Il campo dei kit staff vuole poca larghezza, l'esito del calcolo molta:
+       stretti nella stessa colonna, i tre numeri si spezzavano su quattro
+       righe mentre metà scheda restava vuota. */
+    .staff-omaggio-row { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+    .staff-omaggio-campo { flex: 0 0 132px; }
+    .staff-omaggio-esito { flex: 1 1 260px; min-width: 0; }
+    .staff-omaggio-esito .hint { margin: 6px 2px 0; }
+    .staff-omaggio-esito .kpi-mini-list { border-top: none; margin-top: 0; padding-top: 0; }
+    .staff-omaggio-esito .kpi-mini { padding: 5px 2px; }
+    @media (max-width: 560px) {
+      .staff-omaggio-campo { flex: 1 1 100%; }
+    }
+
     .section-lbl {
       font-size: 10px; font-weight: 700; color: var(--muted);
       text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px;
@@ -1695,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v41</span>
+            <span id="buildTxt">build v42</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2062,14 +2075,20 @@
                 </div>
               </div>
 
-              <div style="margin-bottom:10px;display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+              <div style="margin-bottom:12px">
                 <button class="secondary" id="btnApplyQty" type="button" style="font-size:12px">
                   Usa quantità stimata per tutti
                 </button>
-                <div class="field" style="max-width:210px">
-                  <label class="lbl">Kit staff in omaggio</label>
-                  <input type="text" id="staffOmaggio" placeholder="es. 12" inputmode="numeric">
-                  <div class="hint" id="staffOmaggioNota">Kit completi regalati oltre agli atleti paganti.</div>
+              </div>
+
+              <div class="form-section" style="margin-bottom:14px">
+                <div class="section-lbl">Omaggi allo staff</div>
+                <div class="staff-omaggio-row">
+                  <div class="field staff-omaggio-campo">
+                    <label class="lbl">Kit completi</label>
+                    <input type="text" id="staffOmaggio" placeholder="es. 12" inputmode="numeric">
+                  </div>
+                  <div class="staff-omaggio-esito" id="staffOmaggioNota"></div>
                 </div>
               </div>
 
@@ -3039,7 +3058,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v41";
+  const BUILD = "v42";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4082,10 +4101,22 @@ if("serviceWorker" in navigator) {
     // non è ovvio a colpo d'occhio quanto lo è per "Prezzo per atleta"
     // (che ha già la sua nota kVatNote).
     // L'effetto va detto dove si digita il numero, non solo tre schermate più
-    // in là: è lì che si sta decidendo quanti kit regalare.
-    setText("staffOmaggioNota", staffKit > 0
-      ? `${staffKit} kit × ${eur(costoKitBase)} = ${eur(staffGiftCost)} · margine ${(realMargin*100).toFixed(1)}% · per restare al ${(m*100).toFixed(0)}% servirebbero ${eur(targetPriceCoperto)}/atleta`
-      : "Kit completi regalati oltre agli atleti paganti.");
+    // in là: è lì che si sta decidendo quanti kit regalare. Tre righe corte
+    // invece di una frase: la frase si spezzava su più righe nella colonna
+    // stretta e lasciava vuoto tutto lo spazio a destra del campo.
+    const staffNotaEl = document.getElementById("staffOmaggioNota");
+    if(staffNotaEl){
+      if(staffKit > 0){
+        const margineClass = realMargin >= m ? "good" : (realMargin >= mMin ? "warn" : "bad");
+        staffNotaEl.innerHTML = `<div class="kpi-mini-list">
+          <div class="kpi-mini"><span class="kpi-mini-lbl">Valore regalato</span><span class="kpi-mini-val">${staffKit} kit · ${eur(staffGiftCost)}</span></div>
+          <div class="kpi-mini ${margineClass}"><span class="kpi-mini-lbl">Margine con questo omaggio</span><span class="kpi-mini-val">${(realMargin*100).toFixed(1)}%</span></div>
+          <div class="kpi-mini"><span class="kpi-mini-lbl">Per restare al ${(m*100).toFixed(0)}% servirebbero</span><span class="kpi-mini-val">${eur(targetPriceCoperto)}/atleta</span></div>
+        </div>`;
+      } else {
+        staffNotaEl.innerHTML = '<div class="hint">Kit completi regalati oltre agli atleti paganti.</div>';
+      }
+    }
 
     const minPriceVatTxt = vatOn ? "IVA inclusa" : "netto, no IVA";
     setText("kMinPriceLiveNote", `Prezzo minimo trattativa per atleta · ${minPriceVatTxt}`);
