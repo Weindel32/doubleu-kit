@@ -1695,7 +1695,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v37</span>
+            <span id="buildTxt">build v38</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2712,7 +2712,7 @@
           <div class="dash-header">
             <div>
               <div class="dash-welcome">Materiali</div>
-              <div class="dash-sub">Anagrafica tessuti condivisa con le schede tecniche: nome, composizione, peso, fornitore. Il costo al metro si può calcolare da solo per i tessuti venduti a peso.</div>
+              <div class="dash-sub">Unica anagrafica tessuti, condivisa con le schede tecniche: nome, composizione, peso, fornitore. Il codice (es. COT330) è il riferimento stabile usato in Distinta e nel kit builder — rinominare un tessuto non rompe gli articoli che lo usano già. Il costo al metro si può calcolare da solo per i tessuti venduti a peso.</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="ghost" id="btnMaterialiRefresh" type="button">Aggiorna</button>
@@ -2729,8 +2729,18 @@
                 <input type="text" id="matNome" placeholder="es. Diego Felpa" autocomplete="off">
               </div>
               <div class="field">
+                <label class="lbl">Codice <span style="font-weight:400;color:var(--muted)">(fibra + grammatura, es. COT330, COPL330-G)</span></label>
+                <input type="text" id="matCodice" placeholder="es. CO350" autocomplete="off" style="text-transform:uppercase">
+              </div>
+            </div>
+            <div class="row2" style="margin-bottom:12px">
+              <div class="field">
                 <label class="lbl">Composizione</label>
                 <input type="text" id="matComposizione" placeholder="es. 100% Cotone" autocomplete="off">
+              </div>
+              <div class="field">
+                <label class="lbl">Fornitore</label>
+                <input type="text" id="matFornitore" placeholder="es. CTA" autocomplete="off">
               </div>
             </div>
             <div class="row2" style="margin-bottom:12px">
@@ -2738,10 +2748,7 @@
                 <label class="lbl">Larghezza cm</label>
                 <input type="text" id="matLarghezza" placeholder="es. 190" inputmode="decimal">
               </div>
-              <div class="field">
-                <label class="lbl">Fornitore</label>
-                <input type="text" id="matFornitore" placeholder="es. CTA" autocomplete="off">
-              </div>
+              <div></div>
             </div>
 
             <div class="form-section">
@@ -2846,25 +2853,6 @@
             <div>
               <div class="dash-welcome">Impostazioni</div>
               <div class="dash-sub">Valori predefiniti per i nuovi preventivi, backup dei dati e stato account.</div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-title">Tessuti</div>
-            <div class="hint" style="margin-bottom:14px">Prezzo al metro di ogni tessuto. Serve nella distinta: scegliendo un tessuto, il costo si calcola da solo come consumo × prezzo al metro. Cambiare un prezzo qui non ritocca gli articoli già in catalogo.</div>
-            <table class="soglia-table" style="margin-bottom:12px"><tbody id="tessutiBody"></tbody></table>
-            <div class="row2" style="align-items:end">
-              <div>
-                <label>Nuovo tessuto</label>
-                <input id="tessutoNuovoNome" placeholder="es. COT400" autocomplete="off">
-              </div>
-              <div style="display:flex;gap:8px;align-items:end">
-                <div style="flex:1">
-                  <label>Prezzo al metro €</label>
-                  <input id="tessutoNuovoPrezzo" placeholder="0,00" inputmode="decimal">
-                </div>
-                <button class="secondary" id="btnTessutoAdd" type="button">Aggiungi</button>
-              </div>
             </div>
           </div>
 
@@ -3034,7 +3022,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v37";
+  const BUILD = "v38";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3324,10 +3312,10 @@ if("serviceWorker" in navigator) {
       // copia della distinta, l'articolo di catalogo non viene mai toccato.
       const cp = it.costParts;
       const tessutoRow = cp ? (() => {
-        const nomi = getTessuti().map(t => t.nome).filter(Boolean);
+        const codici = tessutiCodificati().map(m => m.codice);
         const cur  = (cp.tessuto_default || "").trim();
-        if(cur && !nomi.some(n => n.toLowerCase() === cur.toLowerCase())) nomi.push(cur);
-        const opts = nomi.map(n => `<option value="${esc(n)}" ${n===cur ? "selected" : ""}>${esc(n)}</option>`).join("");
+        if(cur && !codici.some(c => c.toLowerCase() === cur.toLowerCase())) codici.push(cur);
+        const opts = codici.map(c => `<option value="${esc(c)}" ${c===cur ? "selected" : ""}>${esc(c)}</option>`).join("");
         const consumoStr = cp.consumo_default ? String(cp.consumo_default).replace(".", ",") : "";
         return `<div class="art-tessuto" style="display:flex;gap:6px;align-items:center;margin-top:4px">
           <select data-act="tessuto" data-id="${it.id}" style="font-size:11px;padding:3px 6px;flex:1;min-width:0">${opts}</select>
@@ -3433,11 +3421,11 @@ if("serviceWorker" in navigator) {
           const it = find(); if(!it || !it.costParts) return;
           if(act === "tessuto") it.costParts.tessuto_default = el.value;
           if(act === "consumo") it.costParts.consumo_default = Math.max(0, toNum(el.value));
-          const t = tessutoByNome(it.costParts.tessuto_default);
+          const t = tessutoByCodice(it.costParts.tessuto_default);
           const m = toNum(it.costParts.consumo_default);
           if(t && m > 0){
             const cent = (n) => Math.round(n * 100) / 100;
-            it.costParts.tessuto = cent(toNum(t.prezzoMetro) * m);
+            it.costParts.tessuto = cent(toNum(t.costoMetro) * m);
             const altreVoci = ["taglio","produzione","accessori","etichetta","altro"]
               .reduce((s, k) => s + toNum(it.costParts[k]), 0);
             it.base = cent(altreVoci + it.costParts.tessuto);
@@ -4469,10 +4457,8 @@ tr:last-child td{border-bottom:none}
       // Righe speciali (catalogo, impostazioni): non sono kit, vanno separate
       cloudCatalogRow  = all.find(p => p.name === CLOUD_CATALOG_NAME)  || cloudCatalogRow;
       cloudSettingsRow = all.find(p => p.name === CLOUD_SETTINGS_NAME) || cloudSettingsRow;
-      cloudTessutiRow  = all.find(p => p.name === CLOUD_TESSUTI_NAME)  || cloudTessutiRow;
       cloudProjects = all.filter(p => !SPECIAL_ROW_NAMES.includes(p.name));
       mergeCatalogFromCloud();
-      applyCloudTessuti();
       applyCloudSettings();
       if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit caricati`, "ok");
       else toast("☁ Nessun kit nel cloud", "warn");
@@ -4576,11 +4562,9 @@ tr:last-child td{border-bottom:none}
      impostazioni sopravvivono anche se iOS azzera lo storage locale. */
   const CLOUD_CATALOG_NAME  = "__catalog__";
   const CLOUD_SETTINGS_NAME = "__settings__";
-  const CLOUD_TESSUTI_NAME  = "__tessuti__";
-  const SPECIAL_ROW_NAMES   = [CLOUD_CATALOG_NAME, CLOUD_SETTINGS_NAME, CLOUD_TESSUTI_NAME];
+  const SPECIAL_ROW_NAMES   = [CLOUD_CATALOG_NAME, CLOUD_SETTINGS_NAME];
   let cloudCatalogRow  = null;
   let cloudSettingsRow = null;
-  let cloudTessutiRow  = null;
 
   const saveSpecialRow = async (rowName, payloadObj, cachedRow) => {
     if(!supabase) return null;
@@ -4610,51 +4594,25 @@ tr:last-child td{border-bottom:none}
     if(row) cloudCatalogRow = row;
   };
 
-  /* ─── Anagrafica tessuti ───
-     Prezzo al metro di ogni tessuto: nella distinta il costo del tessuto
-     diventa consumo × prezzo, invece di un numero da ricalcolare a mano ogni
-     volta che un capo si fa con un cotone diverso. I valori di partenza sono
-     quelli ricavati dal listino costi 2026 (Costo materiale ÷ Consumo). */
-  const TESSUTI_KEY = "doubleu_tessuti_v1";
-  const TESSUTI_INIZIALI = [
-    { nome:"PAM2",   prezzoMetro: 4.50 },
-    { nome:"PAM",    prezzoMetro: 4.00 },
-    { nome:"COT180", prezzoMetro: 2.68 },
-    { nome:"COT280", prezzoMetro: 4.15 },
-    { nome:"COT330", prezzoMetro: 4.76 },
-  ];
-  const getTessuti = () => {
-    try {
-      const r = localStorage.getItem(TESSUTI_KEY);
-      const v = r ? JSON.parse(r) : null;
-      return Array.isArray(v) ? v : TESSUTI_INIZIALI.map(t => ({ ...t }));
-    } catch(e){ return TESSUTI_INIZIALI.map(t => ({ ...t })); }
-  };
-  const setTessuti = (arr) => {
-    try { localStorage.setItem(TESSUTI_KEY, JSON.stringify(arr)); } catch(e) {}
-    syncTessutiToCloud();
-  };
-  const syncTessutiToCloud = async () => {
-    const row = await saveSpecialRow(CLOUD_TESSUTI_NAME,
-      { type:"tessuti", items: getTessuti(), updatedAt: Date.now() }, cloudTessutiRow);
-    if(row) cloudTessutiRow = row;
-  };
-  // Il cloud vince: l'anagrafica è una lista corta e condivisa, e un prezzo al
-  // metro vecchio rimasto su un dispositivo falserebbe i costi di tutti.
-  const applyCloudTessuti = () => {
-    const items = Array.isArray(cloudTessutiRow?.data?.items) ? cloudTessutiRow.data.items : [];
-    if(!items.length){ syncTessutiToCloud(); return; }
-    try { localStorage.setItem(TESSUTI_KEY, JSON.stringify(items)); } catch(e) {}
-  };
-  const tessutoByNome = (nome) =>
-    getTessuti().find(t => (t.nome || "").toLowerCase() === String(nome || "").toLowerCase()) || null;
-
   /* ─── Materiali (tabella "Materiale", condivisa con le schede tecniche) ───
+     Unica anagrafica tessuti dell'app: prima Distinta e kit builder leggevano
+     una lista separata (__tessuti__), rifusa qui perché due posti dove
+     cercare lo stesso tessuto avrebbero solo creato disallineamenti. Il
+     riferimento stabile è il "codice" (es. COPL330-G): il "nome" resta
+     liberamente rinominabile — un fornitore che cambia nome a un tessuto non
+     deve rompere gli articoli che lo usano già.
      A differenza di catalogo/impostazioni/tessuti — righe speciali dentro
      "projects" — questa è una tabella Supabase vera e propria, già usata
      dall'altra app. Niente localStorage: si legge e scrive sempre dal cloud. */
   let materiali = [];
   let materialeEditId = null;
+
+  // Solo i tessuti con un codice sono selezionabili: uno senza codice non è
+  // ancora classificato (fibra + grammatura), e proporlo in un menu vorrebbe
+  // dire far scegliere un tessuto che non si sa bene cosa sia.
+  const tessutiCodificati = () => materiali.filter(m => (m.codice || "").trim());
+  const tessutoByCodice = (codice) =>
+    materiali.find(m => (m.codice || "").toLowerCase() === String(codice || "").toLowerCase()) || null;
 
   const loadMateriali = async () => {
     if(!supabase) return;
@@ -4676,7 +4634,7 @@ tr:last-child td{border-bottom:none}
 
   const resetMaterialeForm = () => {
     materialeEditId = null;
-    ["matNome","matComposizione","matLarghezza","matFornitore","matPeso","matPrezzoKg"].forEach(id => {
+    ["matNome","matCodice","matComposizione","matLarghezza","matFornitore","matPeso","matPrezzoKg"].forEach(id => {
       const el = document.getElementById(id); if(el) el.value = "";
     });
     const costoEl = document.getElementById("matCostoMetro"); if(costoEl) costoEl.value = "";
@@ -4724,6 +4682,7 @@ tr:last-child td{border-bottom:none}
     if(!m) return;
     materialeEditId = id;
     document.getElementById("matNome").value = m.nome || "";
+    document.getElementById("matCodice").value = m.codice || "";
     document.getElementById("matComposizione").value = m.composizione || "";
     document.getElementById("matLarghezza").value = m.larghezza || "";
     document.getElementById("matFornitore").value = m.fornitore || "";
@@ -4745,12 +4704,20 @@ tr:last-child td{border-bottom:none}
     if(!supabase){ toast("Cloud non disponibile", "err"); return; }
     const nome = document.getElementById("matNome").value.trim();
     if(!nome){ toast("Dai un nome al tessuto", "warn"); return; }
+    const codice = document.getElementById("matCodice").value.trim().toUpperCase();
     const unita = document.getElementById("matUnita").value;
     const costoMetro = toNum(document.getElementById("matCostoMetro").value);
     if(costoMetro <= 0){ toast("Manca il costo al metro (o i dati per calcolarlo)", "warn"); return; }
+    // Il codice è il riferimento usato da Distinta e kit builder: se due
+    // tessuti lo condividessero, scegliendone uno si finirebbe per prendere
+    // il prezzo dell'altro senza accorgersene.
+    if(codice && materiali.some(x => x.id !== materialeEditId && (x.codice || "").toUpperCase() === codice)){
+      toast(`Il codice "${codice}" è già usato da un altro tessuto`, "warn"); return;
+    }
 
     const row = {
       nome,
+      codice: codice || null,
       tipo: "Tessuto",
       composizione: document.getElementById("matComposizione").value.trim() || null,
       larghezza: document.getElementById("matLarghezza").value.trim() || null,
@@ -4797,9 +4764,12 @@ tr:last-child td{border-bottom:none}
     list.innerHTML = materiali.map(m => {
       const dettagli = [m.composizione, m.larghezza ? `${m.larghezza} cm` : "", m.fornitore]
         .filter(Boolean).join(" · ");
+      // Il codice va in cima perché è quello che dice a colpo d'occhio la
+      // grammatura (es. COT330); il nome del fornitore è solo un dettaglio.
+      const titolo = m.codice ? `${esc(m.codice)} <span style="font-weight:400;color:var(--muted)">— ${esc(m.nome)}</span>` : esc(m.nome);
       return `<div class="catalog-item">
         <div class="catalog-item-info">
-          <div class="catalog-item-name">${esc(m.nome)}</div>
+          <div class="catalog-item-name">${titolo}${m.codice ? "" : ' <span class="cat-badge" style="background:var(--warn);color:#fff">senza codice</span>'}</div>
           <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m</div>
         </div>
         <div class="catalog-item-actions">
@@ -4906,7 +4876,6 @@ tr:last-child td{border-bottom:none}
   };
 
   const renderImpostazioni = () => {
-    renderTessuti();
     const s = getSettings();
     const el = (id) => document.getElementById(id);
     if(el("setMargin"))   el("setMargin").value      = s.margin;
@@ -6388,12 +6357,12 @@ tr:last-child td{border-bottom:none}
   const fillTessutoSelect = (extraNome) => {
     const sel = document.getElementById("costoTessutoSel");
     if(!sel) return;
-    const nomi = getTessuti().map(t => t.nome).filter(Boolean);
+    const codici = tessutiCodificati().map(m => m.codice);
     const extra = (extraNome || "").trim();
-    if(extra && !nomi.some(n => n.toLowerCase() === extra.toLowerCase())) nomi.push(extra);
+    if(extra && !codici.some(c => c.toLowerCase() === extra.toLowerCase())) codici.push(extra);
     const cur = sel.value;
     sel.innerHTML = '<option value="">— nessuno —</option>'
-      + nomi.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+      + codici.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
     if(cur) sel.value = cur;
   };
 
@@ -6406,81 +6375,23 @@ tr:last-child td{border-bottom:none}
     const out  = document.getElementById("costoTessuto");
     const nota = document.getElementById("costoTessutoNota");
     if(!sel || !cons || !out) return;
-    const t = tessutoByNome(sel.value);
+    const t = tessutoByCodice(sel.value);
     const m = Math.max(0, toNum(cons.value));
     if(!t || m <= 0){
       if(nota) nota.textContent = sel.value && !t
-        ? `"${sel.value}" non è in anagrafica: il costo resta quello inserito.`
-        : (t ? `${t.nome}: ${eur(toNum(t.prezzoMetro))} al metro — inserisci il consumo.`
+        ? `"${sel.value}" non è in Materiali: il costo resta quello inserito.`
+        : (t ? `${t.codice}: ${eur(toNum(t.costoMetro))} al metro — inserisci il consumo.`
              : "Scegli tessuto e consumo per calcolarlo.");
       return;
     }
-    const val = Math.round(toNum(t.prezzoMetro) * m * 100) / 100;
+    const val = Math.round(toNum(t.costoMetro) * m * 100) / 100;
     out.value = String(val).replace(".", ",");
-    if(nota) nota.textContent = `${String(m).replace(".", ",")} m × ${eur(toNum(t.prezzoMetro))} = ${eur(val)}`;
+    if(nota) nota.textContent = `${String(m).replace(".", ",")} m × ${eur(toNum(t.costoMetro))} = ${eur(val)}`;
     renderCosto();
   };
 
   document.getElementById("costoTessutoSel")?.addEventListener("change", ricalcolaTessuto);
   document.getElementById("costoConsumo")?.addEventListener("input",  ricalcolaTessuto);
-
-  /* ─── Anagrafica tessuti in Impostazioni ─── */
-  const renderTessuti = () => {
-    const body = document.getElementById("tessutiBody");
-    if(!body) return;
-    const list = getTessuti();
-    body.innerHTML = list.length
-      ? list.map((t, i) => `<tr class="soglia-row">
-          <td>${esc(t.nome)}</td>
-          <td style="text-align:right"><input data-tprezzo="${i}" value="${toNum(t.prezzoMetro).toFixed(2).replace(".", ",")}" inputmode="decimal" style="width:92px;text-align:right;font-size:12px;padding:4px 6px"> €/m</td>
-          <td style="width:44px"><button class="ghost" type="button" data-tdel="${i}" style="color:var(--bad);padding:4px 8px">✕</button></td>
-        </tr>`).join("")
-      : '<tr class="soglia-row"><td>Nessun tessuto in anagrafica</td><td></td></tr>';
-
-    body.querySelectorAll("[data-tprezzo]").forEach(inp => {
-      inp.addEventListener("change", () => {
-        const arr = getTessuti();
-        const i   = +inp.getAttribute("data-tprezzo");
-        if(!arr[i]) return;
-        arr[i].prezzoMetro = Math.max(0, toNum(inp.value));
-        setTessuti(arr);
-        renderTessuti();
-        toast(`${arr[i].nome}: ${eur(arr[i].prezzoMetro)} al metro ✓`, "ok");
-      });
-    });
-    body.querySelectorAll("[data-tdel]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const arr = getTessuti();
-        const i   = +btn.getAttribute("data-tdel");
-        const t   = arr[i];
-        if(!t) return;
-        if(!confirm(`Eliminare il tessuto "${t.nome}"? Gli articoli che lo usano tengono il costo che hanno adesso.`)) return;
-        arr.splice(i, 1);
-        setTessuti(arr);
-        renderTessuti();
-        toast("Tessuto eliminato ✓", "ok");
-      });
-    });
-  };
-
-  document.getElementById("btnTessutoAdd")?.addEventListener("click", () => {
-    const nomeEl   = document.getElementById("tessutoNuovoNome");
-    const prezzoEl = document.getElementById("tessutoNuovoPrezzo");
-    const nome     = (nomeEl?.value || "").trim();
-    const prezzo   = Math.max(0, toNum(prezzoEl?.value));
-    if(!nome){ toast("Dai un nome al tessuto", "warn"); return; }
-    if(prezzo <= 0){ toast("Inserisci il prezzo al metro", "warn"); return; }
-    const arr = getTessuti();
-    if(arr.some(t => (t.nome || "").toLowerCase() === nome.toLowerCase())){
-      toast("Esiste già un tessuto con questo nome", "warn"); return;
-    }
-    arr.push({ nome, prezzoMetro: prezzo });
-    setTessuti(arr);
-    if(nomeEl)   nomeEl.value   = "";
-    if(prezzoEl) prezzoEl.value = "";
-    renderTessuti();
-    toast("Tessuto aggiunto ✓", "ok");
-  });
 
   // Riapre un articolo di catalogo nella distinta. Se non ha una distinta
   // salvata (creato prima, o a mano dalla schermata Articoli) il costo base
@@ -6900,6 +6811,7 @@ tr:last-child td{border-bottom:none}
       showView("dashboard");
       setJS(true, "JS OK");
       await loadProjectsFromCloud();
+      await loadMateriali();
       renderDashboard();
     } catch(err) {
       console.error(err);
