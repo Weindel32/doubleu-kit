@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v47</span>
+            <span id="buildTxt">build v48</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3079,9 +3079,38 @@ if("serviceWorker" in navigator) {
     tryNext();
   });
 
+  // Con più schede della stessa app aperte, la libreria Supabase le mette in
+  // fila su un lucchetto condiviso (navigator.locks) prima di rinnovare il
+  // token. Se una scheda lo tiene senza rilasciarlo — sospesa in secondo
+  // piano, o rimasta indietro di una versione — le altre restano in attesa
+  // per sempre: la richiesta non parte nemmeno, e in pagina si vede solo un
+  // "timeout" che sembra un guasto di rete mentre il server non ha mai
+  // ricevuto nulla. Qui l'attesa ha una scadenza: scaduta quella si procede
+  // comunque, perché una richiesta in più è molto meno grave di un'app ferma.
+  const lockConScadenza = async (name, acquireTimeout, fn) => {
+    if(!(navigator.locks && typeof navigator.locks.request === "function")) return await fn();
+    const ac = new AbortController();
+    const scadenza = setTimeout(() => ac.abort(), 5000);
+    let partita = false;
+    const avvia = (...args) => { partita = true; return fn(...args); };
+    try {
+      return await navigator.locks.request(name, { signal: ac.signal }, avvia);
+    } catch(err) {
+      // Se l'errore arriva da fn va propagato: qui si ripiega solo quando non
+      // siamo mai riusciti a prendere il turno.
+      if(partita) throw err;
+      console.warn("Auth lock non disponibile entro 5s: procedo senza attendere", err);
+      return await fn();
+    } finally {
+      clearTimeout(scadenza);
+    }
+  };
+
   try {
     if (window.supabase && typeof window.supabase.createClient === "function") {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { lock: lockConScadenza },
+      });
     } else {
       console.warn("Supabase non disponibile — controlla la connessione o l'ad-blocker");
     }
@@ -3089,7 +3118,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v47";
+  const BUILD = "v48";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
