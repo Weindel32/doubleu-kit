@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v44</span>
+            <span id="buildTxt">build v45</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1812,7 +1812,9 @@
             </div>
 
             <div id="dashCloudError" style="display:none;padding:10px 12px;background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:var(--r-sm);margin-bottom:12px;font-size:13px;color:var(--warn)">
-              Impossibile raggiungere il cloud. Le richieste al database potrebbero essere bloccate da un <strong>ad-blocker o un'estensione privacy</strong>: disattivalo per questo sito (o usa un browser senza estensioni), controlla la connessione e premi ↻ Ricarica. I tuoi kit salvati sul cloud non sono persi.
+              <div>Impossibile raggiungere il cloud in questo momento. <strong>I tuoi kit salvati non sono persi</strong>: restano sul cloud e su questo dispositivo. Premi ↻ Ricarica per riprovare.</div>
+              <div style="margin-top:6px">Se si ripete: controlla la connessione; se usi un ad-blocker o un'estensione privacy, disattivala per questo sito.</div>
+              <div id="dashCloudErrorDetail" style="margin-top:6px;font-size:11px;opacity:.75;font-family:ui-monospace,monospace;word-break:break-word"></div>
             </div>
 
             <div class="dash-empty" id="dashEmpty" style="display:none">
@@ -3037,9 +3039,16 @@ if("serviceWorker" in navigator) {
     // vecchio HTML/JS in memoria finché non si ricarica: un solo reload
     // automatico al cambio di controller porta la scheda alla versione nuova
     // senza bisogno di svuotare cache/dati a mano.
+    //
+    // Se però la pagina non aveva ancora un controller (primo avvio, o subito
+    // dopo aver svuotato i dati del sito), il claim del primo service worker
+    // fa scattare comunque controllerchange: lì un reload non serve — l'HTML
+    // in memoria è già quello nuovo — e cadeva proprio mentre partivano le
+    // prime richieste al cloud, facendole abortire.
+    const avevaController = !!navigator.serviceWorker.controller;
     let refreshedOnce = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if(refreshedOnce) return;
+      if(!avevaController || refreshedOnce) return;
       refreshedOnce = true;
       location.reload();
     });
@@ -3080,7 +3089,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v44";
+  const BUILD = "v45";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4627,6 +4636,14 @@ tr:last-child td{border-bottom:none}
     new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
   ]);
 
+  // Mostra il motivo vero del fallimento accanto al riquadro: senza, un
+  // timeout di rete e una chiave rifiutata danno lo stesso messaggio e si
+  // finisce a cercare estensioni che non esistono.
+  const mostraErroreCloud = (motivo) => {
+    const dettaglioEl = document.getElementById("dashCloudErrorDetail");
+    if(dettaglioEl) dettaglioEl.textContent = motivo ? `Dettaglio tecnico: ${motivo}` : "";
+  };
+
   const loadProjectsFromCloud = async () => {
     if(!supabase) return;
     const loadingEl = document.getElementById("dashCloudLoading");
@@ -4635,13 +4652,24 @@ tr:last-child td{border-bottom:none}
     if(loadingEl) loadingEl.style.display = "";
     if(errorEl)   errorEl.style.display   = "none";
     try {
-      const { data, error } = await withTimeout(supabase
+      // Un primo tentativo può cadere per motivi passeggeri (rete che si
+      // sveglia, sessione che si rinnova, service worker che prende il
+      // controllo). Riprovare una volta prima di allarmare evita quasi tutti
+      // i falsi allarmi, senza far aspettare troppo se il guasto è vero.
+      const leggi = () => withTimeout(supabase
         .from("projects")
         .select("id, name, data, created_at")
         .order("created_at", { ascending: false }));
+      let { data, error } = await leggi().catch(err => ({ data: null, error: err }));
+      if(error){
+        console.warn("Cloud load: primo tentativo fallito, riprovo…", error);
+        await new Promise(r => setTimeout(r, 1200));
+        ({ data, error } = await leggi().catch(err => ({ data: null, error: err })));
+      }
       if(error){
         console.error("Cloud load error:", error);
         cloudLoadFailed = true;
+        mostraErroreCloud(error.message || String(error));
         if(errorEl)   errorEl.style.display   = "";
         if(refreshBtn) refreshBtn.style.display = "";
         if(loadingEl) loadingEl.style.display  = "none";
@@ -4664,6 +4692,7 @@ tr:last-child td{border-bottom:none}
     } catch(err) {
       console.error("Cloud load exception:", err);
       cloudLoadFailed = true;
+      mostraErroreCloud(err?.message || String(err));
       if(errorEl)   errorEl.style.display   = "";
       if(refreshBtn) refreshBtn.style.display = "";
       toast("Errore connessione cloud", "err");
