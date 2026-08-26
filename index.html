@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v46</span>
+            <span id="buildTxt">build v47</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3089,7 +3089,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v46";
+  const BUILD = "v47";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4628,13 +4628,30 @@ tr:last-child td{border-bottom:none}
     updateSidebarKit();
   };
 
-  // Impedisce che una richiesta bloccata (ad-blocker / rete) resti "in caricamento" all'infinito
-  // 12 secondi sono un'eternità davanti a un cliente: se il cloud non risponde
-  // in fretta conviene dirlo subito e lasciare lavorare con i kit locali.
-  const withTimeout = (promise, ms = 6000) => Promise.race([
+  // Impedisce che una richiesta bloccata (ad-blocker / rete) resti "in caricamento" all'infinito.
+  // 6 secondi bastavano in ufficio ma non su rete mobile a schermo appena
+  // acceso: scattavano prima che la risposta arrivasse, trasformando una
+  // connessione lenta in un finto guasto. Meglio far aspettare qualche
+  // secondo in più che dichiarare irraggiungibile un cloud che risponde.
+  const withTimeout = (promise, ms = 15000) => Promise.race([
     promise,
     new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
   ]);
+
+  // Un timeout non dice se il problema è tutto il dispositivo o solo il
+  // database. Un colpo secco all'endpoint di Supabase separa i due casi e
+  // trasforma "timeout" in un'indicazione su cui si può agire.
+  const diagnosiConnessione = async () => {
+    if(navigator.onLine === false) return "il dispositivo risulta offline";
+    try {
+      await withTimeout(fetch(SUPABASE_URL + "/auth/v1/health", {
+        method: "GET", mode: "no-cors", cache: "no-store",
+      }), 8000);
+      return "il database risponde, ma la lettura dei dati no";
+    } catch(_) {
+      return "il database non è raggiungibile da questo dispositivo/rete";
+    }
+  };
 
   // Mostra il motivo vero del fallimento accanto al riquadro: senza, un
   // timeout di rete e una chiave rifiutata danno lo stesso messaggio e si
@@ -4677,6 +4694,24 @@ tr:last-child td{border-bottom:none}
     } catch(_) {}
     showAuthOverlay();
     toast("Sessione scaduta: rifai l'accesso per rivedere i kit sul cloud", "warn", 7000);
+  };
+
+  // Dopo un fallimento, riprovare da soli appena la rete torna (o appena si
+  // riapre la scheda) evita di restare fermi davanti a un errore ormai
+  // superato aspettando che qualcuno prema Ricarica.
+  let riprovaArmata = false;
+  const riprovaQuandoTornaLaRete = () => {
+    if(riprovaArmata) return;
+    riprovaArmata = true;
+    const riprova = () => {
+      if(!cloudLoadFailed) return;
+      if(navigator.onLine === false) return;
+      loadProjectsFromCloud().then(() => { if(!cloudLoadFailed) renderDashboard(); });
+    };
+    window.addEventListener("online", riprova);
+    document.addEventListener("visibilitychange", () => {
+      if(document.visibilityState === "visible") riprova();
+    });
   };
 
   const loadProjectsFromCloud = async () => {
@@ -4724,11 +4759,18 @@ tr:last-child td{border-bottom:none}
       if(error){
         console.error("Cloud load error:", error);
         cloudLoadFailed = true;
-        mostraErroreCloud(error.message || String(error));
+        const motivo = error.message || String(error);
+        mostraErroreCloud(motivo);
         if(errorEl)   errorEl.style.display   = "";
         if(refreshBtn) refreshBtn.style.display = "";
         if(loadingEl) loadingEl.style.display  = "none";
         toast("Errore caricamento kit cloud", "err");
+        // La diagnosi arriva dopo il messaggio: è una seconda richiesta e non
+        // deve ritardare quello che l'utente sta già aspettando di leggere.
+        diagnosiConnessione().then(esito => {
+          if(cloudLoadFailed) mostraErroreCloud(`${motivo} — ${esito}`);
+        });
+        riprovaQuandoTornaLaRete();
         return;
       }
       cloudLoadFailed = false;
