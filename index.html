@@ -1695,7 +1695,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v39</span>
+            <span id="buildTxt">build v40</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2330,6 +2330,15 @@
                   <div class="lbl">Fin dove puoi scendere</div>
                   <div class="val" id="kMinPriceLive">—</div>
                   <div class="note" id="kMinPriceLiveNote">Prezzo minimo trattativa per atleta</div>
+                </div>
+
+                <!-- Stesso margine di manovra del prezzo minimo, speso in capi
+                     invece che in sconto: è un'alternativa, non un budget in più. -->
+                <div class="kpi kpi-hero" id="kpiOmaggi" style="display:none">
+                  <div class="lbl">Oppure quanto puoi omaggiare</div>
+                  <div class="val" id="kOmaggiVal">—</div>
+                  <div class="note" id="kOmaggiNote">—</div>
+                  <div class="note" id="kOmaggiDettaglio" style="margin-top:6px"></div>
                 </div>
 
                 <!-- Riferimenti secondari: utili ma non da leggere per primi -->
@@ -3025,7 +3034,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v39";
+  const BUILD = "v40";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3876,14 +3885,17 @@ if("serviceWorker" in navigator) {
     const dep    = toNum(depositPct.value) / 100;
     const buf    = toNum(bufferPct.value) / 100;
 
-    let variableCost = 0, giftCost = 0, hasQty = false;
+    let variableCost = 0, giftCost = 0, hasQty = false, giftMaxQty = 0;
 
     items.forEach(it => {
       const qty = toNum(it.qty);
       if(qty > 0) hasQty = true;
       const itemCost = (toNum(it.base) + toNum(it.extra)) * qty;
       variableCost += itemCost;
-      if(it.isGift) giftCost += itemCost;
+      // Il kit omaggiato allo staff non coincide col kit degli atleti: la
+      // quantità più alta fra le righe in omaggio dice quante persone si
+      // stanno equipaggiando, e da lì si ricava il costo a persona.
+      if(it.isGift){ giftCost += itemCost; if(qty > giftMaxQty) giftMaxQty = qty; }
     });
 
     // I costi fissi (setup, grafica, spedizione) non scalano con gli atleti:
@@ -3915,6 +3927,8 @@ if("serviceWorker" in navigator) {
       kMinPrice.textContent       = "—";
       setText("kMinPriceLive", "—");
       setText("kMinPriceLiveNote", "Prezzo minimo trattativa per atleta");
+      const boxOmaggiVuoto = document.getElementById("kpiOmaggi");
+      if(boxOmaggiVuoto) boxOmaggiVuoto.style.display = "none";
       setText("kMinPriceNote", "Prezzo che lascia ancora il margine minimo accettabile. Sotto questo prezzo non si tratta.");
       kMinDeposit.textContent     = "—";
       kDepNote.textContent        = "Inserisci almeno 1 quantità > 0";
@@ -3973,6 +3987,22 @@ if("serviceWorker" in navigator) {
     const costPerAthlete  = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
 
+    /* ─── Spazio omaggi ───
+       Quanto costo in più il prezzo riesce ancora a sopportare restando sopra
+       il margine minimo. Non è un budget aggiuntivo: è lo stesso margine di
+       manovra che il prezzo minimo esprime in sconto, qui espresso in capi.
+
+       Il ricavo di riferimento è quello dei soli capi fatturati. A prezzo non
+       ancora fissato il prezzo target si alza da solo per assorbire gli
+       omaggi: prendendolo così com'è, ogni omaggio aggiunto farebbe *crescere*
+       lo spazio residuo invece di consumarlo, e la domanda "fin dove posso
+       arrivare" resterebbe senza risposta. Con un prezzo di offerta fissato,
+       invece, il ricavo è quello vero e basta usarlo. */
+    const ricavoRiferimento = usingOffer ? revenueNet : (totalCost - giftCost) / (1 - m);
+    const budgetOmaggi      = Math.max(0, ricavoRiferimento * (1 - mMin) - totalCost);
+    const costoKitCompleto = (variableCost - giftCost) / qtyBase;
+    const omaggioPerPersona= giftMaxQty > 0 ? giftCost / giftMaxQty : 0;
+
     let offerStatus = "", offerStatusColor = "";
 
     if(useOffer.checked && toNum(offerPrice.value) > 0){
@@ -4024,6 +4054,41 @@ if("serviceWorker" in navigator) {
     // (che ha già la sua nota kVatNote).
     const minPriceVatTxt = vatOn ? "IVA inclusa" : "netto, no IVA";
     setText("kMinPriceLiveNote", `Prezzo minimo trattativa per atleta · ${minPriceVatTxt}`);
+
+    // Riquadro omaggi: informativo, non chiede nulla. Se non se ne danno,
+    // resta un dato di trattativa; se se ne danno, dice quanto ne resta.
+    const boxOmaggi = document.getElementById("kpiOmaggi");
+    if(boxOmaggi){
+      const plur = (n, s, p) => `${n} ${n === 1 ? s : p}`;
+      if(budgetOmaggi <= 0.005){
+        // Niente margine di manovra: mostrarlo a zero sarebbe solo rumore,
+        // e il prezzo minimo dice già che non c'è spazio.
+        boxOmaggi.style.display = "none";
+      } else if(omaggioPerPersona > 0){
+        boxOmaggi.style.display = "";
+        const altre = Math.floor(budgetOmaggi / omaggioPerPersona + 1e-9);
+        setText("kOmaggiVal", altre > 0 ? plur(altre, "persona in più", "persone in più") : "sei al limite");
+        setText("kOmaggiNote",
+          `Stai omaggiando ${plur(giftMaxQty, "persona", "persone")} × ${eur(omaggioPerPersona)} = ${eur(giftCost)} · restano ${eur(budgetOmaggi)}`);
+        setText("kOmaggiDettaglio",
+          `Stesso margine di manovra del prezzo minimo (${(mMin*100).toFixed(0)}%): se scendi col prezzo, questo spazio si riduce.`);
+      } else {
+        boxOmaggi.style.display = "";
+        setText("kOmaggiVal", costoKitCompleto > 0
+          ? plur(Math.floor(budgetOmaggi / costoKitCompleto + 1e-9), "kit completo", "kit completi")
+          : eur(budgetOmaggi));
+        setText("kOmaggiNote", `${eur(budgetOmaggi)} di margine di manovra, fino al minimo del ${(mMin*100).toFixed(0)}%`);
+        // Gli omaggi parziali (solo la t-shirt, solo la felpa) sono la prassi
+        // quanto i kit interi: senza questi numeri il conto andrebbe rifatto
+        // a mente ogni volta.
+        const perCapo = [...new Map(items
+          .filter(it => !it.isGift && toNum(it.base) + toNum(it.extra) > 0)
+          .map(it => [it.article, toNum(it.base) + toNum(it.extra)])).entries()]
+          .map(([nome, costo]) => `${Math.floor(budgetOmaggi / costo + 1e-9)} ${esc(nome)}`)
+          .slice(0, 4);
+        setText("kOmaggiDettaglio", perCapo.length ? "oppure " + perCapo.join(" · ") : "");
+      }
+    }
     setText("kMinPriceNote", `Prezzo che lascia ancora il margine minimo accettabile (${(mMin*100).toFixed(0)}%), ${minPriceVatTxt}. Sotto questo prezzo non si tratta.`);
     kMinDeposit.textContent     = eur(minDepositGross);
     if(totalBar) totalBar.textContent = eur(totalCost);
