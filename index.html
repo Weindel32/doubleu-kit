@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v43</span>
+            <span id="buildTxt">build v44</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3020,7 +3020,29 @@
 // locale di riserva, e non deve mai ritardare l'avvio.
 if("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js").then((reg) => {
+      // Il browser controlla da solo gli aggiornamenti solo ad ogni
+      // navigazione: una scheda tenuta aperta per giorni può restare
+      // agganciata a un service worker vecchio finché non la ricarichi a
+      // mano. Un controllo esplicito ora e ogni volta che torni sulla
+      // scheda evita di doverlo spiegare di nuovo a ogni versione nuova.
+      reg.update().catch(() => {});
+      document.addEventListener("visibilitychange", () => {
+        if(document.visibilityState === "visible") reg.update().catch(() => {});
+      });
+    }).catch(() => {});
+
+    // Il nuovo service worker (skipWaiting + clients.claim) prende il
+    // controllo da solo, ma la pagina già aperta resta comunque con il
+    // vecchio HTML/JS in memoria finché non si ricarica: un solo reload
+    // automatico al cambio di controller porta la scheda alla versione nuova
+    // senza bisogno di svuotare cache/dati a mano.
+    let refreshedOnce = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if(refreshedOnce) return;
+      refreshedOnce = true;
+      location.reload();
+    });
   });
 }
 
@@ -3058,7 +3080,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v43";
+  const BUILD = "v44";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
