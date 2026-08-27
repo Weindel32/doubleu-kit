@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v49</span>
+            <span id="buildTxt">build v50</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2957,6 +2957,17 @@
             </div>
           </div>
 
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Diagnostica cloud</div>
+            <div class="hint" style="margin-bottom:14px">Serve quando i kit non si caricano: prova la stessa lettura per tre strade diverse e dice quale si blocca. <strong>Ripara</strong> azzera service worker e cache di questo indirizzo (i kit sul cloud non vengono toccati).</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <button class="primary" id="btnDiagnostica">▶ Esegui diagnostica</button>
+              <button class="secondary" id="btnRiparaApp">⟳ Ripara e ricarica</button>
+              <button class="secondary" id="btnCopiaDiagnostica" style="display:none">⧉ Copia esito</button>
+            </div>
+            <pre id="diagnosticaOut" style="display:none;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin:0"></pre>
+          </div>
+
           <div class="card">
             <div class="card-title">Account &amp; stato</div>
             <table class="dash-table" style="display:table"><tbody id="settingsInfo"></tbody></table>
@@ -3118,7 +3129,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v49";
+  const BUILD = "v50";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -6942,6 +6953,113 @@ tr:last-child td{border-bottom:none}
       applyVAT:   !!document.getElementById("setApplyVAT").checked,
     });
     toast("Predefiniti salvati ✓ — verranno usati per i nuovi preventivi", "ok");
+  });
+
+  /* ─── Diagnostica cloud ───
+     Stesso codice su due indirizzi diversi si comportava in modo diverso: da
+     remoto non si può più dedurre nulla, serve una misura presa sul posto.
+     Le tre prove separano le cose che finora si confondevano in un solo
+     "timeout": la rete verso Supabase, la lettura grezza senza libreria, e
+     la lettura fatta dalla libreria (che è l'unica a passare per la sessione
+     e per il lucchetto condiviso fra schede). */
+  const _btnDiagnostica = document.getElementById("btnDiagnostica");
+  const _diagOut = document.getElementById("diagnosticaOut");
+  const _btnCopiaDiag = document.getElementById("btnCopiaDiagnostica");
+
+  const cronometra = async (fn) => {
+    const t0 = performance.now();
+    try {
+      const esito = await fn();
+      return { ms: Math.round(performance.now() - t0), esito };
+    } catch(err) {
+      return { ms: Math.round(performance.now() - t0), errore: err?.message || String(err) };
+    }
+  };
+
+  const conScadenza = (p, ms) => Promise.race([
+    p, new Promise((_, rej) => setTimeout(() => rej(new Error(`bloccata oltre ${ms/1000}s`)), ms)),
+  ]);
+
+  const tokenDiSessione = async () => {
+    try {
+      const { data } = await conScadenza(supabase.auth.getSession(), 5000);
+      return data?.session?.access_token || null;
+    } catch(_) { return null; }
+  };
+
+  if(_btnDiagnostica) _btnDiagnostica.addEventListener("click", async () => {
+    if(!_diagOut) return;
+    _btnDiagnostica.disabled = true;
+    _diagOut.style.display = "";
+    _diagOut.textContent = "Diagnostica in corso…";
+    const righe = [];
+    const agg = (t) => { righe.push(t); _diagOut.textContent = righe.join("\n"); };
+
+    agg(`indirizzo: ${location.origin}`);
+    agg(`build: ${BUILD} · online: ${navigator.onLine}`);
+
+    // Service worker: quale copia controlla davvero questa pagina
+    try {
+      const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
+      const ctrl = navigator.serviceWorker?.controller;
+      agg(`service worker: ${regs.length} registrazioni · controller: ${ctrl ? ctrl.scriptURL.split("/").pop() + " (" + ctrl.state + ")" : "nessuno"}`);
+      const cache = await caches?.keys?.() || [];
+      agg(`cache presenti: ${cache.join(", ") || "nessuna"}`);
+    } catch(e){ agg(`service worker: non leggibile (${e.message})`); }
+
+    // 1) rete pura verso Supabase, senza libreria e senza sessione
+    const rete = await cronometra(() => conScadenza(
+      fetch(SUPABASE_URL + "/auth/v1/health", { cache: "no-store", headers: { apikey: SUPABASE_KEY } })
+        .then(r => `HTTP ${r.status}`), 20000));
+    agg(`1. rete verso il database: ${rete.esito || "BLOCCATA — " + rete.errore} (${rete.ms} ms)`);
+
+    // 2) lettura grezza: stessa richiesta dei kit, ma senza la libreria
+    const token = await tokenDiSessione();
+    agg(`   sessione: ${token ? "token presente" : "NESSUN token leggibile"}`);
+    const grezza = await cronometra(() => conScadenza(
+      fetch(SUPABASE_URL + "/rest/v1/projects?select=id&limit=1", {
+        cache: "no-store",
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token || SUPABASE_KEY}` },
+      }).then(r => `HTTP ${r.status}`), 20000));
+    agg(`2. lettura kit senza libreria: ${grezza.esito || "BLOCCATA — " + grezza.errore} (${grezza.ms} ms)`);
+
+    // 3) lettura con la libreria: l'unica che passa per sessione e lucchetto
+    const conLib = await cronometra(() => conScadenza(
+      supabase.from("projects").select("id").limit(1)
+        .then(r => r.error ? `errore: ${r.error.message}` : `ok, ${(r.data||[]).length} riga`), 20000));
+    agg(`3. lettura kit con la libreria: ${conLib.esito || "BLOCCATA — " + conLib.errore} (${conLib.ms} ms)`);
+
+    agg("");
+    if(grezza.errore && rete.errore) agg("→ si blocca la rete verso il database: il problema è fuori dall'app (rete, DNS, filtro).");
+    else if(grezza.errore) agg("→ la rete va ma la lettura no: problema di permessi o di sessione.");
+    else if(conLib.errore) agg("→ la rete e la lettura grezza vanno: si blocca la libreria. Prova ⟳ Ripara e ricarica.");
+    else agg("→ tutte e tre le prove sono riuscite: in questo momento il cloud funziona.");
+
+    _btnDiagnostica.disabled = false;
+    if(_btnCopiaDiag) _btnCopiaDiag.style.display = "";
+  });
+
+  if(_btnCopiaDiag) _btnCopiaDiag.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(_diagOut?.textContent || "");
+      toast("Esito copiato ✓", "ok");
+    } catch(_) { toast("Copia non riuscita: seleziona il testo a mano", "warn"); }
+  });
+
+  // Azzera ciò che è legato a questo indirizzo e che può restare incastrato
+  // (service worker vecchio, cache). I kit sul cloud non vengono toccati.
+  const _btnRipara = document.getElementById("btnRiparaApp");
+  if(_btnRipara) _btnRipara.addEventListener("click", async () => {
+    if(!confirm("Azzera service worker e cache di questo indirizzo, poi ricarica.\n\nI kit sul cloud e il tuo accesso non vengono toccati. Procedere?")) return;
+    _btnRipara.disabled = true;
+    try {
+      const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
+      await Promise.all(regs.map(r => r.unregister()));
+      const chiavi = await caches?.keys?.() || [];
+      await Promise.all(chiavi.map(k => caches.delete(k)));
+      toast("Ripulito ✓ ricarico…", "ok");
+    } catch(e){ console.error("Ripara:", e); }
+    setTimeout(() => location.reload(), 600);
   });
 
   const _btnExportBackup = document.getElementById("btnExportBackup");
