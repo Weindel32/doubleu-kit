@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v50</span>
+            <span id="buildTxt">build v51</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3129,7 +3129,51 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v50";
+  // Il token salvato, letto direttamente dal deposito del browser senza
+  // passare per la libreria. Serve proprio quando la libreria non risponde.
+  const tokenDaStorage = () => {
+    try {
+      const chiave = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.includes("-auth-token"));
+      if(!chiave) return null;
+      const raw = JSON.parse(localStorage.getItem(chiave) || "null");
+      return raw?.access_token || raw?.currentSession?.access_token || null;
+    } catch(_) { return null; }
+  };
+
+  /* Su un indirizzo la diagnostica ha mostrato il client di autenticazione
+     incastrato: getSession() non rispondeva ("NESSUN token leggibile") mentre
+     rete e lettura grezza andavano a 200. In quello stato ogni lettura resta
+     appesa per sempre, e finora se ne usciva solo svuotando a mano i dati del
+     sito. Qui lo riconosciamo e lo ripuliamo da soli — una volta sola per
+     sessione, altrimenti un guasto diverso farebbe ricaricare all'infinito. */
+  const CHIAVE_SBLOCCO = "doubleu_sblocco_auth_v1";
+  const sbloccaAuthSeIncastrata = async () => {
+    if(!supabase) return;
+    let risposto = false;
+    try {
+      await Promise.race([
+        // Anche un errore è una risposta: vuol dire che il client è vivo.
+        supabase.auth.getSession().then(() => { risposto = true; }, () => { risposto = true; }),
+        new Promise(r => setTimeout(r, 8000)),
+      ]);
+    } catch(_) { risposto = true; }
+    if(risposto){ try { sessionStorage.removeItem(CHIAVE_SBLOCCO); } catch(_) {} return; }
+    if(sessionStorage.getItem(CHIAVE_SBLOCCO)){
+      console.warn("Autenticazione ancora bloccata dopo la pulizia: non ritento.");
+      return;
+    }
+    console.warn("Autenticazione bloccata: ripulisco la sessione salvata e ricarico.");
+    try {
+      sessionStorage.setItem(CHIAVE_SBLOCCO, "1");
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("sb-") && k.includes("-auth-token"))
+        .forEach(k => localStorage.removeItem(k));
+    } catch(_) {}
+    location.reload();
+  };
+  sbloccaAuthSeIncastrata();
+
+  const BUILD = "v51";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4720,6 +4764,23 @@ tr:last-child td{border-bottom:none}
       msg.includes("not authenticated");
   };
 
+  // Stessa lettura dei kit, fatta a mano con il token preso dal deposito del
+  // browser: non tocca la libreria, quindi funziona anche quando è incastrata.
+  const leggiSenzaLibreria = async () => {
+    const token = tokenDaStorage();
+    if(!token) return { data: null, error: new Error("nessun token salvato") };
+    try {
+      const res = await withTimeout(fetch(
+        `${SUPABASE_URL}/rest/v1/projects?select=id,name,data,created_at&order=created_at.desc`,
+        { cache: "no-store", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` } },
+      ), 15000);
+      if(!res.ok) return { data: null, error: new Error(`HTTP ${res.status}`) };
+      return { data: await res.json(), error: null };
+    } catch(err) {
+      return { data: null, error: err };
+    }
+  };
+
   const rinnovaSessione = async () => {
     try {
       const { data, error } = await withTimeout(supabase.auth.refreshSession(), 8000);
@@ -4811,6 +4872,18 @@ tr:last-child td{border-bottom:none}
         }
         ({ data, error } = await leggi().catch(err => ({ data: null, error: err })));
       }
+      // Ultima spiaggia: la libreria non risponde ma la rete sì (è il caso
+      // visto in diagnostica — lettura grezza 200 in 698 ms, lettura con la
+      // libreria bloccata oltre 20s). I kit ci sono: si vanno a prendere
+      // direttamente, invece di mostrare un cloud "irraggiungibile" che
+      // irraggiungibile non è.
+      if(error && !sessioneNonValida(error)){
+        const diretta = await leggiSenzaLibreria();
+        if(!diretta.error){
+          console.warn("Cloud load: letto senza libreria (client bloccato)");
+          data = diretta.data; error = null;
+        }
+      }
       if(error && sessioneNonValida(error)){
         console.error("Cloud load: sessione non valida, serve un nuovo accesso", error);
         if(loadingEl) loadingEl.style.display = "none";
@@ -4851,6 +4924,10 @@ tr:last-child td{border-bottom:none}
       applyCloudSettings();
       if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit caricati`, "ok");
       else toast("☁ Nessun kit nel cloud", "warn");
+      // Una lettura lenta (o quella di riserva) arriva quando la dashboard è
+      // già stata disegnata vuota: senza ridisegnarla i kit resterebbero
+      // caricati in memoria ma invisibili.
+      if(sonoLaPiuRecente()) renderDashboard();
     } catch(err) {
       console.error("Cloud load exception:", err);
       if(!sonoLaPiuRecente()) return;
