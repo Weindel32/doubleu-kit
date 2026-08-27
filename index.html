@@ -1708,7 +1708,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v48</span>
+            <span id="buildTxt">build v49</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3118,7 +3118,7 @@ if("serviceWorker" in navigator) {
     console.error("Supabase init error:", e);
   }
 
-  const BUILD = "v48";
+  const BUILD = "v49";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4673,10 +4673,16 @@ tr:last-child td{border-bottom:none}
   const diagnosiConnessione = async () => {
     if(navigator.onLine === false) return "il dispositivo risulta offline";
     try {
-      await withTimeout(fetch(SUPABASE_URL + "/auth/v1/health", {
-        method: "GET", mode: "no-cors", cache: "no-store",
+      // Senza la chiave la sonda prende 401, e in "no-cors" la risposta è
+      // opaca: veniva letta come "risponde" qualunque cosa fosse successo,
+      // cioè esattamente l'ambiguità che doveva togliere. Con chiave e CORS
+      // lo stato si legge davvero.
+      const res = await withTimeout(fetch(SUPABASE_URL + "/auth/v1/health", {
+        method: "GET", cache: "no-store", headers: { apikey: SUPABASE_KEY },
       }), 8000);
-      return "il database risponde, ma la lettura dei dati no";
+      return res.ok
+        ? "il database risponde, ma la lettura dei dati no"
+        : `il database risponde ${res.status} alla sonda`;
     } catch(_) {
       return "il database non è raggiungibile da questo dispositivo/rete";
     }
@@ -4728,23 +4734,38 @@ tr:last-child td{border-bottom:none}
   // Dopo un fallimento, riprovare da soli appena la rete torna (o appena si
   // riapre la scheda) evita di restare fermi davanti a un errore ormai
   // superato aspettando che qualcuno prema Ricarica.
+  // La riprova si aggancia solo al ritorno della rete. Agganciarla anche al
+  // ritorno sulla scheda faceva partire una raffica di letture identiche —
+  // nei log se ne sono viste tre in 6 millisecondi — che si accavallavano
+  // fra loro: tutte rispondevano 200, ma quella rimasta indietro scriveva
+  // l'errore sopra i dati che un'altra aveva già caricato.
   let riprovaArmata = false;
   const riprovaQuandoTornaLaRete = () => {
     if(riprovaArmata) return;
     riprovaArmata = true;
-    const riprova = () => {
+    window.addEventListener("online", () => {
       if(!cloudLoadFailed) return;
-      if(navigator.onLine === false) return;
       loadProjectsFromCloud().then(() => { if(!cloudLoadFailed) renderDashboard(); });
-    };
-    window.addEventListener("online", riprova);
-    document.addEventListener("visibilitychange", () => {
-      if(document.visibilityState === "visible") riprova();
     });
   };
 
-  const loadProjectsFromCloud = async () => {
+  // Una lettura per volta: chi arriva mentre un'altra è in corso si aggancia
+  // a quella invece di aprirne una nuova.
+  let letturaInCorso = null;
+  // Solo la lettura più recente può scrivere in pagina: una vecchia che
+  // scade in ritardo non deve poter smentire un caricamento già riuscito.
+  let letturaGenerazione = 0;
+
+  const loadProjectsFromCloud = async (...args) => {
+    if(letturaInCorso) return letturaInCorso;
+    letturaInCorso = eseguiLetturaCloud(...args).finally(() => { letturaInCorso = null; });
+    return letturaInCorso;
+  };
+
+  const eseguiLetturaCloud = async () => {
     if(!supabase) return;
+    const miaGenerazione = ++letturaGenerazione;
+    const sonoLaPiuRecente = () => miaGenerazione === letturaGenerazione;
     const loadingEl = document.getElementById("dashCloudLoading");
     const errorEl   = document.getElementById("dashCloudError");
     const refreshBtn= document.getElementById("btnRefreshCloud");
@@ -4787,6 +4808,10 @@ tr:last-child td{border-bottom:none}
       }
       if(error){
         console.error("Cloud load error:", error);
+        if(!sonoLaPiuRecente()){
+          if(loadingEl) loadingEl.style.display = "none";
+          return;
+        }
         cloudLoadFailed = true;
         const motivo = error.message || String(error);
         mostraErroreCloud(motivo);
@@ -4797,7 +4822,7 @@ tr:last-child td{border-bottom:none}
         // La diagnosi arriva dopo il messaggio: è una seconda richiesta e non
         // deve ritardare quello che l'utente sta già aspettando di leggere.
         diagnosiConnessione().then(esito => {
-          if(cloudLoadFailed) mostraErroreCloud(`${motivo} — ${esito}`);
+          if(cloudLoadFailed && sonoLaPiuRecente()) mostraErroreCloud(`${motivo} — ${esito}`);
         });
         riprovaQuandoTornaLaRete();
         return;
@@ -4817,6 +4842,7 @@ tr:last-child td{border-bottom:none}
       else toast("☁ Nessun kit nel cloud", "warn");
     } catch(err) {
       console.error("Cloud load exception:", err);
+      if(!sonoLaPiuRecente()) return;
       cloudLoadFailed = true;
       mostraErroreCloud(err?.message || String(err));
       if(errorEl)   errorEl.style.display   = "";
