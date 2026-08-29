@@ -1711,7 +1711,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v52</span>
+            <span id="buildTxt">build v53</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3176,7 +3176,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v52";
+  const BUILD = "v53";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4018,6 +4018,10 @@ if("serviceWorker" in navigator) {
   };
 
   /* ─── calc() ─── */
+  // Ultimo esito del calcolo, condiviso col PDF perché mostri gli stessi
+  // numeri che si vedono a schermo.
+  let ultimoCalcolo = null;
+
   const calc = () => {
     const q       = toNum(qtyEst.value);
     const qtyBase = q > 0 ? q : 1;
@@ -4076,6 +4080,7 @@ if("serviceWorker" in navigator) {
         const el = document.getElementById(`rev-${it.id}`);
         if(el) el.textContent = "";
       });
+      ultimoCalcolo = null;
       kCostAthlete.textContent    = "—";
       kPriceAthlete.textContent   = "—";
       kRealMargin.textContent     = "—";
@@ -4173,6 +4178,9 @@ if("serviceWorker" in navigator) {
        del preventivo invece di essere un conto parallelo che diverge. */
     const costoVenduti   = variableCost - giftCost;
     const rapportoRicavo = costoVenduti > 0 ? invoiceTotal / costoVenduti : 0;
+    // Il PDF riusa questo rapporto invece di rifare i conti per conto suo:
+    // due calcoli paralleli sugli stessi dati prima o poi divergono.
+    ultimoCalcolo = { rapportoRicavo };
     items.forEach(it => {
       const el = document.getElementById(`rev-${it.id}`);
       if(!el) return;
@@ -4541,17 +4549,27 @@ if("serviceWorker" in navigator) {
                         + staffPDF.valore;
     const fixedPDF    = Math.max(0, toNum(fixedCost.value));
     const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0) + fixedPDF;
+    // Prezzo e ricavo per riga: gli stessi che compaiono sotto ogni articolo a
+    // schermo, ottenuti dallo stesso rapporto, così il foglio interno dice
+    // quanto rende ciascuna referenza e non solo la media dell'ordine.
+    const rapportoPDF = ultimoCalcolo?.rapportoRicavo || 0;
     const itemsRows   = items.map(it => {
       const sub     = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
       const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
       const codeCell = it.code ? `<span style="font-family:monospace;font-size:10px;color:#5A7690">${esc(it.code)}</span> ` : "";
+      const qty      = toNum(it.qty);
+      const ricavo   = (!it.isGift && rapportoPDF > 0) ? sub * rapportoPDF : 0;
+      const prezzoStr = ricavo > 0 && qty > 0 ? eur(ricavo / qty) : "—";
+      const ricavoStr = ricavo > 0 ? eur(ricavo) : "—";
       return `<tr${it.isGift ? ' style="background:rgba(232,124,43,.04)"' : ''}>
         <td>${codeCell}${esc(it.article)}${giftTag}</td>
         <td>${esc(it.line)}</td>
         <td>${eur(toNum(it.base))}</td>
         <td>${eur(toNum(it.extra))}</td>
-        <td style="font-weight:700">${toNum(it.qty)}</td>
+        <td style="font-weight:700">${qty}</td>
         <td style="font-weight:800;color:${it.isGift ? '#E87C2B' : '#0A4174'}">${sub > 0 ? eur(sub) : "—"}</td>
+        <td style="font-weight:700">${prezzoStr}</td>
+        <td style="font-weight:800;color:#0A6E4E">${ricavoStr}</td>
       </tr>`;
     }).join("") + (staffPDF.kit > 0 ? `<tr style="background:rgba(232,124,43,.04)">
         <td>Kit staff completo<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span></td>
@@ -4560,7 +4578,19 @@ if("serviceWorker" in navigator) {
         <td>${eur(0)}</td>
         <td style="font-weight:700">${staffPDF.kit}</td>
         <td style="font-weight:800;color:#E87C2B">${eur(staffPDF.valore)}</td>
+        <td>—</td>
+        <td>—</td>
       </tr>` : "");
+
+    // Le due scale sono già calcolate e disegnate in pagina: si riusa quel
+    // markup invece di ricalcolarle, altrimenti il PDF potrebbe raccontare
+    // una scala diversa da quella appena letta a schermo.
+    const tabellaScala = (boxId) => {
+      const t = document.querySelector(`#${boxId} table`);
+      return t ? t.outerHTML : "";
+    };
+    const tabScontiPDF = tabellaScala("discountScaleBox");
+    const tabQtaPDF    = tabellaScala("qtyScaleBox");
 
     const offerPill   = usingOff
       ? `<div class="pill"><span>Prezzo proposto</span>${esc(offerPrice.value)} € ${vatOn ? "(IVA incl.)" : "(netto)"}</div>` : "";
@@ -4607,6 +4637,20 @@ tr:last-child td{border-bottom:none}
 .pill{padding:4px 11px;border-radius:999px;background:#EFF5FA;border:1px solid #C8DFF0;font-size:11px;font-weight:700;color:#001D39}
 .pill span{color:#49769F;font-weight:400;margin-right:4px}
 .footer{margin-top:22px;padding-top:10px;border-top:1px solid #C8DFF0;font-size:9px;color:#49769F;display:flex;justify-content:space-between}
+/* Le due scale arrivano dal markup gia' disegnato in pagina: qui vengono
+   ridisegnate per la stampa, dove i colori a schermo non esistono. */
+.scala .disc-table td:first-child{font-weight:700}
+.scala .disc-table td.strong{font-weight:800}
+.scala .disc-table th.st,.scala .disc-table td.st{text-align:center}
+.scala tr.is-current td{font-weight:800;background:#EFF5FA}
+.disc-badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.disc-badge.good{color:#0A6E4E;background:#E1F1EB}
+.disc-badge.warn{color:#9A6600;background:#FAEED3}
+.disc-badge.bad,.disc-badge.low{color:#BC431B;background:#FBE6DA}
+.cat-badge{display:inline-block;padding:1px 6px;border-radius:999px;font-size:8px;font-weight:800;text-transform:uppercase;color:#3E6A95;background:#EFF5FA;border:1px solid #C8DFF0;margin-left:4px}
+.cap{margin-top:7px;font-size:10px;color:#49769F;line-height:1.45}
+/* Una scala spezzata a meta' fra due pagine non si legge piu'. */
+.sec.scala{break-inside:avoid;page-break-inside:avoid}
 @media print{body{padding:16px}@page{margin:.7cm;size:A4 portrait}}
 </style>
 </head>
@@ -4640,7 +4684,7 @@ tr:last-child td{border-bottom:none}
 <div class="sec">
   <div class="sec-title">Articoli kit</div>
   <table>
-    <thead><tr><th>Articolo</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Qtà</th><th>Subtotale</th></tr></thead>
+    <thead><tr><th>Articolo</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Qtà</th><th>Subtotale</th><th>Prezzo unit.</th><th>Ricavo</th></tr></thead>
     <tbody>${itemsRows}</tbody>
   </table>
   ${fixedPDF > 0 ? `<div style="margin-top:8px;font-size:11px;color:#49769F">Costi fissi una-tantum (setup, grafica, spedizione): <b style="color:#001D39">${eur(fixedPDF)}</b> · incidenza ${g("kFixedPerAthlete")} per atleta</div>` : ""}
@@ -4671,6 +4715,18 @@ tr:last-child td{border-bottom:none}
     <div class="kpi ${kpiState("kpiDeposit")}"><div class="lbl">Acconto minimo sicuro</div><div class="val">${g("kMinDeposit")}</div><div class="note">Al netto IVA copre produzione + buffer</div></div>
   </div>
 </div>
+
+${tabScontiPDF ? `<div class="sec scala">
+  <div class="sec-title">Scala sconti</div>
+  ${tabScontiPDF}
+  <div class="cap">Sconti calcolati sul fatturato attuale di ${g("kGross")}. Margine minimo accettabile: ${minMargin.value}%.</div>
+</div>` : ""}
+
+${tabQtaPDF ? `<div class="sec scala">
+  <div class="sec-title">Scala quantità</div>
+  ${tabQtaPDF}
+  <div class="cap">Prezzo unitario tenuto fisso a ${g("kPriceAthlete")}: cambia solo la quantità.${fixedPDF > 0 ? ` I ${eur(fixedPDF)} di costi fissi si spalmano, quindi il costo unitario scende e il margine sale.` : " Senza costi fissi il costo unitario non cambia: cresce solo il profitto totale."}</div>
+</div>` : ""}
 
 <div class="footer"><span>doubleu kit — uso interno</span><span>${date}</span></div>
 </body></html>`;
