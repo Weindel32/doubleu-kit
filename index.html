@@ -814,15 +814,14 @@
     .bottom-zone .kpi { padding: 11px 12px; }
     .bottom-zone .kpi .val { font-size: 20px; margin-top: 2px; }
     .bottom-zone .kpi .note { font-size: 11px; margin-top: 3px; }
-    /* Ogni card prende la sua altezza: in griglia si allineerebbero alla più
-       alta della riga, e chi ha il badge di stato o una riga in più lasciava
-       le vicine mezze vuote. */
-    .bottom-zone .row2, .bottom-zone .row3, .bottom-zone .row4 {
-      gap: 10px; align-items: start;
-    }
-    /* Le due di testa fanno da banda: lì l'allineamento in altezza vale più
-       del pieno, e su una card in evidenza un po' d'aria non stona. */
-    .bottom-zone .riep-testa { align-items: stretch; }
+    /* Le righe restano allineate: lasciare a ogni card la sua altezza toglieva
+       i vuoti ma rendeva la griglia disordinata, che è peggio. Il vuoto si
+       toglie alla radice — meno spaziatura, note brevi, e nessuna card con
+       una riga in più della sua vicina. */
+    .bottom-zone .row2, .bottom-zone .row3, .bottom-zone .row4 { gap: 10px; }
+    /* Il badge di stato è l'unica cosa che resta ad allungare una card oltre
+       le vicine: qui pesa il minimo indispensabile. */
+    .bottom-zone .kpi-flag { margin-top: 6px; padding: 2px 8px 2px 6px; font-size: 10px; }
     .bottom-zone #kpiMarginSum .val, .bottom-zone #kpiPriceSum .val { font-size: 27px; }
 
     .bottom-actions {
@@ -1740,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v61</span>
+            <span id="buildTxt">build v62</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2265,11 +2264,20 @@
 
               <!-- Le due cifre su cui si decide, ripetute qui: chi arriva al
                    Riepilogo non deve tornare allo step Prezzi per leggerle. -->
-              <div class="row2 riep-testa" style="margin-bottom:10px">
+              <div class="row2" style="margin-bottom:10px">
                 <div class="kpi" id="kpiMarginSum">
                   <div class="lbl">Margine reale</div>
                   <div class="val" id="kRealMarginSum">—</div>
                   <div class="note" id="kTargetSum">Target: —</div>
+                  <!-- La percentuale da sola non dice quanto si porta a casa:
+                       l'importo le sta accanto, e le due card di testa hanno
+                       così la stessa struttura invece di una mezza vuota. -->
+                  <div class="kpi-mini-list">
+                    <div class="kpi-mini">
+                      <span class="kpi-mini-lbl">Margine dell'ordine</span>
+                      <span class="kpi-mini-val" id="kProfit">—</span>
+                    </div>
+                  </div>
                 </div>
                 <div class="kpi" id="kpiPriceSum">
                   <div class="lbl">Prezzo per atleta</div>
@@ -2346,12 +2354,7 @@
                 </div>
               </div>
 
-              <div class="row3" style="margin-top:10px">
-                <div class="kpi">
-                  <div class="lbl">Margine dell'ordine</div>
-                  <div class="val" id="kProfit">—</div>
-                  <div class="note">Margine su imponibile</div>
-                </div>
+              <div class="row2" style="margin-top:10px">
                 <div class="kpi" id="kpiDeposit">
                   <div class="lbl">Acconto minimo sicuro</div>
                   <div class="val" id="kMinDeposit">—</div>
@@ -3258,7 +3261,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v61";
+  const BUILD = "v62";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
