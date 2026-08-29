@@ -631,6 +631,9 @@
     .art-selects { display: flex; gap: 7px; margin-bottom: 4px; }
     .art-selects select { font-size: 12px; font-weight: 600; padding: 5px 8px; }
     .art-cost-note { font-size: 11px; color: var(--muted); }
+    /* Il ricavo di riga sta accanto al costo: leggermente più marcato, perché
+       è il dato che si va a cercare quando si confrontano due referenze. */
+    .art-rev-note  { font-size: 11px; color: var(--text-2); font-weight: 600; }
 
     .art-pricing { display: flex; gap: 8px; }
     .art-field { min-width: 72px; display: flex; flex-direction: column-reverse; }
@@ -1708,7 +1711,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v51</span>
+            <span id="buildTxt">build v52</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3173,7 +3176,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v51";
+  const BUILD = "v52";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3494,6 +3497,7 @@ if("serviceWorker" in navigator) {
         <select data-act="line"    data-id="${it.id}" style="min-width:110px">${optsL}</select>
       </div>
       <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costLabel}</div>
+      <div class="art-rev-note" id="rev-${it.id}"></div>
       ${tessutoRow}
     </div>
 
@@ -4066,6 +4070,12 @@ if("serviceWorker" in navigator) {
     const totalBar    = document.getElementById("kTotalCostBar");
 
     if(!hasQty || totalCost <= 0){
+      // Senza quantità non c'è fatturato da ripartire: le note di riga vanno
+      // svuotate, altrimenti resterebbero a schermo i valori del calcolo prima.
+      items.forEach(it => {
+        const el = document.getElementById(`rev-${it.id}`);
+        if(el) el.textContent = "";
+      });
       kCostAthlete.textContent    = "—";
       kPriceAthlete.textContent   = "—";
       kRealMargin.textContent     = "—";
@@ -4149,6 +4159,30 @@ if("serviceWorker" in navigator) {
 
     const costPerAthlete  = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
+
+    /* ─── Prezzo e ricavo per singola referenza ───
+       Il costo unitario di ogni riga è sempre stato in pagina, il prezzo no:
+       con due referenze di costo diverso restava solo la media sul totale, che
+       non corrisponde a nessuno dei due articoli e nasconde quale dei due rende
+       meno.
+
+       Il prezzo di riga non si ricalcola da capo dal margine: si ripartisce il
+       fatturato vero in proporzione al costo dei capi venduti. Così sconto,
+       costi fissi e prezzo di offerta finiscono nelle righe come sono già
+       finiti nel totale, e la somma dei ricavi di riga torna sempre al totale
+       del preventivo invece di essere un conto parallelo che diverge. */
+    const costoVenduti   = variableCost - giftCost;
+    const rapportoRicavo = costoVenduti > 0 ? invoiceTotal / costoVenduti : 0;
+    items.forEach(it => {
+      const el = document.getElementById(`rev-${it.id}`);
+      if(!el) return;
+      const qty = toNum(it.qty);
+      const costoRiga = (toNum(it.base) + toNum(it.extra)) * qty;
+      if(it.isGift){ el.textContent = "Omaggio · nessun ricavo"; return; }
+      if(!(rapportoRicavo > 0) || qty <= 0 || costoRiga <= 0){ el.textContent = ""; return; }
+      const ricavo = costoRiga * rapportoRicavo;
+      el.textContent = `Prezzo: ${eur(ricavo / qty)} · Ricavo: ${eur(ricavo)}`;
+    });
 
     /* ─── Spazio omaggi ───
        Quanto costo in più il prezzo riesce ancora a sopportare restando sopra
