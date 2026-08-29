@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v62</span>
+            <span id="buildTxt">build v63</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2264,7 +2264,7 @@
 
               <!-- Le due cifre su cui si decide, ripetute qui: chi arriva al
                    Riepilogo non deve tornare allo step Prezzi per leggerle. -->
-              <div class="row2" style="margin-bottom:10px">
+              <div class="row3" style="margin-bottom:10px">
                 <div class="kpi" id="kpiMarginSum">
                   <div class="lbl">Margine reale</div>
                   <div class="val" id="kRealMarginSum">—</div>
@@ -2290,12 +2290,22 @@
                     </div>
                   </div>
                 </div>
+                <div class="kpi" id="kpiMinPrice">
+                  <div class="lbl">Prezzo minimo trattativa</div>
+                  <div class="val" id="kMinPrice">—</div>
+                  <div class="note" id="kMinPriceNote">Sotto questo prezzo non si tratta.</div>
+                  <!-- Il minimo dice dove fermarsi, non quanto margine di
+                       trattativa resta: lo sconto massimo lo dice. -->
+                  <div class="kpi-mini-list">
+                    <div class="kpi-mini">
+                      <span class="kpi-mini-lbl">Sconto massimo</span>
+                      <span class="kpi-mini-val" id="kScontoMax">—</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Quattro colonne per i numeri brevi: a tre restavano card
-                   larghissime con dentro un solo importo, e l'ultima riga
-                   finiva spaiata. -->
-              <div class="row4">
+              <div class="row3" style="margin-top:10px">
                 <div class="kpi">
                   <div class="lbl">Quantità stimata</div>
                   <div class="val" id="kQtaSum">—</div>
@@ -2310,11 +2320,6 @@
                   <div class="lbl">Margine per atleta</div>
                   <div class="val" id="kProfitAthlete">—</div>
                   <div class="note">Prezzo netto − costo per atleta</div>
-                </div>
-                <div class="kpi" id="kpiMinPrice">
-                  <div class="lbl">Prezzo minimo trattativa</div>
-                  <div class="val" id="kMinPrice">—</div>
-                  <div class="note" id="kMinPriceNote">Sotto questo prezzo non si tratta.</div>
                 </div>
               </div>
 
@@ -3261,7 +3266,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v62";
+  const BUILD = "v63";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4225,6 +4230,7 @@ if("serviceWorker" in navigator) {
       kMinSustainable.textContent = "—";
       kTargetPrice.textContent    = "—";
       kMinPrice.textContent       = "—";
+      setText("kScontoMax", "—");
       setText("kMinPriceLive", "—");
       setText("kMinPriceLiveNote", "Prezzo minimo trattativa per atleta");
       const boxOmaggiVuoto = document.getElementById("kpiOmaggi");
@@ -4416,6 +4422,12 @@ if("serviceWorker" in navigator) {
     kMinSustainable.textContent = eur(minSustainableDisplay);
     kTargetPrice.textContent    = eur(targetPricePerAthlete);
     kMinPrice.textContent       = eur(minAcceptablePerAthlete);
+    // Il minimo dice dove fermarsi, non quanto margine di trattativa resta da
+    // qui: lo sconto massimo traduce la stessa soglia nella lingua con cui il
+    // cliente la chiede. Se il prezzo è già sotto il minimo non c'è spazio.
+    const scontoMax = pricePerAthlete > 0
+      ? Math.max(0, (pricePerAthlete - minAcceptablePerAthlete) / pricePerAthlete) : 0;
+    setText("kScontoMax", scontoMax > 0 ? `${(scontoMax * 100).toFixed(1)}%` : "—");
     setText("kMinPriceLive", eur(minAcceptablePerAthlete));
     // Il prezzo minimo è sempre calcolato sul margine %, ma il numero
     // mostrato è lordo se l'IVA è attiva: va detto esplicitamente, perché
