@@ -1711,7 +1711,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v53</span>
+            <span id="buildTxt">build v54</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3176,7 +3176,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v53";
+  const BUILD = "v54";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4165,31 +4165,48 @@ if("serviceWorker" in navigator) {
     const costPerAthlete  = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
 
-    /* ─── Prezzo e ricavo per singola referenza ───
-       Il costo unitario di ogni riga è sempre stato in pagina, il prezzo no:
-       con due referenze di costo diverso restava solo la media sul totale, che
-       non corrisponde a nessuno dei due articoli e nasconde quale dei due rende
-       meno.
+    /* ─── Prezzo e margine per singola referenza ───
+       Il prezzo dell'ordine è uno solo. Attribuire a ogni riga un prezzo
+       diverso, ricavato dal suo costo, faceva sembrare che si incassassero
+       importi diversi da quelli reali: due referenze vendute allo stesso
+       prezzo rendono lo stesso incasso, non due incassi distinti.
 
-       Il prezzo di riga non si ricalcola da capo dal margine: si ripartisce il
-       fatturato vero in proporzione al costo dei capi venduti. Così sconto,
-       costi fissi e prezzo di offerta finiscono nelle righe come sono già
-       finiti nel totale, e la somma dei ricavi di riga torna sempre al totale
-       del preventivo invece di essere un conto parallelo che diverge. */
+       Quello che cambia davvero fra loro è il margine: a parità di prezzo la
+       referenza più cara rende meno, ed è l'unica cosa che serve sapere per
+       decidere. I costi fissi entrano pro quota, altrimenti i margini di riga
+       risulterebbero più alti di quello dell'ordine.
+
+       Un prezzo unitario però esiste solo se le righe si spartiscono la
+       quantità stimata (150 + 150 = 300). Nel kit con più capi a testa il
+       prezzo è quello del kit intero e un prezzo della singola riga non
+       esiste: lì si mostra quanto pesa la riga sul costo, che resta vero in
+       ogni caso. */
+    const qtaVendute     = items.reduce((a, it) => a + (it.isGift ? 0 : toNum(it.qty)), 0);
+    const righeRipartite = qtaVendute > 0 && Math.abs(qtaVendute - qtyBase) < 0.5;
+    const prezzoUnitNet  = vatOn ? pricePerAthlete / (1 + vatRate) : pricePerAthlete;
+    const fissiPerUnita  = qtyBase > 0 ? fixed / qtyBase : 0;
     const costoVenduti   = variableCost - giftCost;
-    const rapportoRicavo = costoVenduti > 0 ? invoiceTotal / costoVenduti : 0;
-    // Il PDF riusa questo rapporto invece di rifare i conti per conto suo:
-    // due calcoli paralleli sugli stessi dati prima o poi divergono.
-    ultimoCalcolo = { rapportoRicavo };
+    // Il PDF riusa questi valori invece di rifare i conti per conto suo: due
+    // calcoli paralleli sugli stessi dati prima o poi divergono.
+    ultimoCalcolo = { righeRipartite, prezzoUnitNet, fissiPerUnita, pricePerAthlete, costoVenduti };
+
+    const margineRiga = (costoUnit) => (prezzoUnitNet - costoUnit - fissiPerUnita) / prezzoUnitNet;
+
     items.forEach(it => {
       const el = document.getElementById(`rev-${it.id}`);
       if(!el) return;
-      const qty = toNum(it.qty);
-      const costoRiga = (toNum(it.base) + toNum(it.extra)) * qty;
+      const qty       = toNum(it.qty);
+      const costoUnit = toNum(it.base) + toNum(it.extra);
       if(it.isGift){ el.textContent = "Omaggio · nessun ricavo"; return; }
-      if(!(rapportoRicavo > 0) || qty <= 0 || costoRiga <= 0){ el.textContent = ""; return; }
-      const ricavo = costoRiga * rapportoRicavo;
-      el.textContent = `Prezzo: ${eur(ricavo / qty)} · Ricavo: ${eur(ricavo)}`;
+      if(qty <= 0 || costoUnit <= 0){ el.textContent = ""; return; }
+      if(righeRipartite && prezzoUnitNet > 0){
+        el.textContent = `Prezzo: ${eur(pricePerAthlete)} · Margine: ${(margineRiga(costoUnit) * 100).toFixed(1)}%`
+          + ` · Ricavo: ${eur(pricePerAthlete * qty)}`;
+      } else if(costoVenduti > 0){
+        el.textContent = `Quota sul costo dell'ordine: ${((costoUnit * qty / costoVenduti) * 100).toFixed(0)}%`;
+      } else {
+        el.textContent = "";
+      }
     });
 
     /* ─── Spazio omaggi ───
@@ -4549,18 +4566,22 @@ if("serviceWorker" in navigator) {
                         + staffPDF.valore;
     const fixedPDF    = Math.max(0, toNum(fixedCost.value));
     const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0) + fixedPDF;
-    // Prezzo e ricavo per riga: gli stessi che compaiono sotto ogni articolo a
-    // schermo, ottenuti dallo stesso rapporto, così il foglio interno dice
-    // quanto rende ciascuna referenza e non solo la media dell'ordine.
-    const rapportoPDF = ultimoCalcolo?.rapportoRicavo || 0;
+    // Prezzo, ricavo e margine per riga: gli stessi che compaiono sotto ogni
+    // articolo a schermo, presi dallo stesso calcolo. A parità di prezzo la
+    // colonna che distingue le referenze è il margine, non l'incasso.
+    const cPDF        = ultimoCalcolo || {};
+    const ripartitePDF = !!cPDF.righeRipartite && cPDF.prezzoUnitNet > 0;
     const itemsRows   = items.map(it => {
       const sub     = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
       const giftTag = it.isGift ? `<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span>` : "";
       const codeCell = it.code ? `<span style="font-family:monospace;font-size:10px;color:#5A7690">${esc(it.code)}</span> ` : "";
-      const qty      = toNum(it.qty);
-      const ricavo   = (!it.isGift && rapportoPDF > 0) ? sub * rapportoPDF : 0;
-      const prezzoStr = ricavo > 0 && qty > 0 ? eur(ricavo / qty) : "—";
-      const ricavoStr = ricavo > 0 ? eur(ricavo) : "—";
+      const qty       = toNum(it.qty);
+      const costoUnit = toNum(it.base) + toNum(it.extra);
+      const mostra    = ripartitePDF && !it.isGift && qty > 0 && costoUnit > 0;
+      const margine   = mostra ? (cPDF.prezzoUnitNet - costoUnit - cPDF.fissiPerUnita) / cPDF.prezzoUnitNet : 0;
+      const prezzoStr = mostra ? eur(cPDF.pricePerAthlete) : "—";
+      const ricavoStr = mostra ? eur(cPDF.pricePerAthlete * qty) : "—";
+      const margStr   = mostra ? (margine * 100).toFixed(1) + "%" : "—";
       return `<tr${it.isGift ? ' style="background:rgba(232,124,43,.04)"' : ''}>
         <td>${codeCell}${esc(it.article)}${giftTag}</td>
         <td>${esc(it.line)}</td>
@@ -4570,6 +4591,7 @@ if("serviceWorker" in navigator) {
         <td style="font-weight:800;color:${it.isGift ? '#E87C2B' : '#0A4174'}">${sub > 0 ? eur(sub) : "—"}</td>
         <td style="font-weight:700">${prezzoStr}</td>
         <td style="font-weight:800;color:#0A6E4E">${ricavoStr}</td>
+        <td style="font-weight:800">${margStr}</td>
       </tr>`;
     }).join("") + (staffPDF.kit > 0 ? `<tr style="background:rgba(232,124,43,.04)">
         <td>Kit staff completo<span style="font-size:9px;font-weight:800;background:rgba(232,124,43,.12);border:1px solid rgba(232,124,43,.35);color:#E87C2B;border-radius:4px;padding:1px 5px;margin-left:5px">OMAGGIO</span></td>
@@ -4578,6 +4600,7 @@ if("serviceWorker" in navigator) {
         <td>${eur(0)}</td>
         <td style="font-weight:700">${staffPDF.kit}</td>
         <td style="font-weight:800;color:#E87C2B">${eur(staffPDF.valore)}</td>
+        <td>—</td>
         <td>—</td>
         <td>—</td>
       </tr>` : "");
@@ -4649,6 +4672,9 @@ tr:last-child td{border-bottom:none}
 .disc-badge.bad,.disc-badge.low{color:#BC431B;background:#FBE6DA}
 .cat-badge{display:inline-block;padding:1px 6px;border-radius:999px;font-size:8px;font-weight:800;text-transform:uppercase;color:#3E6A95;background:#EFF5FA;border:1px solid #C8DFF0;margin-left:4px}
 .cap{margin-top:7px;font-size:10px;color:#49769F;line-height:1.45}
+.cap b{color:#001D39}
+/* Nove colonne su A4 verticale: senza stringere, l'ultima va a capo. */
+table.art th,table.art td{font-size:11px;padding:6px 5px}
 /* Una scala spezzata a meta' fra due pagine non si legge piu'. */
 .sec.scala{break-inside:avoid;page-break-inside:avoid}
 @media print{body{padding:16px}@page{margin:.7cm;size:A4 portrait}}
@@ -4683,11 +4709,14 @@ tr:last-child td{border-bottom:none}
 
 <div class="sec">
   <div class="sec-title">Articoli kit</div>
-  <table>
-    <thead><tr><th>Articolo</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Qtà</th><th>Subtotale</th><th>Prezzo unit.</th><th>Ricavo</th></tr></thead>
+  <table class="art">
+    <thead><tr><th>Articolo</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Qtà</th><th>Subtotale</th><th>Prezzo unit.</th><th>Ricavo</th><th>Margine</th></tr></thead>
     <tbody>${itemsRows}</tbody>
   </table>
-  ${fixedPDF > 0 ? `<div style="margin-top:8px;font-size:11px;color:#49769F">Costi fissi una-tantum (setup, grafica, spedizione): <b style="color:#001D39">${eur(fixedPDF)}</b> · incidenza ${g("kFixedPerAthlete")} per atleta</div>` : ""}
+  <div class="cap">${ripartitePDF
+    ? `Prezzo unitario unico per tutte le referenze: <b>${g("kPriceAthlete")}</b>. A parità di prezzo la referenza che costa di più rende meno: è la colonna <b>Margine</b> a distinguerle, non l'incasso.`
+    : `Le righe non si spartiscono la quantità stimata: il prezzo è quello del kit completo, non della singola riga.`}</div>
+  ${fixedPDF > 0 ? `<div style="margin-top:6px;font-size:11px;color:#49769F">Costi fissi una-tantum (setup, grafica, spedizione): <b style="color:#001D39">${eur(fixedPDF)}</b> · incidenza ${g("kFixedPerAthlete")} per atleta · già compresi nei margini di riga</div>` : ""}
 </div>
 
 <div class="sec">
