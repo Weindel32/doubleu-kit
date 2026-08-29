@@ -808,6 +808,23 @@
     /* ─── Bottom Zone ─── */
     .bottom-zone { margin-top: 18px; }
 
+    /* Il riepilogo ha quindici card e ognuna porta un solo numero: con la
+       spaziatura delle card in evidenza restava molto vuoto attorno a poco
+       testo. Qui sono compatte, e restano grandi solo i due numeri di testa. */
+    .bottom-zone .kpi { padding: 11px 12px; }
+    .bottom-zone .kpi .val { font-size: 20px; margin-top: 2px; }
+    .bottom-zone .kpi .note { font-size: 11px; margin-top: 3px; }
+    /* Ogni card prende la sua altezza: in griglia si allineerebbero alla più
+       alta della riga, e chi ha il badge di stato o una riga in più lasciava
+       le vicine mezze vuote. */
+    .bottom-zone .row2, .bottom-zone .row3, .bottom-zone .row4 {
+      gap: 10px; align-items: start;
+    }
+    /* Le due di testa fanno da banda: lì l'allineamento in altezza vale più
+       del pieno, e su una card in evidenza un po' d'aria non stona. */
+    .bottom-zone .riep-testa { align-items: stretch; }
+    .bottom-zone #kpiMarginSum .val, .bottom-zone #kpiPriceSum .val { font-size: 27px; }
+
     .bottom-actions {
       display: flex; gap: 8px; flex-wrap: wrap;
       align-items: center; justify-content: space-between;
@@ -1723,7 +1740,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v60</span>
+            <span id="buildTxt">build v61</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2248,7 +2265,7 @@
 
               <!-- Le due cifre su cui si decide, ripetute qui: chi arriva al
                    Riepilogo non deve tornare allo step Prezzi per leggerle. -->
-              <div class="row2" style="margin-bottom:10px">
+              <div class="row2 riep-testa" style="margin-bottom:10px">
                 <div class="kpi" id="kpiMarginSum">
                   <div class="lbl">Margine reale</div>
                   <div class="val" id="kRealMarginSum">—</div>
@@ -3241,7 +3258,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v60";
+  const BUILD = "v61";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4209,7 +4226,7 @@ if("serviceWorker" in navigator) {
       setText("kMinPriceLiveNote", "Prezzo minimo trattativa per atleta");
       const boxOmaggiVuoto = document.getElementById("kpiOmaggi");
       if(boxOmaggiVuoto) boxOmaggiVuoto.style.display = "none";
-      setText("kMinPriceNote", "Prezzo che lascia ancora il margine minimo accettabile. Sotto questo prezzo non si tratta.");
+      setText("kMinPriceNote", "Al margine minimo accettabile");
       kMinDeposit.textContent     = "—";
       setText("kQtaSum", "—"); setText("kVatDue", "—"); setText("kSaldo", "—");
       setText("kSaldoNote", "Totale − acconto");
@@ -4473,7 +4490,10 @@ if("serviceWorker" in navigator) {
         setText("kOmaggiDettaglio", perCapo.length ? "oppure " + perCapo.join(" · ") : "");
       }
     }
-    setText("kMinPriceNote", `Prezzo che lascia ancora il margine minimo accettabile (${(mMin*100).toFixed(0)}%), ${minPriceVatTxt}. Sotto questo prezzo non si tratta.`);
+    // Note brevi: in griglia la card più alta detta l'altezza di tutta la
+    // riga, quindi una spiegazione lunga lasciava le vicine mezze vuote. Il
+    // senso lo porta già l'etichetta, qui bastano i numeri che cambiano.
+    setText("kMinPriceNote", `Al margine minimo ${(mMin*100).toFixed(0)}% · ${minPriceVatTxt}`);
     kMinDeposit.textContent     = eur(minDepositGross);
     if(totalBar) totalBar.textContent = eur(totalCost);
 
@@ -4488,9 +4508,7 @@ if("serviceWorker" in navigator) {
           ? `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · IVA ${(vatRate*100).toFixed(0)}%`
           : `Prezzo a TARGET · Sconto ${(disc*100).toFixed(0)}% · NO IVA`);
 
-    kDepNote.textContent = vatOn
-      ? `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · netto IVA ${eur(depositNet)} · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`
-      : `Acconto attuale: ${eur(depositAmount)} (${(dep*100).toFixed(0)}%) · Min % per coprire: ${(depositPctRequired*100).toFixed(1)}%`;
+    kDepNote.textContent = `Ora ${(dep*100).toFixed(0)}% = ${eur(depositAmount)} · serve almeno ${(depositPctRequired*100).toFixed(1)}%`;
 
     const alerts = [];
 
