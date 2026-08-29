@@ -492,6 +492,20 @@
 
     .kpi .note { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
+    /* Lordo e netto affiancati. Il netto stava nella nota, in grigio piccolo,
+       come se fosse una postilla: ma è il numero su cui si ragiona di margine
+       e va letto insieme al lordo, non cercato. */
+    .kpi-prezzi { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .kpi-netto { display: flex; align-items: baseline; gap: 5px; }
+    .kpi-netto[hidden] { display: none; }
+    .kpi-netto-val {
+      font-size: 17px; font-weight: 700; color: var(--text-2); letter-spacing: -.2px;
+    }
+    .kpi-netto-lbl {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+
     /* Chip di stato: icona + parola, così il significato NON dipende dal solo colore */
     .kpi-flag {
       display: inline-flex; align-items: center; gap: 5px; margin-top: 9px;
@@ -1719,7 +1733,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v57</span>
+            <span id="buildTxt">build v58</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2252,7 +2266,13 @@
                 </div>
                 <div class="kpi" id="kpiPriceSum">
                   <div class="lbl">Prezzo per atleta</div>
-                  <div class="val" id="kPriceAthleteSum">—</div>
+                  <div class="kpi-prezzi">
+                    <div class="val" id="kPriceAthleteSum">—</div>
+                    <div class="kpi-netto" id="kPriceNetBoxSum" hidden>
+                      <span class="kpi-netto-val" id="kPriceAthleteNetSum">—</span>
+                      <span class="kpi-netto-lbl">netto</span>
+                    </div>
+                  </div>
                   <div class="note" id="kVatNoteSum">—</div>
                 </div>
               </div>
@@ -2398,7 +2418,13 @@
 
                 <div class="kpi kpi-hero" id="kpiPrice">
                   <div class="lbl">Prezzo per atleta</div>
-                  <div class="val" id="kPriceAthlete">—</div>
+                  <div class="kpi-prezzi">
+                    <div class="val" id="kPriceAthlete">—</div>
+                    <div class="kpi-netto" id="kPriceNetBox" hidden>
+                      <span class="kpi-netto-val" id="kPriceAthleteNet">—</span>
+                      <span class="kpi-netto-lbl">netto</span>
+                    </div>
+                  </div>
                   <div class="note" id="kVatNote">—</div>
                 </div>
 
@@ -3225,7 +3251,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v57";
+  const BUILD = "v58";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4082,7 +4108,13 @@ if("serviceWorker" in navigator) {
       const s = document.getElementById(da), d = document.getElementById(a);
       if(s && d) d.textContent = s.textContent;
     };
-    copiaTesto("kCostAthlete",  "kCostAthleteSum");
+    copiaTesto("kCostAthlete",     "kCostAthleteSum");
+    copiaTesto("kPriceAthleteNet", "kPriceAthleteNetSum");
+    // Anche il "nascosto" va rispecchiato: senza IVA il netto coincide col
+    // prezzo e ripeterlo sarebbe rumore, ma solo in una delle due schermate.
+    const boxNet = document.getElementById("kPriceNetBox");
+    const boxNetSum = document.getElementById("kPriceNetBoxSum");
+    if(boxNet && boxNetSum) boxNetSum.hidden = boxNet.hidden;
     copiaTesto("kRealMargin",   "kRealMarginSum");
     copiaTesto("kTarget",       "kTargetSum");
     copiaTesto("kPriceAthlete", "kPriceAthleteSum");
@@ -4096,6 +4128,15 @@ if("serviceWorker" in navigator) {
     };
     copiaStato("kpiMargin", "kpiMarginSum");
     copiaStato("kpiPrice",  "kpiPriceSum");
+  };
+
+  // Il netto come coda di testo, per i documenti che non hanno card: vale solo
+  // con l'IVA attiva, altrimenti ripeterebbe il prezzo appena scritto.
+  const nettoTesto = () => {
+    const box = document.getElementById("kPriceNetBox");
+    const val = document.getElementById("kPriceAthleteNet")?.textContent;
+    if(!box || box.hidden || !val || val === "—") return "";
+    return ` · ${val} netto`;
   };
 
   const calc = () => {
@@ -4159,6 +4200,9 @@ if("serviceWorker" in navigator) {
       ultimoCalcolo = null;
       kCostAthlete.textContent    = "—";
       kPriceAthlete.textContent   = "—";
+      setText("kPriceAthleteNet", "—");
+      const boxNettoVuoto = document.getElementById("kPriceNetBox");
+      if(boxNettoVuoto) boxNettoVuoto.hidden = true;
       kRealMargin.textContent     = "—";
       kTarget.textContent         = "Target: " + (m * 100).toFixed(0) + "%";
       kVatNote.textContent        = "—";
@@ -4342,11 +4386,12 @@ if("serviceWorker" in navigator) {
     kPriceAthlete.textContent   = eur(pricePerAthlete);
     kRealMargin.textContent     = (realMargin * 100).toFixed(1) + "%";
     kTarget.textContent         = "Target: " + (m * 100).toFixed(0) + "%";
-    // L'imponibile è il numero su cui si ragiona di margine: averlo qui evita
-    // di doverlo ricavare dividendo per l'IVA ogni volta.
-    kVatNote.textContent        = vatOn
-      ? `IVA inclusa · ${eur(prezzoUnitNet)} netto`
-      : "Prezzi netti (no IVA)";
+    // L'imponibile ha un posto suo accanto al lordo: senza IVA attiva il
+    // prezzo mostrato è già netto, quindi ripeterlo sarebbe rumore.
+    setText("kPriceAthleteNet", vatOn ? eur(prezzoUnitNet) : "—");
+    const boxNetto = document.getElementById("kPriceNetBox");
+    if(boxNetto) boxNetto.hidden = !vatOn;
+    kVatNote.textContent        = vatOn ? "IVA inclusa nel prezzo" : "Prezzi netti (no IVA)";
 
     const profitPerAthlete = qtyBase > 0 ? profit / qtyBase : 0;
 
@@ -4617,7 +4662,7 @@ if("serviceWorker" in navigator) {
     lines.push(`Margine dell'ordine: ${kProfit.textContent}`);
     lines.push(`Margine per atleta: ${document.getElementById("kProfitAthlete")?.textContent || "—"}`);
     lines.push(`Costo per atleta: ${kCostAthlete.textContent}`);
-    lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${kVatNote.textContent})`);
+    lines.push(`Prezzo per atleta: ${kPriceAthlete.textContent} (${kVatNote.textContent})${nettoTesto()}`);
     lines.push(`Margine reale: ${kRealMargin.textContent}`);
     const vatTag = vatOn ? " (IVA incl.)" : " (netto)";
     lines.push(`Minimo sostenibile: ${kMinSustainable.textContent}${vatTag}`);
@@ -4817,7 +4862,7 @@ table.art th,table.art td{font-size:11px;padding:6px 5px}
   <div class="grid5">
     <div class="kpi ${kpiState("kpiMargin")}"><div class="lbl">Margine reale</div><div class="val">${g("kRealMargin")}</div><div class="note">Target: ${marginLabel}</div></div>
     <div class="kpi"><div class="lbl">Costo / atleta</div><div class="val">${g("kCostAthlete")}</div><div class="note">Su qtà stimata</div></div>
-    <div class="kpi ${kpiState("kpiPrice")}"><div class="lbl">Prezzo / atleta</div><div class="val">${g("kPriceAthlete")}</div><div class="note">${g("kVatNote")}</div></div>
+    <div class="kpi ${kpiState("kpiPrice")}"><div class="lbl">Prezzo / atleta</div><div class="val">${g("kPriceAthlete")}</div><div class="note">${g("kVatNote")}${nettoTesto()}</div></div>
     <div class="kpi"><div class="lbl">Min. sostenibile</div><div class="val">${g("kMinSustainable")}</div><div class="note">Breakeven + buffer</div></div>
     <div class="kpi ${kpiState("kpiTargetPrice")}"><div class="lbl">Prezzo target</div><div class="val">${g("kTargetPrice")}</div><div class="note">Per raggiungere target</div></div>
   </div>
