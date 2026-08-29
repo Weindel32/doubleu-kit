@@ -362,9 +362,17 @@
     /* ─── Grid Helpers ─── */
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    /* Per i valori brevi del riepilogo: a tre colonne restavano card larghe
+       con dentro un solo importo. */
+    .row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
+    /* Prima di impilarle del tutto, il passaggio intermedio a due colonne:
+       quattro card in colonna singola allungano il riepilogo a dismisura. */
+    @media (max-width: 1100px) {
+      .row4 { grid-template-columns: 1fr 1fr; }
+    }
     @media (max-width: 720px) {
-      .row2, .row3 { grid-template-columns: 1fr; }
+      .row2, .row3, .row4 { grid-template-columns: 1fr; }
     }
 
     /* ─── Toggle ─── */
@@ -1146,7 +1154,7 @@
       .dash-table th:not(:first-child) { padding-left: 14px; padding-right: 14px; }
 
       /* Row grids collapse */
-      .row2, .row3 { grid-template-columns: 1fr; }
+      .row2, .row3, .row4 { grid-template-columns: 1fr; }
       .analisi-2col { grid-template-columns: 1fr; }
       /* Le celle di .dash-table sono nowrap: senza min-width:0 la colonna grid
          si allargava oltre lo schermo e trascinava tutta la pagina di lato. */
@@ -1711,7 +1719,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v56</span>
+            <span id="buildTxt">build v57</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2249,12 +2257,51 @@
                 </div>
               </div>
 
-              <div class="row3">
+              <!-- Quattro colonne per i numeri brevi: a tre restavano card
+                   larghissime con dentro un solo importo, e l'ultima riga
+                   finiva spaiata. -->
+              <div class="row4">
+                <div class="kpi">
+                  <div class="lbl">Quantità stimata</div>
+                  <div class="val" id="kQtaSum">—</div>
+                  <div class="note">Il divisore di tutti i valori per atleta</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Costo per atleta</div>
+                  <div class="val" id="kCostAthleteSum">—</div>
+                  <div class="note">Costo totale ÷ quantità stimata</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Margine per atleta</div>
+                  <div class="val" id="kProfitAthlete">—</div>
+                  <div class="note">Prezzo netto − costo per atleta</div>
+                </div>
+                <div class="kpi" id="kpiMinPrice">
+                  <div class="lbl">Prezzo minimo trattativa</div>
+                  <div class="val" id="kMinPrice">—</div>
+                  <div class="note" id="kMinPriceNote">Sotto questo prezzo non si tratta.</div>
+                </div>
+              </div>
+
+              <div class="row3" style="margin-top:10px">
                 <div class="kpi">
                   <div class="lbl">Costo totale reale</div>
                   <div class="val" id="kTotalCost">—</div>
                   <div class="note">Produzione completa (incl. eventuali omaggi)</div>
                 </div>
+                <div class="kpi">
+                  <div class="lbl">Costo fatturato</div>
+                  <div class="val" id="kPaidCost">—</div>
+                  <div class="note">Senza omaggi · costi fissi inclusi</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Costo omaggi (assorbiti)</div>
+                  <div class="val" id="kGiftCost">—</div>
+                  <div class="note">Nel costo totale, non fatturati</div>
+                </div>
+              </div>
+
+              <div class="row3" style="margin-top:10px">
                 <div class="kpi">
                   <div class="lbl">Totale fatturato</div>
                   <div class="val" id="kGross">—</div>
@@ -2265,18 +2312,10 @@
                   <div class="val" id="kNet">—</div>
                   <div class="note">Totale netto (senza IVA)</div>
                 </div>
-              </div>
-
-              <div class="row2" style="margin-top:10px">
                 <div class="kpi">
-                  <div class="lbl">Costo fatturato</div>
-                  <div class="val" id="kPaidCost">—</div>
-                  <div class="note">Senza omaggi · costi fissi inclusi</div>
-                </div>
-                <div class="kpi">
-                  <div class="lbl">Costo omaggi (assorbiti)</div>
-                  <div class="val" id="kGiftCost">—</div>
-                  <div class="note">Inclusi nel costo totale, non fatturati</div>
+                  <div class="lbl">IVA da versare</div>
+                  <div class="val" id="kVatDue">—</div>
+                  <div class="note" id="kVatDueNote">Incassata nel prezzo, non è tua</div>
                 </div>
               </div>
 
@@ -2286,20 +2325,15 @@
                   <div class="val" id="kProfit">—</div>
                   <div class="note">Margine su imponibile</div>
                 </div>
-                <div class="kpi">
-                  <div class="lbl">Margine per atleta</div>
-                  <div class="val" id="kProfitAthlete">—</div>
-                  <div class="note">Margine dell'ordine ÷ quantità stimata</div>
-                </div>
-                <div class="kpi" id="kpiMinPrice">
-                  <div class="lbl">Prezzo minimo trattativa (per atleta)</div>
-                  <div class="val" id="kMinPrice">—</div>
-                  <div class="note" id="kMinPriceNote">Prezzo che lascia ancora il margine minimo accettabile. Sotto questo prezzo non si tratta.</div>
-                </div>
                 <div class="kpi" id="kpiDeposit">
-                  <div class="lbl">Acconto minimo sicuro (da richiedere)</div>
+                  <div class="lbl">Acconto minimo sicuro</div>
                   <div class="val" id="kMinDeposit">—</div>
                   <div class="note" id="kDepNote">Al netto IVA copre produzione + buffer</div>
+                </div>
+                <div class="kpi">
+                  <div class="lbl">Saldo alla consegna</div>
+                  <div class="val" id="kSaldo">—</div>
+                  <div class="note" id="kSaldoNote">Totale − acconto</div>
                 </div>
               </div>
 
@@ -3191,7 +3225,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v56";
+  const BUILD = "v57";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4048,6 +4082,7 @@ if("serviceWorker" in navigator) {
       const s = document.getElementById(da), d = document.getElementById(a);
       if(s && d) d.textContent = s.textContent;
     };
+    copiaTesto("kCostAthlete",  "kCostAthleteSum");
     copiaTesto("kRealMargin",   "kRealMarginSum");
     copiaTesto("kTarget",       "kTargetSum");
     copiaTesto("kPriceAthlete", "kPriceAthleteSum");
@@ -4142,6 +4177,8 @@ if("serviceWorker" in navigator) {
       if(boxOmaggiVuoto) boxOmaggiVuoto.style.display = "none";
       setText("kMinPriceNote", "Prezzo che lascia ancora il margine minimo accettabile. Sotto questo prezzo non si tratta.");
       kMinDeposit.textContent     = "—";
+      setText("kQtaSum", "—"); setText("kVatDue", "—"); setText("kSaldo", "—");
+      setText("kSaldoNote", "Totale − acconto");
       kDepNote.textContent        = "Inserisci almeno 1 quantità > 0";
       kGrossNote.textContent      = "—";
       if(totalBar) totalBar.textContent = "—";
@@ -4291,6 +4328,15 @@ if("serviceWorker" in navigator) {
     const depositAmount     = invoiceTotal * dep;
     const depositNet        = vatOn ? depositAmount / (1 + vatRate) : depositAmount;
     const depositPctRequired= invoiceTotal > 0 ? (minDepositGross / invoiceTotal) : 0;
+
+    // Voci del solo Riepilogo: la quantità su cui è diviso tutto, l'IVA che
+    // si incassa ma si riversa, e il saldo che resta da incassare dopo
+    // l'acconto — cioè le due metà della cassa, non solo quella richiesta.
+    setText("kQtaSum", String(qtyBase));
+    setText("kVatDue", vatOn ? eur(invoiceTotal - revenueNet) : "—");
+    setText("kVatDueNote", vatOn ? "Incassata nel prezzo, non è tua" : "Nessuna IVA applicata");
+    setText("kSaldo", eur(Math.max(0, invoiceTotal - depositAmount)));
+    setText("kSaldoNote", `Totale − acconto ${depositPct.value}% (${eur(depositAmount)})`);
 
     kCostAthlete.textContent    = eur(costPerAthlete);
     kPriceAthlete.textContent   = eur(pricePerAthlete);
