@@ -1711,7 +1711,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v54</span>
+            <span id="buildTxt">build v55</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2233,6 +2233,21 @@
             <div class="step-content" data-step="3">
             <div class="card bottom-zone">
               <div class="card-title">Riepilogo ordine</div>
+
+              <!-- Le due cifre su cui si decide, ripetute qui: chi arriva al
+                   Riepilogo non deve tornare allo step Prezzi per leggerle. -->
+              <div class="row2" style="margin-bottom:10px">
+                <div class="kpi" id="kpiMarginSum">
+                  <div class="lbl">Margine reale</div>
+                  <div class="val" id="kRealMarginSum">—</div>
+                  <div class="note" id="kTargetSum">Target: —</div>
+                </div>
+                <div class="kpi" id="kpiPriceSum">
+                  <div class="lbl">Prezzo per atleta</div>
+                  <div class="val" id="kPriceAthleteSum">—</div>
+                  <div class="note" id="kVatNoteSum">—</div>
+                </div>
+              </div>
 
               <div class="row3">
                 <div class="kpi">
@@ -3176,7 +3191,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v54";
+  const BUILD = "v55";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4022,6 +4037,32 @@ if("serviceWorker" in navigator) {
   // numeri che si vedono a schermo.
   let ultimoCalcolo = null;
 
+  /* Margine reale e prezzo per atleta vivevano solo nell'analisi live dello
+     step Prezzi. Qui vengono rispecchiati nel Riepilogo — copiati, non
+     ricalcolati: un secondo calcolo sugli stessi dati e' esattamente cio' che
+     fa comparire due numeri diversi per la stessa cosa. Anche il colore di
+     stato segue l'originale, altrimenti un margine sotto soglia risulterebbe
+     allarmante in una schermata e tranquillo nell'altra. */
+  const rispecchiaRiepilogo = () => {
+    const copiaTesto = (da, a) => {
+      const s = document.getElementById(da), d = document.getElementById(a);
+      if(s && d) d.textContent = s.textContent;
+    };
+    copiaTesto("kRealMargin",   "kRealMarginSum");
+    copiaTesto("kTarget",       "kTargetSum");
+    copiaTesto("kPriceAthlete", "kPriceAthleteSum");
+    copiaTesto("kVatNote",      "kVatNoteSum");
+
+    const copiaStato = (da, a) => {
+      const s = document.getElementById(da), d = document.getElementById(a);
+      if(!s || !d) return;
+      d.classList.remove("good", "warn", "bad");
+      ["good", "warn", "bad"].forEach(c => { if(s.classList.contains(c)) d.classList.add(c); });
+    };
+    copiaStato("kpiMargin", "kpiMarginSum");
+    copiaStato("kpiPrice",  "kpiPriceSum");
+  };
+
   const calc = () => {
     const q       = toNum(qtyEst.value);
     const qtyBase = q > 0 ? q : 1;
@@ -4118,6 +4159,7 @@ if("serviceWorker" in navigator) {
       renderDiscountScale(null);
       renderQtyScale(null);
       renderPriceBar(null);
+      rispecchiaRiepilogo();
       return;
     }
 
@@ -4442,6 +4484,7 @@ if("serviceWorker" in navigator) {
                      targetPricePerAthlete, realMargin, m, mMin });
 
     showAlerts(alerts);
+    rispecchiaRiepilogo();
     saveDraft();
   };
 
