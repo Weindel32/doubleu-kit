@@ -1723,7 +1723,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v59</span>
+            <span id="buildTxt">build v60</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3241,7 +3241,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v59";
+  const BUILD = "v60";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5196,6 +5196,21 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!supabase) return false;
     try {
       const label = projectLabel || projectPayload.projectName || "Progetto";
+
+      /* Il nome è la chiave con cui l'app identifica un kit: lo store locale è
+         letteralmente una mappa nome → kit, e risalvare con lo stesso nome
+         sovrascrive. Il cloud invece decideva fra aggiornare e creare
+         guardando solo activeCloudId, che vive in memoria e si perde a ogni
+         ricarica: bastava riaprire l'app, riprendere la bozza, caricare la
+         copia locale o salvare da un altro dispositivo perché lo stesso kit
+         venisse inserito una seconda volta. Qui, quando non abbiamo un id in
+         mano, la riga si cerca per nome prima di crearne una nuova. */
+      if(!activeCloudId){
+        const { data: esistente } = await supabase
+          .from("projects").select("id").eq("name", label).limit(1);
+        if(esistente?.[0]?.id) activeCloudId = esistente[0].id;
+      }
+
       if(activeCloudId) {
         const { data, error } = await supabase
           .from("projects")
