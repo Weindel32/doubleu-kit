@@ -492,19 +492,9 @@
 
     .kpi .note { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
-    /* Lordo e netto affiancati. Il netto stava nella nota, in grigio piccolo,
-       come se fosse una postilla: ma è il numero su cui si ragiona di margine
-       e va letto insieme al lordo, non cercato. */
-    .kpi-prezzi { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-    .kpi-netto { display: flex; align-items: baseline; gap: 5px; }
-    .kpi-netto[hidden] { display: none; }
-    .kpi-netto-val {
-      font-size: 17px; font-weight: 700; color: var(--text-2); letter-spacing: -.2px;
-    }
-    .kpi-netto-lbl {
-      font-size: 10px; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .05em;
-    }
+    /* L'imponibile usa la riga etichetta-valore gia' in uso nell'analisi
+       (.kpi-mini-list): affiancarlo al lordo faceva leggere i due importi come
+       un numero solo, e nella nota sembrava una postilla. */
 
     /* Chip di stato: icona + parola, così il significato NON dipende dal solo colore */
     .kpi-flag {
@@ -1733,7 +1723,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v58</span>
+            <span id="buildTxt">build v59</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2266,14 +2256,14 @@
                 </div>
                 <div class="kpi" id="kpiPriceSum">
                   <div class="lbl">Prezzo per atleta</div>
-                  <div class="kpi-prezzi">
-                    <div class="val" id="kPriceAthleteSum">—</div>
-                    <div class="kpi-netto" id="kPriceNetBoxSum" hidden>
-                      <span class="kpi-netto-val" id="kPriceAthleteNetSum">—</span>
-                      <span class="kpi-netto-lbl">netto</span>
+                  <div class="val" id="kPriceAthleteSum">—</div>
+                  <div class="note" id="kVatNoteSum">—</div>
+                  <div class="kpi-mini-list" id="kPriceNetBoxSum" hidden>
+                    <div class="kpi-mini">
+                      <span class="kpi-mini-lbl">Imponibile, senza IVA</span>
+                      <span class="kpi-mini-val" id="kPriceAthleteNetSum">—</span>
                     </div>
                   </div>
-                  <div class="note" id="kVatNoteSum">—</div>
                 </div>
               </div>
 
@@ -2418,14 +2408,14 @@
 
                 <div class="kpi kpi-hero" id="kpiPrice">
                   <div class="lbl">Prezzo per atleta</div>
-                  <div class="kpi-prezzi">
-                    <div class="val" id="kPriceAthlete">—</div>
-                    <div class="kpi-netto" id="kPriceNetBox" hidden>
-                      <span class="kpi-netto-val" id="kPriceAthleteNet">—</span>
-                      <span class="kpi-netto-lbl">netto</span>
+                  <div class="val" id="kPriceAthlete">—</div>
+                  <div class="note" id="kVatNote">—</div>
+                  <div class="kpi-mini-list" id="kPriceNetBox" hidden>
+                    <div class="kpi-mini">
+                      <span class="kpi-mini-lbl">Imponibile, senza IVA</span>
+                      <span class="kpi-mini-val" id="kPriceAthleteNet">—</span>
                     </div>
                   </div>
-                  <div class="note" id="kVatNote">—</div>
                 </div>
 
                 <div class="pbar" id="priceBarBox" style="display:none"></div>
@@ -3251,7 +3241,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v58";
+  const BUILD = "v59";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
