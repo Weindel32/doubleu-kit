@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v64</span>
+            <span id="buildTxt">build v65</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2393,6 +2393,21 @@
               </div>
               <div id="discountScaleBox" style="margin-top:12px">
                 <div class="hint">Inserisci i dati del kit (quantità e articoli) per vedere la scala sconti.</div>
+              </div>
+            </div>
+
+            <div class="card" id="marginScaleCard" style="margin-top:14px">
+              <div class="card-title">Scala margini — quanto dovresti chiedere</div>
+              <div class="hint" style="margin-bottom:10px">A parità di costi e quantità, vedi il prezzo da fare per ogni margine target: serve quando decidi <em>dove</em> puntare, prima ancora di trattare lo sconto.</div>
+              <div class="row2" style="align-items:end">
+                <div>
+                  <label>Margini da confrontare % <span style="font-weight:400;color:var(--muted)">(separati da virgola)</span></label>
+                  <input id="marginScale" value="35, 40, 45, 50, 55" inputmode="text">
+                  <div class="hint">Ogni valore diventa una riga. Il target attuale viene sempre incluso.</div>
+                </div>
+              </div>
+              <div id="marginScaleBox" style="margin-top:12px">
+                <div class="hint">Inserisci i dati del kit (quantità e articoli) per vedere la scala margini.</div>
               </div>
             </div>
 
@@ -3273,7 +3288,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v64";
+  const BUILD = "v65";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3993,6 +4008,72 @@ if("serviceWorker" in navigator) {
       <div class="hint" style="margin-top:8px">Sconti calcolati sul prezzo attuale dell'ordine (0% = fatturato ${eur(baseInvoice)} del Riepilogo). ${scaleLegend(m, mMin)}</div>`;
   };
 
+  /* ─── Scala margini: quale prezzo serve per ogni target ───
+     La scala sconti parte dal prezzo e guarda quanto si può scendere; questa
+     fa il contrario, e serve prima: dato il costo, dove conviene puntare.
+
+     Il prezzo nasce dai soli capi fatturati (paidCost), come il prezzo target
+     del riepilogo: con degli omaggi in mezzo il margine reale resta sotto il
+     target, ed è proprio quello che la colonna "Margine reale" mostra. */
+  const parseMarginList = (raw) => parseDiscountList(raw).filter(v => v < 100);
+
+  const renderMarginScale = (ctx) => {
+    const box = document.getElementById("marginScaleBox");
+    if(!box) return;
+    if(!ctx){
+      box.innerHTML = '<div class="hint">Inserisci i dati del kit (quantità e articoli) per vedere la scala margini.</div>';
+      return;
+    }
+    const { paidCost, totalCost, m, mMin, vatOn, vatRate, qtyBase, disc, minSustainableDisplay, usingOffer } = ctx;
+    const input = document.getElementById("marginScale");
+    let targets = parseMarginList(input ? input.value : "");
+    if(!targets.length) targets = [35, 40, 45, 50, 55];
+    const mPct = m * 100;
+    if(!targets.some(t => Math.abs(t - mPct) < 0.05)) { targets.push(mPct); targets.sort((a, b) => a - b); }
+
+    const rows = targets.map(pct => {
+      const t            = pct / 100;
+      const revenueNetT  = paidCost / (1 - t);
+      const invoiceT     = vatOn ? revenueNetT * (1 + vatRate) : revenueNetT;
+      const invoice      = invoiceT * (1 - disc);
+      const pricePerAth  = invoice / qtyBase;
+      const revenueNet   = vatOn ? invoice / (1 + vatRate) : invoice;
+      const profit       = revenueNet - totalCost;
+      const realMargin   = revenueNet > 0 ? profit / revenueNet : 0;
+      const { state, txt: stateTxt } = scaleState(pricePerAth, realMargin, minSustainableDisplay, mMin, m);
+      return { pct, pricePerAth, invoice, realMargin, profit, state, stateTxt,
+               isCurrent: Math.abs(pct - mPct) < 0.05 };
+    });
+
+    const body = rows.map(r => {
+      const pctStr = (r.pct % 1 === 0 ? r.pct.toFixed(0) : r.pct.toFixed(1)) + "%";
+      return `<tr class="disc-row ${r.state}${r.isCurrent ? " is-current" : ""}">
+        <td data-label="Margine target">${pctStr}${r.isCurrent ? ' <span class="cat-badge">attuale</span>' : ""}</td>
+        <td data-label="Prezzo / atleta" class="strong">${eur(r.pricePerAth)}</td>
+        <td data-label="Totale fatturato">${eur(r.invoice)}</td>
+        <td data-label="Margine reale">${(r.realMargin*100).toFixed(1)}%</td>
+        <td data-label="Profitto ordine">${eur(r.profit)}</td>
+        <td data-label="Stato" class="st"><span class="disc-badge ${r.state}">${r.stateTxt}</span></td>
+      </tr>`;
+    }).join("");
+
+    box.innerHTML = `
+      <div class="disc-scroll">
+        <table class="disc-table">
+          <thead><tr>
+            <th>Margine target</th>
+            <th>Prezzo / atleta</th>
+            <th>Totale fatturato</th>
+            <th>Margine reale</th>
+            <th>Profitto ordine</th>
+            <th class="st">Stato</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+      <div class="hint" style="margin-top:8px">Prezzo ricalcolato per ogni target, a costi e quantità invariati${disc > 0 ? `, con lo sconto del ${(disc*100).toFixed(0)}% già applicato` : ""}.${usingOffer ? " <b>Stai usando un prezzo di offerta fissato</b>: questa tabella mostra cosa dovresti chiedere, non quello che stai chiedendo." : ""}<br>${scaleLegend(m, mMin)}</div>`;
+  };
+
   /* ─── Scala quantità: come cambiano costi e margine al variare degli atleti ───
      I costi fissi non scalano, quindi il costo per atleta scende al crescere
      della quantità: è la leva da mostrare quando il cliente chiede "e se
@@ -4262,6 +4343,7 @@ if("serviceWorker" in navigator) {
       setText("kFixedPerAthlete", "—");
       setText("kFixedNote", "Costi fissi ÷ quantità stimata");
       renderDiscountScale(null);
+      renderMarginScale(null);
       renderQtyScale(null);
       renderPriceBar(null);
       rispecchiaRiepilogo();
@@ -4606,6 +4688,7 @@ if("serviceWorker" in navigator) {
     }
 
     renderDiscountScale({ baseInvoice: invoiceTotal, totalCost, m, mMin, vatOn, vatRate, qtyBase, minSustainableDisplay });
+    renderMarginScale({ paidCost, totalCost, m, mMin, vatOn, vatRate, qtyBase, disc, minSustainableDisplay, usingOffer });
     renderQtyScale({ variableCost, fixed, m, mMin, vatOn, vatRate, qtyBase, buf, pricePerAthlete, usingOffer, disc });
     renderPriceBar({ pricePerAthlete, minSustainableDisplay, minAcceptablePerAthlete,
                      targetPricePerAthlete, realMargin, m, mMin });
@@ -4783,6 +4866,7 @@ if("serviceWorker" in navigator) {
       return t ? t.outerHTML : "";
     };
     const tabScontiPDF = tabellaScala("discountScaleBox");
+    const tabMarginePDF= tabellaScala("marginScaleBox");
     const tabQtaPDF    = tabellaScala("qtyScaleBox");
 
     const offerPill   = usingOff
@@ -4919,6 +5003,12 @@ ${tabScontiPDF ? `<div class="sec scala">
   <div class="sec-title">Scala sconti</div>
   ${tabScontiPDF}
   <div class="cap">Sconti calcolati sul fatturato attuale di ${g("kGross")}. Margine minimo accettabile: ${minMargin.value}%.</div>
+</div>` : ""}
+
+${tabMarginePDF ? `<div class="sec scala">
+  <div class="sec-title">Scala margini</div>
+  ${tabMarginePDF}
+  <div class="cap">Prezzo ricalcolato per ogni margine target, a costi e quantità invariati. Il target attuale è ${marginLabel}.</div>
 </div>` : ""}
 
 ${tabQtaPDF ? `<div class="sec scala">
@@ -7543,6 +7633,8 @@ ${tabQtaPDF ? `<div class="sec scala">
       bindCalc(staffOmaggio);
       const discountScaleEl = document.getElementById("discountScale");
       if(discountScaleEl) bindCalc(discountScaleEl);
+      const marginScaleEl = document.getElementById("marginScale");
+      if(marginScaleEl) bindCalc(marginScaleEl);
       const qtyScaleEl = document.getElementById("qtyScale");
       if(qtyScaleEl) bindCalc(qtyScaleEl);
 
