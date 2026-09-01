@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v65</span>
+            <span id="buildTxt">build v66</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2136,13 +2136,35 @@
                   <div>
                     <label>Costi fissi totali €</label>
                     <input id="fixedCost" value="" placeholder="es. 150,00" inputmode="decimal">
-                    <div class="hint">Setup stampa/ricamo, grafica, campionario, spedizione: non dipendono dal numero di atleti.</div>
+                    <div class="hint">Setup stampa/ricamo, grafica, campionario: non dipendono dal numero di atleti.</div>
                   </div>
                   <div>
                     <label>Incidenza per atleta</label>
                     <div class="kpi" style="padding:10px 12px">
                       <div class="val" id="kFixedPerAthlete" style="font-size:18px">—</div>
                       <div class="note" id="kFixedNote">Costi fissi ÷ quantità stimata</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- La spedizione ha un campo suo perché è l'unico costo che a
+                     volte non si addebita: dentro i costi fissi il prezzo la
+                     recupererebbe sempre, e quanto costa regalarla resterebbe
+                     invisibile. -->
+                <div class="row2" style="margin-top:12px">
+                  <div>
+                    <label>Spedizione €</label>
+                    <input id="shipCost" value="" placeholder="es. 60,00" inputmode="decimal">
+                    <div class="hint">Una spedizione per ordine.</div>
+                  </div>
+                  <div>
+                    <label>A tuo carico</label>
+                    <div class="toggle">
+                      <input type="checkbox" id="shipAbsorbed" checked>
+                      <div>
+                        <div class="toggle-lbl">Non la addebiti</div>
+                        <div class="hint" style="margin:0" id="shipNote">OFF → il prezzo la recupera</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3288,7 +3310,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v65";
+  const BUILD = "v66";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3400,6 +3422,9 @@ if("serviceWorker" in navigator) {
   const offerPrice  = document.getElementById("offerPrice");
   const useOffer    = document.getElementById("useOffer");
   const fixedCost   = document.getElementById("fixedCost");
+  const shipCost    = document.getElementById("shipCost");
+  const shipAbsorbed= document.getElementById("shipAbsorbed");
+  const shipNote    = document.getElementById("shipNote");
   const staffOmaggio= document.getElementById("staffOmaggio");
   const depositPct  = document.getElementById("depositPct");
   const bufferPct   = document.getElementById("bufferPct");
@@ -4285,8 +4310,15 @@ if("serviceWorker" in navigator) {
     // vanno nel costo totale ma restano fuori dal costo variabile usato per
     // proiettare altre quantità.
     const fixed     = Math.max(0, toNum(fixedCost.value));
-    const totalCost = variableCost + fixed;
-    const paidCost  = totalCost - giftCost;
+    /* La spedizione la paghi comunque, quindi sta nel costo totale. Ma se non
+       la addebiti non deve entrare nel costo che il prezzo deve recuperare:
+       altrimenti il prezzo si alzerebbe da solo per fartela pagare, che è
+       esattamente il contrario di regalarla. Stesso meccanismo degli omaggi. */
+    const ship        = Math.max(0, toNum(shipCost?.value));
+    const shipAssorb  = !!shipAbsorbed?.checked;
+    const shipNonRec  = shipAssorb ? ship : 0;
+    const totalCost = variableCost + fixed + ship;
+    const paidCost  = totalCost - giftCost - shipNonRec;
 
     const statusBar   = document.getElementById("statusBar");
     const statusLabel = document.getElementById("statusLabel");
@@ -4341,6 +4373,7 @@ if("serviceWorker" in navigator) {
       statusLabel.textContent= "Inserisci i dati per calcolare";
       statusStats.innerHTML  = "";
       setText("kFixedPerAthlete", "—");
+      if(shipNote) shipNote.textContent = shipAbsorbed?.checked ? "OFF → il prezzo la recupera" : "Il prezzo la recupera";
       setText("kFixedNote", "Costi fissi ÷ quantità stimata");
       renderDiscountScale(null);
       renderMarginScale(null);
@@ -4413,7 +4446,7 @@ if("serviceWorker" in navigator) {
     const qtaVendute     = items.reduce((a, it) => a + (it.isGift ? 0 : toNum(it.qty)), 0);
     const righeRipartite = qtaVendute > 0 && Math.abs(qtaVendute - qtyBase) < 0.5;
     const prezzoUnitNet  = vatOn ? pricePerAthlete / (1 + vatRate) : pricePerAthlete;
-    const fissiPerUnita  = qtyBase > 0 ? fixed / qtyBase : 0;
+    const fissiPerUnita  = qtyBase > 0 ? (fixed + ship) / qtyBase : 0;
     const costoVenduti   = variableCost - giftCost;
     // Il PDF riusa questi valori invece di rifare i conti per conto suo: due
     // calcoli paralleli sugli stessi dati prima o poi divergono.
@@ -4449,7 +4482,7 @@ if("serviceWorker" in navigator) {
        lo spazio residuo invece di consumarlo, e la domanda "fin dove posso
        arrivare" resterebbe senza risposta. Con un prezzo di offerta fissato,
        invece, il ricavo è quello vero e basta usarlo. */
-    const ricavoRiferimento = usingOffer ? revenueNet : (totalCost - giftCost) / (1 - m);
+    const ricavoRiferimento = usingOffer ? revenueNet : paidCost / (1 - m);
     const budgetOmaggi      = Math.max(0, ricavoRiferimento * (1 - mMin) - totalCost);
     const costoKitCompleto = (variableCost - giftCost) / qtyBase;
     const omaggioPerPersona= giftMaxQty > 0 ? giftCost / giftMaxQty : 0;
@@ -4608,6 +4641,20 @@ if("serviceWorker" in navigator) {
       ? `${eur(fixed)} ÷ ${qtyBase} atleti · ${(fixed / totalCost * 100).toFixed(1)}% del costo totale`
       : "Costi fissi ÷ quantità stimata");
 
+    /* Quanto costa regalare la spedizione, nell'unica unità che conta qui: i
+       punti di margine. Il prezzo non cambia quando la assorbi, quindi
+       l'impatto è esattamente la spedizione sul ricavo netto. */
+    if(shipNote){
+      if(ship <= 0){
+        shipNote.textContent = shipAssorb ? "OFF → il prezzo la recupera" : "Il prezzo la recupera";
+      } else if(shipAssorb){
+        const punti = revenueNet > 0 ? (ship / revenueNet) * 100 : 0;
+        shipNote.textContent = `Ti costa ${punti.toFixed(1)} punti di margine · ${eur(ship / qtyBase)} per atleta`;
+      } else {
+        shipNote.textContent = `Recuperata nel prezzo · ${eur(ship / qtyBase)} per atleta`;
+      }
+    }
+
     kGrossNote.textContent = usingOffer
       ? (vatOn ? "Modalità BUDGET (IVA incl.)" : "Modalità BUDGET (netto)")
       : (vatOn
@@ -4729,6 +4776,8 @@ if("serviceWorker" in navigator) {
     priceIncludesVAT.checked = true;
     depositPct.value  = defs.depositPct; bufferPct.value = defs.bufferPct; applyVAT.checked = !!defs.applyVAT;
     fixedCost.value   = "";
+    if(shipCost) shipCost.value = "";
+    if(shipAbsorbed) shipAbsorbed.checked = true;
     if(staffOmaggio) staffOmaggio.value = "";
     items = [];
     render(); showAlerts([]);
@@ -4767,6 +4816,7 @@ if("serviceWorker" in navigator) {
     if(staffCopy.kit > 0)
       lines.push(`- Kit staff in omaggio | qty ${staffCopy.kit} | ${eur(staffCopy.costoKit)} cad. | OMAGGIO (valore ${eur(staffCopy.valore)})`);
     if(toNum(fixedCost.value) > 0) lines.push(`Costi fissi una-tantum: ${eur(toNum(fixedCost.value))}`);
+    if(toNum(shipCost?.value) > 0) lines.push(`Spedizione: ${eur(toNum(shipCost.value))} (${shipAbsorbed?.checked ? "a tuo carico" : "addebitata"})`);
     lines.push(``);
     lines.push(`RIEPILOGO:`);
     lines.push(`Costo totale reale: ${kTotalCost.textContent}`);
@@ -4818,6 +4868,8 @@ if("serviceWorker" in navigator) {
     const giftCostPDF = items.reduce((a,it) => a + (it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0)
                         + staffPDF.valore;
     const fixedPDF    = Math.max(0, toNum(fixedCost.value));
+    const shipPDF     = Math.max(0, toNum(shipCost?.value));
+    const shipAssorbPDF = !!shipAbsorbed?.checked;
     const paidCostPDF = items.reduce((a,it) => a + (!it.isGift ? (toNum(it.base)+toNum(it.extra))*toNum(it.qty) : 0), 0) + fixedPDF;
     // Prezzo, ricavo e margine per riga: gli stessi che compaiono sotto ogni
     // articolo a schermo, presi dallo stesso calcolo. A parità di prezzo la
@@ -4970,7 +5022,8 @@ table.art th,table.art td{font-size:11px;padding:6px 5px}
   <div class="cap">${ripartitePDF
     ? `Prezzo unitario unico per tutte le referenze: <b>${g("kPriceAthlete")}</b>. A parità di prezzo la referenza che costa di più rende meno: è la colonna <b>Margine</b> a distinguerle, non l'incasso.`
     : `Le righe non si spartiscono la quantità stimata: il prezzo è quello del kit completo, non della singola riga.`}</div>
-  ${fixedPDF > 0 ? `<div style="margin-top:6px;font-size:11px;color:#49769F">Costi fissi una-tantum (setup, grafica, spedizione): <b style="color:#001D39">${eur(fixedPDF)}</b> · incidenza ${g("kFixedPerAthlete")} per atleta · già compresi nei margini di riga</div>` : ""}
+  ${fixedPDF > 0 ? `<div style="margin-top:6px;font-size:11px;color:#49769F">Costi fissi una-tantum (setup, grafica, campionario): <b style="color:#001D39">${eur(fixedPDF)}</b> · incidenza ${g("kFixedPerAthlete")} per atleta · già compresi nei margini di riga</div>` : ""}
+  ${shipPDF > 0 ? `<div style="margin-top:4px;font-size:11px;color:#49769F">Spedizione: <b style="color:#001D39">${eur(shipPDF)}</b> · ${shipAssorbPDF ? `<b style="color:#E87C2B">a tuo carico</b>, non recuperata nel prezzo` : "addebitata, recuperata nel prezzo"} · ${g("shipNote")}</div>` : ""}
 </div>
 
 <div class="sec">
@@ -5066,6 +5119,8 @@ ${tabQtaPDF ? `<div class="sec scala">
     bufferPct: bufferPct.value,
     applyVAT: applyVAT.checked,
     fixedCost: fixedCost.value || "",
+    shipCost: shipCost?.value || "",
+    shipAbsorbed: shipAbsorbed ? !!shipAbsorbed.checked : true,
     staffOmaggio: staffOmaggio?.value || "",
     items
   });
@@ -5085,6 +5140,11 @@ ${tabQtaPDF ? `<div class="sec scala">
     bufferPct.value   = p.bufferPct   ?? "5";
     applyVAT.checked  = (p.applyVAT !== undefined) ? !!p.applyVAT : true;
     fixedCost.value   = p.fixedCost   ?? "";
+    if(shipCost) shipCost.value = p.shipCost ?? "";
+    // I preventivi salvati prima non hanno il campo: senza spedizione il
+    // valore predefinito non cambia nulla, ma lasciarlo coerente col nuovo
+    // default evita che riaprendoli si comportino in modo diverso.
+    if(shipAbsorbed) shipAbsorbed.checked = p.shipAbsorbed !== undefined ? !!p.shipAbsorbed : true;
     if(staffOmaggio) staffOmaggio.value = p.staffOmaggio ?? "";
     items = Array.isArray(p.items) ? p.items : [];
     render();
@@ -7630,6 +7690,8 @@ ${tabQtaPDF ? `<div class="sec scala">
       bindCalc(bufferPct);
       bindCalc(applyVAT,          "change");
       bindCalc(fixedCost);
+      if(shipCost) bindCalc(shipCost);
+      if(shipAbsorbed) shipAbsorbed.addEventListener("change", calc);
       bindCalc(staffOmaggio);
       const discountScaleEl = document.getElementById("discountScale");
       if(discountScaleEl) bindCalc(discountScaleEl);
