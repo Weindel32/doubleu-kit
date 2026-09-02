@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v66</span>
+            <span id="buildTxt">build v67</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3310,7 +3310,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v66";
+  const BUILD = "v67";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5462,7 +5462,16 @@ ${tabQtaPDF ? `<div class="sec scala">
     setStore(store);
 
     const cloudOk = await saveProjectToCloud(p, name);
-    if(cloudOk){ toast("Progetto salvato sul cloud ✓", "ok"); return; }
+    if(cloudOk){
+      // Una volta sul cloud, la copia locale con lo stesso nome è solo un
+      // doppione: se resta, la dashboard mostra due righe identiche (una
+      // "Locale" e una "Cloud") e un "Sync" successivo su quella locale
+      // creerebbe una seconda riga cloud reale.
+      const storeAfter = getStore();
+      if(storeAfter[name]){ delete storeAfter[name]; setStore(storeAfter); }
+      toast("Progetto salvato sul cloud ✓", "ok");
+      return;
+    }
     if(!supabase){ toast("Salvato solo su questo dispositivo (cloud non disponibile)", "warn", 6000); return; }
 
     // Il cloud ha riportato un problema, ma su rete instabile (iOS) la scrittura
@@ -6153,10 +6162,18 @@ ${tabQtaPDF ? `<div class="sec scala">
         else goToStep(currentStep + 1);
       });
     } else {
+      const currentKitName = (() => {
+        const client  = (clientName.value  || "").trim();
+        const project = (projectName.value || "").trim();
+        if(!project) return "";
+        return client ? `${client} – ${project}` : project;
+      })();
+      const isExistingKit = !!activeCloudId || (currentKitName && !!getStore()[currentKitName]);
+      const saveLabel = quickCalcMode ? "Salva come kit" : (isExistingKit ? "Salva modifiche" : "Salva progetto");
       navRight.innerHTML = `
         <button id="btnCopyStep" class="ghost">Copia riepilogo</button>
         <button id="btnPrintStep" class="ghost">Stampa / PDF</button>
-        <button id="btnSaveStep" class="primary">${quickCalcMode ? "Salva come kit" : "Salva progetto"}</button>`;
+        <button id="btnSaveStep" class="primary">${saveLabel}</button>`;
       document.getElementById("btnCopyStep").addEventListener("click",  copySummary);
       document.getElementById("btnPrintStep").addEventListener("click", printPDF);
       document.getElementById("btnSaveStep").addEventListener("click",  saveProject);
@@ -6444,15 +6461,19 @@ ${tabQtaPDF ? `<div class="sec scala">
         try {
           const { data: sessionData } = await supabase.auth.getSession();
           if(!sessionData?.session){ fail("Sessione scaduta — effettua di nuovo il login"); return; }
-          const { data, error } = await supabase
-            .from("projects")
-            .insert([{ name: kit.name, data: kit.payload }])
-            .select("id");
-          if(error){ fail("Errore sync: " + error.message); return; }
+          // saveProjectToCloud cerca prima una riga cloud con lo stesso nome:
+          // un insert incondizionato qui creerebbe un doppione se il kit
+          // esisteva già sul cloud (es. sync doppio, o salvato da altro dispositivo).
+          // Si salva/ripristina activeCloudId perché è lo stato del kit
+          // attualmente aperto, non di questa riga della dashboard.
+          const priorActiveCloudId = activeCloudId;
+          activeCloudId = null;
+          const ok = await saveProjectToCloud(kit.payload, kit.name);
+          activeCloudId = priorActiveCloudId;
+          if(!ok){ fail("Errore sync"); return; }
           const store = getStore();
           delete store[kit.name];
           setStore(store);
-          await loadProjectsFromCloud();
           toast("Kit sincronizzato sul cloud ☁", "ok");
           renderDashboard();
         } catch(e){ fail("Errore sync: " + e.message); }
@@ -6535,15 +6556,16 @@ ${tabQtaPDF ? `<div class="sec scala">
             try {
               const { data: sessionData } = await supabase.auth.getSession();
               if(!sessionData?.session){ fail("Sessione scaduta — effettua di nuovo il login"); return; }
-              const { data, error } = await supabase
-                .from("projects")
-                .insert([{ name: kit.name, data: kit.payload }])
-                .select("id");
-              if(error){ fail("Errore sync: " + error.message); return; }
+              // Come sopra: cerca per nome prima di creare, e non toccare il
+              // kit attualmente aperto (activeCloudId salvato/ripristinato).
+              const priorActiveCloudId = activeCloudId;
+              activeCloudId = null;
+              const ok = await saveProjectToCloud(kit.payload, kit.name);
+              activeCloudId = priorActiveCloudId;
+              if(!ok){ fail("Errore sync"); return; }
               const store = getStore();
               delete store[kit.name];
               setStore(store);
-              await loadProjectsFromCloud();
               toast("Kit sincronizzato sul cloud ☁", "ok");
               renderDashboard();
             } catch(e){ fail("Errore sync: " + e.message); }
