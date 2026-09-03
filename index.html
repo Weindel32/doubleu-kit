@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v67</span>
+            <span id="buildTxt">build v68</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3310,7 +3310,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v67";
+  const BUILD = "v68";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5588,25 +5588,39 @@ ${tabQtaPDF ? `<div class="sec scala">
   // metro lineare. Il €/kg non è una colonna della tabella condivisa, quindi
   // il risultato finisce in costoMetro (come fa già chi la popola a mano) e il
   // €/kg resta leggibile nella nota, senza toccare lo schema di Materiale.
+  // Grammatura commerciale (g/m²): il peso a kg qui è sempre g/m lineare (vedi
+  // unitaPeso sopra), quindi va diviso per la larghezza in metri per ottenere il
+  // numero da comunicare al cliente — non è la stessa grandezza del g/m lineare.
+  const grammaturaCommerciale = (pesoGm, larghezzaCm) =>
+    (pesoGm > 0 && larghezzaCm > 0) ? Math.round(pesoGm / (larghezzaCm / 100)) : null;
+
   const aggiornaCalcoloPeso = () => {
     const unita = document.getElementById("matUnita")?.value || "metro";
     const nota  = document.getElementById("matCalcNota");
     if(unita !== "kg"){ if(nota) nota.textContent = ""; return; }
-    const pesoG   = toNum(document.getElementById("matPeso")?.value);
-    const prezzoKg= toNum(document.getElementById("matPrezzoKg")?.value);
-    const costoEl = document.getElementById("matCostoMetro");
+    const pesoG    = toNum(document.getElementById("matPeso")?.value);
+    const prezzoKg = toNum(document.getElementById("matPrezzoKg")?.value);
+    const larghezza= toNum(document.getElementById("matLarghezza")?.value);
+    const costoEl  = document.getElementById("matCostoMetro");
+    const righe = [];
     if(pesoG > 0 && prezzoKg > 0){
       const costoMetro = Math.round((pesoG / 1000) * prezzoKg * 100) / 100;
       if(costoEl) costoEl.value = String(costoMetro).replace(".", ",");
-      if(nota) nota.textContent = `${String(pesoG).replace(".", ",")} g/m ÷ 1000 × ${eur(prezzoKg)}/kg = ${eur(costoMetro)}/m`;
-    } else if(nota){
-      nota.textContent = "Inserisci peso e prezzo al kg per calcolarlo.";
+      righe.push(`${String(pesoG).replace(".", ",")} g/m ÷ 1000 × ${eur(prezzoKg)}/kg = ${eur(costoMetro)}/m`);
+    } else {
+      righe.push("Inserisci peso e prezzo al kg per calcolarlo.");
     }
+    const grammatura = grammaturaCommerciale(pesoG, larghezza);
+    righe.push(grammatura != null
+      ? `Grammatura commerciale: ${grammatura} g/m²`
+      : "Grammatura commerciale: inserisci anche la larghezza cm.");
+    if(nota) nota.innerHTML = righe.map(esc).join("<br>");
   };
 
   document.getElementById("matUnita")?.addEventListener("change", () => { aggiornaRigheUnita(); aggiornaCalcoloPeso(); });
   document.getElementById("matPeso")?.addEventListener("input", aggiornaCalcoloPeso);
   document.getElementById("matPrezzoKg")?.addEventListener("input", aggiornaCalcoloPeso);
+  document.getElementById("matLarghezza")?.addEventListener("input", aggiornaCalcoloPeso);
 
   const loadMaterialeInForm = (id) => {
     const m = materiali.find(x => x.id === id);
@@ -5655,6 +5669,10 @@ ${tabQtaPDF ? `<div class="sec scala">
       larghezza: document.getElementById("matLarghezza").value.trim() || null,
       fornitore: document.getElementById("matFornitore").value.trim() || null,
       unitaMisura: unita === "kg" ? "kg" : "metro",
+      // unitaPeso è condiviso con la Production Sheet: qui il peso a kg è sempre
+      // g/m lineare (mai g/m²), quindi lo dichiariamo esplicitamente così l'altra
+      // app può calcolare la grammatura commerciale (g/m²) senza ambiguità.
+      unitaPeso: unita === "kg" ? "g/m" : null,
       peso: unita === "kg" ? (document.getElementById("matPeso").value.trim() || null) : null,
       // costoMetro è sempre e solo euro al metro: il prezzo al kg ha un campo
       // suo, perché tenerli nella stessa colonna faceva leggere un prezzo al
@@ -5728,10 +5746,11 @@ ${tabQtaPDF ? `<div class="sec scala">
       // Il codice va in cima perché è quello che dice a colpo d'occhio la
       // grammatura (es. COT330); il nome del fornitore è solo un dettaglio.
       const titolo = m.codice ? `${esc(m.codice)} <span style="font-weight:400;color:var(--muted)">— ${esc(m.nome)}</span>` : esc(m.nome);
+      const grammatura = grammaturaCommerciale(toNum(m.peso), toNum(m.larghezza));
       return `<div class="catalog-item">
         <div class="catalog-item-info">
           <div class="catalog-item-name">${titolo}${m.codice ? "" : ' <span class="cat-badge" style="background:var(--warn);color:#fff">senza codice</span>'}</div>
-          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m${Number.isFinite(m.prezzoKg) ? ` <span style="color:var(--muted)">(${eur(m.prezzoKg)}/kg × ${esc(String(m.peso || "?"))} g/m)</span>` : ""}</div>
+          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m${Number.isFinite(m.prezzoKg) ? ` <span style="color:var(--muted)">(${eur(m.prezzoKg)}/kg × ${esc(String(m.peso || "?"))} g/m)</span>` : ""}${grammatura != null ? ` <span style="color:var(--muted)">· ${grammatura} g/m² comm.</span>` : ""}</div>
         </div>
         <div class="catalog-item-actions">
           <button class="secondary" style="font-size:12px;padding:5px 10px" data-mact="edit" data-mid="${m.id}">Modifica</button>
