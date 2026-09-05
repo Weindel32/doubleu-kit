@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v68</span>
+            <span id="buildTxt">build v69</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2976,7 +2976,7 @@
           <div class="dash-header">
             <div>
               <div class="dash-welcome">Esportazioni</div>
-              <div class="dash-sub">Esporta il kit attivo in diversi formati.</div>
+              <div class="dash-sub">Esporta il kit attivo o il listino catalogo in diversi formati.</div>
             </div>
           </div>
 
@@ -3018,6 +3018,23 @@
               <div class="export-title">Export CSV</div>
               <div class="export-desc">Scarica la lista articoli del kit come file CSV, importabile in Excel o Google Sheets.</div>
               <button class="secondary" id="btnExportCSV">Scarica CSV</button>
+            </div>
+            <div class="export-card">
+              <div class="export-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+                </svg>
+              </div>
+              <div class="export-title">Listino catalogo</div>
+              <div class="export-desc">Esporta gli articoli del catalogo (codice, nome, costo), filtrati per linea, in CSV o PDF.</div>
+              <div style="margin-bottom:10px">
+                <select id="exportCatalogLine" style="width:100%"></select>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="secondary" id="btnExportCatalogCSV" style="flex:1">CSV</button>
+                <button class="secondary" id="btnExportCatalogPDF" style="flex:1">PDF</button>
+              </div>
             </div>
           </div>
         </div><!-- /esportazioniView -->
@@ -3310,7 +3327,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v68";
+  const BUILD = "v69";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3405,6 +3422,19 @@ if("serviceWorker" in navigator) {
     sel.innerHTML = LINES.map(l => `<option value="${esc(l.value)}">${esc(l.label)}</option>`).join("");
     if(cur) sel.value = cur;
   };
+
+  // Select "linea" dell'export catalogo: a differenza di fillLineSelect ha
+  // in più "Tutte le linee" in testa, quindi non riusa quella funzione (il
+  // suo guard sulla lunghezza è tarato esattamente su LINES.length).
+  const fillExportLineSelect = () => {
+    const sel = document.getElementById("exportCatalogLine");
+    if(!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="ALL">Tutte le linee</option>'
+      + LINES.map(l => `<option value="${esc(l.value)}">${esc(l.label)}</option>`).join("");
+    if(cur) sel.value = cur;
+  };
+  fillExportLineSelect();
 
   const REF_COST = {
     PREMIUM: {"T-shirt":15,"T-Shirt Cot.":12,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
@@ -7712,6 +7742,123 @@ ${tabQtaPDF ? `<div class="sec scala">
     a.href = url; a.download = (projectName.value || "kit") + ".csv"; a.click();
     URL.revokeObjectURL(url);
     toast("CSV scaricato ✓","ok");
+  });
+
+  // Righe di catalogo per l'export listino, filtrate per la linea scelta nel select
+  const catalogForExport = () => {
+    const sel  = document.getElementById("exportCatalogLine");
+    const line = sel ? sel.value : "ALL";
+    const all  = getCatalog();
+    return { line, rows: line === "ALL" ? all : all.filter(a => a.categoria === line) };
+  };
+
+  const _btnExportCatalogCSV = document.getElementById("btnExportCatalogCSV");
+  if(_btnExportCatalogCSV) _btnExportCatalogCSV.addEventListener("click", () => {
+    const { line, rows } = catalogForExport();
+    if(!rows.length){ toast("Nessun articolo in questa linea", "warn"); return; }
+    const header  = "Codice,Nome,Tipo,Genere,Linea,Costo base €,Extra €,Totale €";
+    const csvCell = (v) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const csvRows = rows.map(a => {
+      const tot = toNum(a.base) + toNum(a.extra);
+      return [csvCell(a.code || ""), csvCell(a.name || ""), csvCell(a.tipo || ""), csvCell(a.genere || ""),
+        csvCell(LINE_LABEL[a.categoria] || a.categoria || ""), toNum(a.base).toFixed(2), toNum(a.extra).toFixed(2), tot.toFixed(2)].join(",");
+    });
+    const csv  = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type:"text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    const suffix = line === "ALL" ? "tutte-le-linee" : line.toLowerCase().replace(/\s+/g, "-");
+    a.href = url; a.download = `listino-${suffix}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast("CSV listino scaricato ✓", "ok");
+  });
+
+  const _btnExportCatalogPDF = document.getElementById("btnExportCatalogPDF");
+  if(_btnExportCatalogPDF) _btnExportCatalogPDF.addEventListener("click", () => {
+    const { line, rows } = catalogForExport();
+    if(!rows.length){ toast("Nessun articolo in questa linea", "warn"); return; }
+    const date      = new Date().toLocaleDateString("it-IT", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    const lineLabel = line === "ALL" ? "Tutte le linee" : (LINE_LABEL[line] || line);
+    const bodyRows  = rows.map(a => {
+      const tot = toNum(a.base) + toNum(a.extra);
+      return `<tr>
+        <td style="font-family:monospace">${esc(a.code || "—")}</td>
+        <td>${esc(a.name || "")}</td>
+        <td>${esc(a.tipo || "")}</td>
+        <td>${esc(a.genere || "")}</td>
+        <td>${esc(LINE_LABEL[a.categoria] || a.categoria || "")}</td>
+        <td>${eur(toNum(a.base))}</td>
+        <td>${eur(toNum(a.extra))}</td>
+        <td style="font-weight:800">${eur(tot)}</td>
+      </tr>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>DOUBLEU — Listino ${esc(lineLabel)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;color:#001D39;background:#fff;padding:28px;font-size:13px;line-height:1.4}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #0A4174}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0A4174,#001D39);flex-shrink:0}
+.header h1{font-size:16px;font-weight:900;letter-spacing:-.2px;color:#001D39}
+.header .sub{font-size:10px;color:#49769F;margin-top:2px}
+.meta{margin-left:auto;text-align:right;font-size:11px;color:#49769F;line-height:1.7}
+.meta strong{color:#001D39;font-weight:800}
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7BBDE8;font-weight:700;text-align:left;padding:5px 8px;border-bottom:1.5px solid #C8DFF0}
+td{padding:7px 8px;font-size:11px;border-bottom:1px solid #EBF3FA;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #C8DFF0;font-size:9px;color:#49769F;display:flex;justify-content:space-between}
+@media print{body{padding:16px}@page{margin:.7cm;size:A4 portrait}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"></div>
+  <div><h1>doubleu kit</h1><div class="sub">Listino catalogo — uso interno</div></div>
+  <div class="meta">
+    <div>${date}</div>
+    <div>Linea: <strong>${esc(lineLabel)}</strong></div>
+    <div>${rows.length} articoli</div>
+  </div>
+</div>
+<table>
+  <thead><tr><th>Codice</th><th>Nome</th><th>Tipo</th><th>Genere</th><th>Linea</th><th>Costo base</th><th>Extra</th><th>Totale</th></tr></thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+<div class="footer"><span>doubleu kit — uso interno</span><span>${date}</span></div>
+</body></html>`;
+
+    // Stesso approccio dell'iframe nascosto usato per il PDF del preventivo:
+    // window.open("_blank") su iPhone/iPad Safari riapre l'app (→ login)
+    // invece del documento generato.
+    const old = document.getElementById("pdfPrintFrame");
+    if(old) old.remove();
+    const frame = document.createElement("iframe");
+    frame.id = "pdfPrintFrame";
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none";
+    document.body.appendChild(frame);
+
+    let printed = false;
+    const fire = () => {
+      if(printed) return;
+      const w = frame.contentWindow;
+      if(!w) return;
+      printed = true;
+      try { w.focus(); w.print(); }
+      catch(err){ console.error("Print error:", err); toast("Stampa non riuscita su questo browser", "warn", 5000); }
+    };
+
+    const doc = frame.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    frame.onload = () => setTimeout(fire, 300);
+    setTimeout(fire, 1200);
   });
 
   /* ─── App init (called after auth confirmed) ─── */
