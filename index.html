@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v69</span>
+            <span id="buildTxt">build v70</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2039,7 +2039,7 @@
             <div class="card" style="margin-bottom:14px">
               <div class="form-section" style="margin-bottom:0">
                 <div class="section-lbl" id="clienteSectionLbl">Cliente</div>
-                <div class="row2">
+                <div class="row4">
                   <div class="fld-client">
                     <label>Cliente / Club</label>
                     <input id="clientName" placeholder="es. Tennis Club Roma">
@@ -2053,6 +2053,16 @@
                     <label>Quantità stimata</label>
                     <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
                     <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
+                  </div>
+                  <div>
+                    <label>Stato</label>
+                    <div class="toggle">
+                      <input type="checkbox" id="kitOrdine">
+                      <div>
+                        <div class="toggle-lbl">Ordine confermato</div>
+                        <div class="hint" style="margin:0">OFF → è ancora un preventivo/calcolo</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2542,6 +2552,15 @@
           <div class="tab-bar">
             <button class="tab-btn active" data-analisi-tab="kit">Articoli &amp; linee</button>
             <button class="tab-btn"        data-analisi-tab="confronto">Confronto kit</button>
+          </div>
+
+          <!-- Filtro stato: condiviso da entrambe le tab, perché sommare
+               preventivi mai chiusi a ordini reali falsa sia le classifiche
+               sia le statistiche per articolo/linea. -->
+          <div class="art-filters" id="portfolioStatoFilter" style="margin-bottom:14px">
+            <span class="filter-pill active" data-stato-filter="ALL">Tutti</span>
+            <span class="filter-pill" data-stato-filter="ordine">Solo ordini</span>
+            <span class="filter-pill" data-stato-filter="preventivo">Solo preventivi</span>
           </div>
 
           <!-- Articoli & linee: l'unica analisi che il Builder non può dare,
@@ -3327,7 +3346,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v69";
+  const BUILD = "v70";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3454,6 +3473,7 @@ if("serviceWorker" in navigator) {
   const fixedCost   = document.getElementById("fixedCost");
   const shipCost    = document.getElementById("shipCost");
   const shipAbsorbed= document.getElementById("shipAbsorbed");
+  const kitOrdine   = document.getElementById("kitOrdine");
   const shipNote    = document.getElementById("shipNote");
   const staffOmaggio= document.getElementById("staffOmaggio");
   const depositPct  = document.getElementById("depositPct");
@@ -4809,6 +4829,7 @@ if("serviceWorker" in navigator) {
     if(shipCost) shipCost.value = "";
     if(shipAbsorbed) shipAbsorbed.checked = true;
     if(staffOmaggio) staffOmaggio.value = "";
+    if(kitOrdine) kitOrdine.checked = false;
     items = [];
     render(); showAlerts([]);
     togglePicker(false);
@@ -5152,6 +5173,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     shipCost: shipCost?.value || "",
     shipAbsorbed: shipAbsorbed ? !!shipAbsorbed.checked : true,
     staffOmaggio: staffOmaggio?.value || "",
+    stato: kitOrdine?.checked ? "ordine" : "preventivo",
     items
   });
 
@@ -5176,6 +5198,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     // default evita che riaprendoli si comportino in modo diverso.
     if(shipAbsorbed) shipAbsorbed.checked = p.shipAbsorbed !== undefined ? !!p.shipAbsorbed : true;
     if(staffOmaggio) staffOmaggio.value = p.staffOmaggio ?? "";
+    if(kitOrdine) kitOrdine.checked = p.stato === "ordine";
     items = Array.isArray(p.items) ? p.items : [];
     render();
     updateSidebarKit();
@@ -6754,6 +6777,11 @@ ${tabQtaPDF ? `<div class="sec scala">
   // Unisce kit locali e cloud (i cloud già presenti in locale non si contano
   // due volte) e allega le statistiche calcolate. Condiviso da "Confronto
   // kit" e da "Articoli & linee", che guardano entrambe l'intero portafoglio.
+  // "ALL" | "ordine" | "preventivo" — filtra il portafoglio prima di qualunque
+  // statistica: preventivi mai chiusi non sono fatturato, e sommarli ai kit
+  // diventati ordini falserebbe articoli/linee e KPI del confronto.
+  let portfolioStatoFilter = "ALL";
+
   const getPortfolioKits = () => {
     const store = getStore();
     const all = [
@@ -6769,9 +6797,19 @@ ${tabQtaPDF ? `<div class="sec scala">
         profit: s.profit, revenueNet: s.revenueNet, totalCost: s.totalCost,
         costPerAthlete: s.costPerAthlete, pricePerAthlete: s.pricePerAthlete,
         qtyBase: s.qtyBase, state: s.state,
+        stato: k.payload?.stato === "ordine" ? "ordine" : "preventivo",
       };
-    }).filter(Boolean);
+    }).filter(Boolean).filter(k => portfolioStatoFilter === "ALL" || k.stato === portfolioStatoFilter);
   };
+
+  document.querySelectorAll("#portfolioStatoFilter [data-stato-filter]").forEach(el => {
+    el.addEventListener("click", () => {
+      portfolioStatoFilter = el.getAttribute("data-stato-filter");
+      document.querySelectorAll("#portfolioStatoFilter [data-stato-filter]").forEach(p =>
+        p.classList.toggle("active", p === el));
+      renderAnalisi();
+    });
+  });
 
   let cmpSortMode   = "margin"; // margin | profit | date
   let cmpStateFilter = null;    // null = tutti, altrimenti una chiave di KIT_STATES
@@ -6839,10 +6877,12 @@ ${tabQtaPDF ? `<div class="sec scala">
       const dateStr = k.date ? new Date(k.date).toLocaleDateString("it-IT") : "—";
       const stateDef= KIT_STATES[k.state];
       const bar     = marginBar("", k.marginPct, k.targetPct, stateDef.cls);
+      const isOrdine = k.stato === "ordine";
+      const statoBadge = `<span class="mb-chip ${isOrdine ? "good" : ""}" style="${isOrdine ? "" : "color:var(--muted);border-color:var(--border)"}">${isOrdine ? "✓ Ordine" : "Preventivo"}</span>`;
       return `<div class="cmp-row">
         <div class="cmp-rank">${i + 1}</div>
         <div class="cmp-main">
-          <div class="cmp-name">${k.source === "cloud" ? "☁ " : ""}${esc(k.name)}</div>
+          <div class="cmp-name">${k.source === "cloud" ? "☁ " : ""}${esc(k.name)} ${statoBadge}</div>
           <div class="cmp-sub">${client ? esc(client) + " · " : ""}${dateStr}</div>
           <div class="cmp-drivers">${k.qtyBase} atleti · ${eur(k.pricePerAthlete)} / atleta</div>
           ${bar}
@@ -6853,6 +6893,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           <div class="cmp-cap sec">Costo / atleta</div>
           <div class="cmp-cost">${eur(k.costPerAthlete)}</div>
           <button type="button" class="cmp-open" data-cmp-open="${i}">Apri →</button>
+          <button type="button" class="cmp-open" data-cmp-toggle-stato="${i}" style="margin-top:4px">${isOrdine ? "↺ Segna preventivo" : "✓ Segna ordine"}</button>
         </div>
       </div>`;
     }).join("");
@@ -6866,6 +6907,29 @@ ${tabQtaPDF ? `<div class="sec scala">
         toast(`"${k.name}" caricato ✓`, "ok");
         if(isIphoneLayout()) startUnifiedFlow(false);
         else { showView("builder"); goToStep(1); }
+      });
+    });
+
+    // Segna/rimuovi lo stato "ordine" senza dover riaprire il kit nel Builder:
+    // è la distinzione fra preventivo e ordine reale, non serve un flusso a parte.
+    listEl.querySelectorAll("[data-cmp-toggle-stato]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const k = cmpKitsCache[+btn.getAttribute("data-cmp-toggle-stato")];
+        if(!k) return;
+        const nuovoStato = k.stato === "ordine" ? "preventivo" : "ordine";
+        const payload = { ...k.payload, stato: nuovoStato };
+        if(k.source === "locale"){
+          const store = getStore();
+          if(store[k.name]) store[k.name].payload = payload;
+          setStore(store);
+        } else if(k.source === "cloud" && supabase && k.cloudId){
+          const { error } = await supabase.from("projects").update({ data: payload }).eq("id", k.cloudId);
+          if(error){ toast("Errore aggiornamento cloud", "warn"); return; }
+          const idx = cloudProjects.findIndex(p => p.id === k.cloudId);
+          if(idx > -1) cloudProjects[idx] = { ...cloudProjects[idx], data: payload };
+        }
+        toast(nuovoStato === "ordine" ? "Segnato come ordine ✓" : "Rimesso come preventivo", "ok");
+        renderConfronto();
       });
     });
   };
