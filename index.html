@@ -1739,7 +1739,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v70</span>
+            <span id="buildTxt">build v71</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1868,6 +1868,7 @@
                     <th>Kit</th>
                     <th>Articoli</th>
                     <th>Salvato il</th>
+                    <th>Stato</th>
                     <th>Fonte</th>
                     <th></th>
                   </tr>
@@ -2056,13 +2057,13 @@
                   </div>
                   <div>
                     <label>Stato</label>
-                    <div class="toggle">
-                      <input type="checkbox" id="kitOrdine">
-                      <div>
-                        <div class="toggle-lbl">Ordine confermato</div>
-                        <div class="hint" style="margin:0">OFF → è ancora un preventivo/calcolo</div>
-                      </div>
+                    <input type="hidden" id="kitStato" value="preventivo">
+                    <div class="art-filters" id="kitStatoPicker">
+                      <span class="filter-pill" data-stato="calcolo">Calcolo</span>
+                      <span class="filter-pill active" data-stato="preventivo">Preventivo</span>
+                      <span class="filter-pill" data-stato="ordine">Ordine</span>
                     </div>
+                    <div class="hint">Calcolo = simulazione senza cliente. Preventivo = inviato, non ancora chiuso.</div>
                   </div>
                 </div>
               </div>
@@ -2561,6 +2562,7 @@
             <span class="filter-pill active" data-stato-filter="ALL">Tutti</span>
             <span class="filter-pill" data-stato-filter="ordine">Solo ordini</span>
             <span class="filter-pill" data-stato-filter="preventivo">Solo preventivi</span>
+            <span class="filter-pill" data-stato-filter="calcolo">Solo calcoli</span>
           </div>
 
           <!-- Articoli & linee: l'unica analisi che il Builder non può dare,
@@ -3346,7 +3348,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v70";
+  const BUILD = "v71";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3473,7 +3475,7 @@ if("serviceWorker" in navigator) {
   const fixedCost   = document.getElementById("fixedCost");
   const shipCost    = document.getElementById("shipCost");
   const shipAbsorbed= document.getElementById("shipAbsorbed");
-  const kitOrdine   = document.getElementById("kitOrdine");
+  const kitStato    = document.getElementById("kitStato");
   const shipNote    = document.getElementById("shipNote");
   const staffOmaggio= document.getElementById("staffOmaggio");
   const depositPct  = document.getElementById("depositPct");
@@ -3631,6 +3633,18 @@ if("serviceWorker" in navigator) {
         x.classList.toggle("active", x === pill));
       applyArtFilter();
     });
+  });
+
+  // Segmented control Calcolo/Preventivo/Ordine del kit corrente: il valore
+  // vive nell'input nascosto #kitStato, letto da payload().
+  const setKitStatoPicker = (value) => {
+    const v = KIT_STATO[value] ? value : "preventivo";
+    if(kitStato) kitStato.value = v;
+    document.querySelectorAll("#kitStatoPicker .filter-pill").forEach(p =>
+      p.classList.toggle("active", p.getAttribute("data-stato") === v));
+  };
+  document.querySelectorAll("#kitStatoPicker .filter-pill").forEach(pill => {
+    pill.addEventListener("click", () => setKitStatoPicker(pill.getAttribute("data-stato")));
   });
 
   /* ─── render() ─── */
@@ -4829,7 +4843,7 @@ if("serviceWorker" in navigator) {
     if(shipCost) shipCost.value = "";
     if(shipAbsorbed) shipAbsorbed.checked = true;
     if(staffOmaggio) staffOmaggio.value = "";
-    if(kitOrdine) kitOrdine.checked = false;
+    setKitStatoPicker("preventivo");
     items = [];
     render(); showAlerts([]);
     togglePicker(false);
@@ -5173,7 +5187,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     shipCost: shipCost?.value || "",
     shipAbsorbed: shipAbsorbed ? !!shipAbsorbed.checked : true,
     staffOmaggio: staffOmaggio?.value || "",
-    stato: kitOrdine?.checked ? "ordine" : "preventivo",
+    stato: kitStato?.value || "preventivo",
     items
   });
 
@@ -5198,7 +5212,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     // default evita che riaprendoli si comportino in modo diverso.
     if(shipAbsorbed) shipAbsorbed.checked = p.shipAbsorbed !== undefined ? !!p.shipAbsorbed : true;
     if(staffOmaggio) staffOmaggio.value = p.staffOmaggio ?? "";
-    if(kitOrdine) kitOrdine.checked = p.stato === "ordine";
+    setKitStatoPicker(p.stato || "preventivo");
     items = Array.isArray(p.items) ? p.items : [];
     render();
     updateSidebarKit();
@@ -6374,6 +6388,22 @@ ${tabQtaPDF ? `<div class="sec scala">
     return "ok";
   };
 
+  /* ─── Stato commerciale di un kit salvato: calcolo / preventivo / ordine ───
+     Tre esiti perché "preventivo" da solo confondeva due usi diversi: un
+     preventivo mandato a un cliente reale, e una simulazione di margine su
+     un prodotto senza nessun cliente dietro. Sono cose diverse anche nelle
+     statistiche di portafoglio, quindi vanno etichettate diversamente. */
+  const KIT_STATO = {
+    calcolo:    { label:"Calcolo",    cls:"",     icon:"" },
+    preventivo: { label:"Preventivo", cls:"warn", icon:"" },
+    ordine:     { label:"Ordine",     cls:"good", icon:"✓" },
+  };
+  const getKitStato = (payload) => KIT_STATO[payload?.stato] ? payload.stato : "preventivo";
+  const statoBadgeHtml = (stato) => {
+    const def = KIT_STATO[stato] || KIT_STATO.preventivo;
+    return `<span class="mb-chip ${def.cls}">${def.icon ? def.icon + " " : ""}${def.label}</span>`;
+  };
+
   // Margine di portafoglio: profitto totale / ricavo netto totale, non la
   // media dei margini percentuali. La media aritmetica pesa un kit da 20
   // atleti come uno da 200: un piccolo kit in perdita può far sembrare
@@ -6474,6 +6504,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         </td>
         <td>${kit.itemCount}</td>
         <td>${date}</td>
+        <td>${statoBadgeHtml(getKitStato(kit.payload))}</td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud"
           ? `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 10.5A4 4 0 0011.5 7H11a5 5 0 00-4.9 4A3 3 0 107 17h8a3 3 0 000-6z"/></svg> Cloud`
           : `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="16" height="11" rx="1.5"/><line x1="6" y1="17" x2="14" y2="17"/><line x1="10" y1="15" x2="10" y2="17"/></svg> Locale`
@@ -6567,7 +6598,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           return `<div class="dash-kit-card">
             <div class="dash-kit-card-top">
               <div>
-                <div class="dash-kit-name">${esc(kit.name)}</div>
+                <div class="dash-kit-name">${esc(kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}</div>
                 ${client ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
               </div>
               ${src}
@@ -6797,7 +6828,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         profit: s.profit, revenueNet: s.revenueNet, totalCost: s.totalCost,
         costPerAthlete: s.costPerAthlete, pricePerAthlete: s.pricePerAthlete,
         qtyBase: s.qtyBase, state: s.state,
-        stato: k.payload?.stato === "ordine" ? "ordine" : "preventivo",
+        stato: getKitStato(k.payload),
       };
     }).filter(Boolean).filter(k => portfolioStatoFilter === "ALL" || k.stato === portfolioStatoFilter);
   };
@@ -6877,12 +6908,10 @@ ${tabQtaPDF ? `<div class="sec scala">
       const dateStr = k.date ? new Date(k.date).toLocaleDateString("it-IT") : "—";
       const stateDef= KIT_STATES[k.state];
       const bar     = marginBar("", k.marginPct, k.targetPct, stateDef.cls);
-      const isOrdine = k.stato === "ordine";
-      const statoBadge = `<span class="mb-chip ${isOrdine ? "good" : ""}" style="${isOrdine ? "" : "color:var(--muted);border-color:var(--border)"}">${isOrdine ? "✓ Ordine" : "Preventivo"}</span>`;
       return `<div class="cmp-row">
         <div class="cmp-rank">${i + 1}</div>
         <div class="cmp-main">
-          <div class="cmp-name">${k.source === "cloud" ? "☁ " : ""}${esc(k.name)} ${statoBadge}</div>
+          <div class="cmp-name">${k.source === "cloud" ? "☁ " : ""}${esc(k.name)} ${statoBadgeHtml(k.stato)}</div>
           <div class="cmp-sub">${client ? esc(client) + " · " : ""}${dateStr}</div>
           <div class="cmp-drivers">${k.qtyBase} atleti · ${eur(k.pricePerAthlete)} / atleta</div>
           ${bar}
@@ -6893,7 +6922,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           <div class="cmp-cap sec">Costo / atleta</div>
           <div class="cmp-cost">${eur(k.costPerAthlete)}</div>
           <button type="button" class="cmp-open" data-cmp-open="${i}">Apri →</button>
-          <button type="button" class="cmp-open" data-cmp-toggle-stato="${i}" style="margin-top:4px">${isOrdine ? "↺ Segna preventivo" : "✓ Segna ordine"}</button>
+          <button type="button" class="cmp-open" data-cmp-toggle-stato="${i}" style="margin-top:4px">↺ Cambia stato</button>
         </div>
       </div>`;
     }).join("");
@@ -6910,13 +6939,14 @@ ${tabQtaPDF ? `<div class="sec scala">
       });
     });
 
-    // Segna/rimuovi lo stato "ordine" senza dover riaprire il kit nel Builder:
-    // è la distinzione fra preventivo e ordine reale, non serve un flusso a parte.
+    // Cambia stato (calcolo → preventivo → ordine → calcolo) senza dover
+    // riaprire il kit nel Builder.
+    const STATO_CYCLE = { calcolo:"preventivo", preventivo:"ordine", ordine:"calcolo" };
     listEl.querySelectorAll("[data-cmp-toggle-stato]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const k = cmpKitsCache[+btn.getAttribute("data-cmp-toggle-stato")];
         if(!k) return;
-        const nuovoStato = k.stato === "ordine" ? "preventivo" : "ordine";
+        const nuovoStato = STATO_CYCLE[k.stato] || "preventivo";
         const payload = { ...k.payload, stato: nuovoStato };
         if(k.source === "locale"){
           const store = getStore();
@@ -6928,7 +6958,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           const idx = cloudProjects.findIndex(p => p.id === k.cloudId);
           if(idx > -1) cloudProjects[idx] = { ...cloudProjects[idx], data: payload };
         }
-        toast(nuovoStato === "ordine" ? "Segnato come ordine ✓" : "Rimesso come preventivo", "ok");
+        toast(`Segnato come "${KIT_STATO[nuovoStato].label}" ✓`, "ok");
         renderConfronto();
       });
     });
