@@ -1921,6 +1921,88 @@
     @media (max-width: 860px) {
       #dashCardList { display: flex; }
     }
+
+    /* ═══ Tema DOUBLEU — fase 3: Kit builder ═══ */
+    /* Stato su una riga sua, con i tre pulsanti distanziati */
+    .fld-stato .hint { margin-top: 0; }
+    #kitStatoPicker { gap: 8px; }
+    #kitStatoPicker .filter-pill { padding: 9px 18px; font-size: 13px; font-weight: 700; }
+    @media (min-width: 1101px) {
+      .cliente-row { grid-template-columns: 1.3fr 1.3fr .8fr; row-gap: 16px; }
+    }
+    @media (min-width: 721px) {
+      .cliente-row .fld-stato {
+        grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap;
+        gap: 10px 16px; padding-top: 14px; border-top: 1px solid var(--border);
+      }
+      .cliente-row .fld-stato label { margin: 0; }
+    }
+
+    /* Icona del capo */
+    .art-thumb { color: #FFFFFF; }
+    .art-thumb-ico { width: 26px; height: 26px; }
+
+    /* Articoli come schede prodotto (da tablet in su; su telefono resta la lista) */
+    @media (min-width: 861px) {
+      #itemsBody { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+      #itemsBody > .hint { grid-column: 1 / -1; }
+      #itemsBody .art-card { margin-bottom: 0; display: flex; flex-direction: column; }
+      #itemsBody .art-card-main {
+        grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 0 12px; align-items: stretch; flex: 1;
+      }
+      #itemsBody .art-card-main > * { min-width: 0; }
+      #itemsBody .art-thumb {
+        width: 100%; height: 104px; border-radius: 0;
+        background: var(--surface-2); color: var(--sb-bg);
+        border-bottom: 1px solid var(--border);
+      }
+      #itemsBody .art-card.is-gift .art-thumb { background: var(--warn-bg); }
+      #itemsBody .art-thumb-ico { width: 64px; height: 64px; }
+      #itemsBody .art-info, #itemsBody .art-fields, #itemsBody .art-price { padding: 0 14px; }
+      #itemsBody .art-selects { flex-direction: column; gap: 6px; }
+      #itemsBody .art-selects select { min-width: 0 !important; width: 100%; font-size: 13px; }
+      #itemsBody .art-fields { flex-direction: column; align-items: stretch; gap: 10px; }
+      #itemsBody .art-pricing { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+      #itemsBody .art-field { min-width: 0; }
+      #itemsBody .art-qty { justify-content: space-between; }
+      #itemsBody .art-qty input { flex: 1; width: auto; min-width: 0; }
+      #itemsBody .qty-btn { width: 36px; height: 36px; }
+      #itemsBody .art-price { text-align: right; font-size: 24px; min-width: 0; }
+      #itemsBody .art-actions { margin-top: auto; }
+    }
+
+    /* Pannello "Analisi live": testata navy, numeri da tabellone */
+    .kpi-panel .card { padding: 0 0 16px; overflow: hidden; }
+    .kpi-panel .card > .card-title {
+      margin: 0 0 4px; padding: 14px 18px; background: var(--sb-bg); color: #FFFFFF; font-size: 19px;
+    }
+    .kpi-panel .card > .kpi, .kpi-panel .card > .pbar,
+    .kpi-panel .card > .kpi-mini-list { margin-left: 16px; margin-right: 16px; }
+    .kpi-panel .kpi-hero { margin-top: 10px; margin-bottom: 0; }
+    .kpi-panel .kpi-hero .val { font-size: 44px; }
+    .kpi-panel #kpiMargin .val { font-size: 64px; line-height: .95; }
+    .kpi-panel .kpi-cost-row { margin-top: 8px; border-top: 0; }
+    .kpi-panel .kpi-cost-row .kpi-mini { padding: 8px 12px; border-radius: 10px; background: var(--surface-2); }
+    .kpi-panel .kpi-cost-row .kpi-mini-val { font-family: var(--display); font-size: 22px; color: var(--text-2); }
+
+    /* Telefono: margine, costo e prezzo per atleta in una barra navy in basso,
+       sempre a portata di pollice mentre si compone il kit. */
+    @media (max-width: 560px) {
+      .statusBar {
+        position: fixed; top: auto; left: 10px; right: 10px;
+        bottom: calc(66px + env(safe-area-inset-bottom, 0px)); z-index: 190;
+        border: 0; border-radius: 16px; padding: 10px 14px;
+        background: var(--sb-bg) !important; color: #FFFFFF;
+        box-shadow: 0 8px 24px rgba(0,29,57,.28);
+      }
+      .statusBar .statusLabel { color: #FFFFFF !important; }
+      .statusBar.good .statusLabel { color: #7FE3AC !important; }
+      .statusBar.warn .statusLabel { color: #F3D35B !important; }
+      .statusBar.bad  .statusLabel { color: #FF9C82 !important; }
+      .statusStats { color: #A9B4C2; }
+      .statusStats strong { color: #FFFFFF; font-family: var(--display); font-size: 16px; }
+      .content-area { padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px)); }
+    }
   </style>
 </head>
 
@@ -2076,7 +2158,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v79</span>
+            <span id="buildTxt">build v80</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2378,7 +2460,7 @@
             <div class="card" style="margin-bottom:14px">
               <div class="form-section" style="margin-bottom:0">
                 <div class="section-lbl" id="clienteSectionLbl">Cliente</div>
-                <div class="row4">
+                <div class="row4 cliente-row">
                   <div class="fld-client">
                     <label>Cliente / Club</label>
                     <input id="clientName" placeholder="es. Tennis Club Roma">
@@ -2393,7 +2475,7 @@
                     <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
                     <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
                   </div>
-                  <div>
+                  <div class="fld-stato">
                     <label>Stato</label>
                     <input type="hidden" id="kitStato" value="preventivo">
                     <div class="art-filters" id="kitStatoPicker">
@@ -2836,6 +2918,15 @@
                   </div>
                 </div>
 
+                <!-- Costo e prezzo per atleta si leggono insieme: il costo
+                     sta subito sotto, non in fondo tra i riferimenti. -->
+                <div class="kpi-mini-list kpi-cost-row">
+                  <div class="kpi-mini" id="kpiCost">
+                    <span class="kpi-mini-lbl">Costo per atleta</span>
+                    <span class="kpi-mini-val" id="kCostAthlete">—</span>
+                  </div>
+                </div>
+
                 <div class="pbar" id="priceBarBox" style="display:none"></div>
 
                 <div class="kpi kpi-hero" id="kpiMinPriceLive">
@@ -2855,10 +2946,6 @@
 
                 <!-- Riferimenti secondari: utili ma non da leggere per primi -->
                 <div class="kpi-mini-list">
-                  <div class="kpi-mini" id="kpiCost">
-                    <span class="kpi-mini-lbl">Costo per atleta</span>
-                    <span class="kpi-mini-val" id="kCostAthlete">—</span>
-                  </div>
                   <div class="kpi-mini" id="kpiMinSustainable">
                     <span class="kpi-mini-lbl">Minimo sostenibile</span>
                     <span class="kpi-mini-val" id="kMinSustainable">—</span>
@@ -3686,7 +3773,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v79";
+  const BUILD = "v80";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3990,6 +4077,36 @@ if("serviceWorker" in navigator) {
     pill.addEventListener("click", () => setKitStatoPicker(pill.getAttribute("data-stato")));
   });
 
+  /* ─── Icona del capo nella scheda articolo ───
+     Solo grafica: sceglie il disegno dal nome dell'articolo, senza toccare
+     nessun dato. Ciò che non si riconosce resta una t-shirt. */
+  const GARMENT_PATHS = {
+    tshirt:  '<path d="M8 3L3 6l2 5 3-1.5V21h8V9.5l3 1.5 2-5-5-3a4 4 0 0 1-8 0z"/>',
+    polo:    '<path d="M8 3L3 6l2 5 3-1.5V21h8V9.5l3 1.5 2-5-5-3a4 4 0 0 1-8 0z"/><path d="M10 3.6l2 2.9 2-2.9M12 6.5V10"/>',
+    felpa:   '<path d="M9 3.5Q12 5.5 15 3.5L19 5L22 18L19 18.8L17 10V20H7V10L5 18.8L2 18L5 5Z"/><path d="M9 3.5Q12 7 15 3.5M7 18.3H17M2.4 16.3L5.3 17.1M21.6 16.3L18.7 17.1"/>',
+    hoodie:  '<path d="M9 3.5Q12 5.5 15 3.5L19 5L22 18L19 18.8L17 10V20H7V10L5 18.8L2 18L5 5Z"/><path d="M9 3.5C9 1 15 1 15 3.5M9.5 14.5h5M7 18.3H17"/>',
+    zip:     '<path d="M9 3.5Q12 5.5 15 3.5L19 5L22 18L19 18.8L17 10V20H7V10L5 18.8L2 18L5 5Z"/><path d="M9 3.5C9 1 15 1 15 3.5M12 5v15M7 18.3H17"/>',
+    short:   '<path d="M5 4h14l1.5 16H13l-1-9-1 9H3.5z"/><path d="M5 7h14"/>',
+    gonna:   '<path d="M7 4h10l3 16H4z"/><path d="M7 7h10"/>',
+    pantalone:'<path d="M6 3h12l1 18h-5l-2-12-2 12H5z"/><path d="M6 6h12"/>',
+    dress:   '<path d="M9 2h6l-1 5 4 14H6l4-14z"/><path d="M10 7h4"/>',
+    cappello:'<path d="M4 16a8 8 0 0 1 16 0z"/><path d="M4 16h17l-1 2H4zM12 8V6.5"/>',
+  };
+  const garmentIcon = (article) => {
+    const a = String(article || "").toLowerCase();
+    const k = a.includes("zip") ? "zip"
+      : (a.includes("hoodie") || a.includes("cappuccio")) ? "hoodie"
+      : (a.includes("sweat") && a.includes("pant")) || a.includes("pantalon") || a.includes("jogger") ? "pantalone"
+      : (a.includes("sweat") || a.includes("felpa")) ? "felpa"
+      : (a.includes("short") || a.includes("pantaloncin")) ? "short"
+      : (a.includes("skirt") || a.includes("gonn")) ? "gonna"
+      : (a.includes("dress") || a.includes("vestit")) ? "dress"
+      : a.includes("polo") ? "polo"
+      : (a.includes("cappell") || a.includes("cap")) ? "cappello"
+      : "tshirt";
+    return `<svg class="art-thumb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${GARMENT_PATHS[k]}</svg>`;
+  };
+
   /* ─── render() ─── */
   const render = () => {
     let html = "";
@@ -4029,11 +4146,7 @@ if("serviceWorker" in navigator) {
 <div class="art-card${giftClass}" data-name="${esc(String(it.article).toLowerCase())}" data-line="${esc(it.line)}">
   <div class="art-card-main">
 
-    <div class="art-thumb" title="${esc(it.article)}">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5">
-        <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/>
-      </svg>
-    </div>
+    <div class="art-thumb" title="${esc(it.article)}">${garmentIcon(it.article)}</div>
 
     <div class="art-info">
       <div class="art-selects">
