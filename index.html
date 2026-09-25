@@ -2003,6 +2003,42 @@
       .statusStats strong { color: #FFFFFF; font-family: var(--display); font-size: 16px; }
       .content-area { padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px)); }
     }
+
+    /* ═══ Tema DOUBLEU — fase 4: fluidità ═══ */
+    /* Cambio pagina: la nuova vista entra in dissolvenza. Solo opacità: uno
+       spostamento qui renderebbe la vista un contenitore per gli elementi
+       fissi, e per un attimo li sposterebbe. */
+    @keyframes du-view-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes du-step-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+    @keyframes du-num     { from { opacity: .3; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+    .content-area > [id$="View"] { animation: du-view-in .24s ease-out; }
+    .step-content.active, .iq-screen.active { animation: du-step-in .24s cubic-bezier(.2, .7, .2, 1); }
+
+    /* Numero chiave appena cambiato (classe messa dallo script in fondo) */
+    .du-updated { animation: du-num .3s ease-out; }
+    span.du-updated { display: inline-block; }
+
+    /* Risposta al passaggio del mouse e al tocco */
+    .art-card, .dash-kit-card, .kpi, .export-card, .step-item, .dash-act, .filter-pill, .mobile-nav-item {
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+    }
+    @media (hover: hover) {
+      #itemsBody .art-card:hover, .dash-kit-card:hover, .export-card:hover {
+        transform: translateY(-2px); box-shadow: var(--shadow-md);
+      }
+      .dash-act:hover { transform: translateY(-1px); }
+    }
+    button, a, .filter-pill, .step-item, .mobile-nav-item { -webkit-tap-highlight-color: transparent; }
+    .step-item:active, .filter-pill:active, .mobile-nav-item:active, .dash-act:active { transform: scale(.96); }
+    .main-content { scroll-behavior: smooth; }
+
+    /* Chi ha chiesto al sistema meno movimento non vede animazioni */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important; scroll-behavior: auto !important;
+      }
+    }
   </style>
 </head>
 
@@ -2158,7 +2194,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v80</span>
+            <span id="buildTxt">build v81</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3773,7 +3809,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v80";
+  const BUILD = "v81";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8835,6 +8871,44 @@ tr:last-child td{border-bottom:none}
     });
   }
 
+})();
+</script>
+
+<script>
+/* Restyling fase 4: quando un numero chiave cambia valore, una breve
+   animazione lo segnala. Solo grafica: osserva il testo che i calcoli hanno
+   già scritto, non lo legge per calcolare né lo modifica. */
+(() => {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!("MutationObserver" in window)) return;
+  const IDS = ["kRealMargin", "kPriceAthlete", "kCostAthlete", "kMinPriceLive",
+               "kRealMarginSum", "kPriceAthleteSum", "kGross", "kProfit"];
+  const prev = new Map();
+  const pulse = (el) => {
+    const txt = el.textContent;
+    if (prev.get(el) === txt) return;     // riscritto uguale: niente animazione
+    const first = !prev.has(el);
+    prev.set(el, txt);
+    if (first) return;                    // primo valore: niente animazione
+    el.classList.remove("du-updated");
+    void el.offsetWidth;                  // riavvia l'animazione
+    el.classList.add("du-updated");
+  };
+  const obs = new MutationObserver((muts) => {
+    const done = new Set();
+    muts.forEach((m) => {
+      const node = m.target.nodeType === 3 ? m.target.parentElement : m.target;
+      const el = node && node.closest("[data-du-num]");
+      if (el && !done.has(el)) { done.add(el); pulse(el); }
+    });
+  });
+  IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.setAttribute("data-du-num", "");
+    prev.set(el, el.textContent);
+    obs.observe(el, { childList: true, characterData: true, subtree: true });
+  });
 })();
 </script>
 
