@@ -19,6 +19,12 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.json">
 
+  <!-- Font del tema DOUBLEU. Senza rete restano i font di sistema indicati
+       come ripiego nel CSS: l'app funziona uguale, cambia solo il carattere. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     /* ─── Reset ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1600,6 +1606,244 @@
     /* ─── Card secondary actions ─── */
     .art-actions-secondary { display: none; gap: 5px; }
     .art-actions-secondary.open { display: contents; }
+
+    /* ═══════════════════════════════════════════════════════════
+       Tema DOUBLEU — fase 1 del restyling (solo aspetto).
+       Sta in fondo al foglio e sovrascrive token e componenti base:
+       nessuna regola qui cambia cosa viene mostrato, solo come.
+       Palette: navy DOUBLEU come colore principale, arancio come
+       accento delle azioni chiave, verde/giallo/rosso solo per gli
+       esiti. Tipografia: Barlow per il testo, Barlow Condensed per
+       titoli, etichette e numeri.
+       ═══════════════════════════════════════════════════════════ */
+    :root {
+      --bg:          #F2F4F7;
+      --surface:     #FFFFFF;
+      --surface-2:   #F5F7FA;
+      --surface-3:   #E9EEF3;
+      --border:      #E1E6EC;
+      --border-2:    #D0D8E1;
+
+      --text:        #001D39;
+      --text-2:      #0A4174;
+      --muted:       #5F6B7C;
+      --muted-2:     #A9B4C2;
+
+      --accent:      #001D39;
+      --accent-2:    #0A4174;
+      --accent-light:rgba(10,65,116,.08);
+
+      --brand-orange:   #E87C2B;
+      --brand-orange-2: #D46A1A;
+
+      --sb-bg:       #001D39;
+      --sb-border:   rgba(255,255,255,.08);
+      --sb-text:     #FFFFFF;
+      --sb-muted:    #B9C6D6;
+      --sb-active:   #0A4174;
+      --sb-active-bd:#0A4174;
+
+      /* "Sotto target" passa da ambra a giallo scuro: l'ambra si confondeva
+         con l'arancio del brand, che ora segna le azioni. */
+      --good:        #0A7A4A;
+      --good-bg:     #E3F4EA;
+      --good-bd:     #9ED3B6;
+      --warn:        #8A6D00;
+      --warn-bg:     #FBF3D0;
+      --warn-bd:     #E3CB6A;
+
+      --input-bg:    #FFFFFF;
+      --input-bd:    #D0D8E1;
+      --input-focus: #0A4174;
+
+      --shadow-sm:   0 1px 2px rgba(0,29,57,.05);
+      --shadow-md:   0 6px 20px rgba(0,29,57,.08);
+      --shadow-lg:   0 12px 36px rgba(0,29,57,.12);
+
+      --font:        "Barlow", "Avenir Next", "Segoe UI", Roboto, sans-serif;
+      --display:     "Barlow Condensed", "Arial Narrow", "Avenir Next Condensed", sans-serif;
+      --r:           16px;
+      --r-sm:        10px;
+    }
+
+    body { font-family: var(--font); font-variant-numeric: tabular-nums; }
+
+    /* ─── Sidebar navy ─── */
+    .sidebar { border-right: 0; }
+    .sb-logo { border-bottom-color: var(--sb-border); }
+    .sb-mark {
+      background: var(--brand-orange); color: var(--sb-bg); box-shadow: none;
+      font-family: var(--display); font-style: italic; font-weight: 800;
+      font-size: 19px; letter-spacing: -.02em;
+    }
+    .sb-brand {
+      font-family: var(--display); font-style: italic; font-weight: 800;
+      font-size: 21px; line-height: 1; letter-spacing: .02em;
+      text-transform: uppercase; color: #FFFFFF;
+    }
+    .sb-tag { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .18em; color: #8FA3BA; margin-top: 3px; }
+    .nav-item { color: var(--sb-muted); font-size: 14px; padding: 10px 12px; border-radius: 10px; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: #FFFFFF; }
+    .nav-item.active { background: var(--sb-active); border-color: transparent; color: #FFFFFF; font-weight: 700; }
+    .nav-item.active .nav-icon { color: var(--brand-orange); }
+    .sb-kit { border-color: var(--sb-border); }
+    .sb-kit-lbl { font-family: var(--display); font-size: 11px; letter-spacing: .14em; color: #8FA3BA; }
+    .sb-kit-sub, .sb-urole { color: #A9B4C2; }
+    .sb-avatar { background: #0A4174; }
+
+    /* ─── Titoli e etichette ─── */
+    .topbar-title, .dash-welcome, .card-title, .auth-title, .drawer-title,
+    .iq-title, .iphone-quick-title, .iphone-saved-title {
+      font-family: var(--display); font-style: italic; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .01em;
+    }
+    .topbar-title { font-size: 28px; }
+    .dash-welcome { font-size: 34px; line-height: 1; }
+    .card-title   { font-size: 20px; }
+    .auth-title   { font-size: 24px; }
+    .iq-title     { font-size: 28px; }
+    .iphone-quick-title, .iphone-saved-title { font-size: 24px; }
+
+    label, .section-lbl, .kpi .lbl, .dash-table th, .disc-table th, .cmp-cap,
+    .iq-section-label, .iphone-flow-label {
+      font-family: var(--display); font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+    label { font-size: 12px; color: #3F4E63; margin-bottom: 5px; }
+    .section-lbl { font-size: 12px; color: #3F4E63; }
+    .hint { color: var(--muted); }
+
+    /* Numeri grandi: condensato da tabellone */
+    .kpi .val, .art-price, .art-total-val, .pbar-price, .cmp-profit,
+    .iq-result-big, .dash-amt {
+      font-family: var(--display); font-weight: 800; letter-spacing: 0;
+    }
+    .kpi .lbl { font-size: 12px; color: #3F4E63; }
+    .kpi .val { font-size: 28px; line-height: 1.05; }
+    .kpi-hero .val { font-size: 40px; }
+    .bottom-zone .kpi .val { font-size: 26px; }
+    .bottom-zone #kpiMarginSum .val, .bottom-zone #kpiPriceSum .val { font-size: 40px; }
+    .art-price { font-size: 20px; }
+    .art-total-val { font-size: 24px; }
+
+    /* ─── Superfici ─── */
+    .card { border-color: var(--border); box-shadow: none; }
+    .form-section { background: var(--surface-2); border-color: var(--border); }
+    .statusBar { box-shadow: none; }
+
+    /* ─── Campi ─── */
+    input, select, textarea { padding: 9px 12px; border-radius: var(--r-sm); }
+    input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px rgba(10,65,116,.14); }
+    .toggle { border-color: var(--border); }
+
+    /* ─── Pulsanti ─── */
+    button { border-radius: 12px; font-weight: 700; transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .08s; }
+    button.primary { background: var(--accent); color: #FFFFFF; box-shadow: none; }
+    button.primary:hover { background: var(--accent-2); box-shadow: none; }
+    button.secondary { background: var(--surface); border: 1px solid var(--border-2); color: var(--text); }
+    button.secondary:hover { background: var(--surface); border-color: var(--text); }
+    button.ghost { border-color: var(--border-2); }
+    /* Azioni chiave in arancio, testo navy per il contrasto */
+    #btnNewKitDash, #btnAddItem {
+      background: var(--brand-orange); color: var(--sb-bg); font-weight: 800;
+    }
+    #btnNewKitDash:hover, #btnAddItem:hover { background: var(--brand-orange-2); color: var(--sb-bg); }
+
+    .qty-btn { background: var(--surface); border-color: var(--border-2); }
+    .qty-btn:hover { background: var(--surface-2); }
+
+    /* ─── Passi del builder: tre schede separate ─── */
+    .step-bar { gap: 8px; background: transparent; border: 0; box-shadow: none; overflow: visible; }
+    .step-item {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 12px 16px; font-family: var(--display); font-size: 17px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em; color: var(--text);
+    }
+    .step-item:last-child { border-right: 1px solid var(--border); }
+    .step-item.active { background: var(--sb-bg); border-color: var(--sb-bg); color: #FFFFFF; }
+    .step-item:hover:not(.active) { background: var(--surface); border-color: var(--text-2); }
+    .step-num { background: var(--surface-3); color: var(--muted); font-family: var(--display); font-size: 14px; width: 26px; height: 26px; }
+    .step-item.active .step-num { background: var(--brand-orange); color: var(--sb-bg); }
+    .step-item.done { color: var(--text); }
+    .step-item.done .step-num { background: var(--good-bg); color: var(--good); }
+
+    /* ─── Tessere KPI ─── */
+    .kpi { background: var(--surface); border-color: var(--border); border-radius: 14px; }
+    .kpi.good { background: var(--surface); border: 1.5px solid var(--good-bd); }
+    .kpi.warn { background: var(--surface); border: 1.5px solid var(--warn-bd); }
+    .kpi.bad  { background: var(--bad-bg);  border: 1.5px solid var(--bad-bd); }
+    .kpi-flag { border-radius: 999px; }
+    .kpi-flag.good { background: var(--good-bg); border-color: transparent; }
+    .kpi-flag.warn { background: var(--warn-bg); border-color: transparent; }
+    .kpi-flag.bad  { background: var(--bad-bg);  border-color: transparent; }
+
+    /* Dashboard: tessere bianche, il margine di portafoglio in navy */
+    .kpi.dk-navy, .kpi.dk-mid, .kpi.dk-light { background: var(--surface); border-color: var(--border); }
+    .kpi.dk-navy .lbl, .kpi.dk-mid .lbl, .kpi.dk-light .lbl { color: #3F4E63; }
+    .kpi.dk-navy .val, .kpi.dk-mid .val, .kpi.dk-light .val { color: var(--text); }
+    .kpi.dk-navy .note, .kpi.dk-mid .note, .kpi.dk-light .note { color: var(--muted); }
+    .kpi.dk-orange { background: var(--sb-bg); border-color: var(--sb-bg); }
+    .kpi.dk-orange .lbl  { color: var(--brand-orange); }
+    .kpi.dk-orange .val  { color: #FFFFFF; }
+    .kpi.dk-orange .note { color: #A9B4C2; }
+
+    /* ─── Pillole, schede, tab ─── */
+    .filter-pill { border-color: var(--border-2); color: #3F4E63; }
+    .filter-pill.active { background: var(--accent); border-color: var(--accent); }
+    .tab-bar { box-shadow: none; }
+    .tab-btn.active { background: var(--accent); box-shadow: none; }
+    .cmp-sort-btn.active { background: var(--accent); border-color: var(--accent); }
+    .art-card { border-color: var(--border); border-radius: 14px; }
+    .art-thumb { background: var(--sb-bg); }
+    .art-badge { background: var(--surface-3); color: var(--text); }
+    .dash-kit-name { font-family: var(--display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: .01em; }
+    .dash-table td { border-color: var(--border); }
+    .dash-table td:first-child { border-left-color: var(--border); }
+    .dash-table td:last-child { border-right-color: var(--border); }
+
+    /* ─── Riepilogo in tre sezioni: per atleta, ordine, incasso ─── */
+    .rz-section {
+      display: flex; align-items: center; gap: 12px;
+      margin: 22px 0 10px;
+      font-family: var(--display); font-style: italic; font-weight: 800;
+      font-size: 19px; text-transform: uppercase; letter-spacing: .02em; color: var(--text);
+    }
+    .rz-section::after { content: ""; flex: 1; height: 2px; background: var(--text); }
+    /* Il totale fatturato è il numero che si cerca per primo tra i totali */
+    .kpi.kpi-total { background: var(--sb-bg); border-color: var(--sb-bg); }
+    .kpi.kpi-total .lbl  { color: var(--brand-orange); }
+    .kpi.kpi-total .val  { color: #FFFFFF; }
+    .kpi.kpi-total .note { color: #A9B4C2; }
+    /* Sette tessere su quattro colonne: il margine dell'ordine chiude la riga */
+    /* Sotto gli 861px le righe diventano a colonna singola: lì uno span 2
+       creerebbe una colonna in più, quindi vale solo sopra. */
+    @media (min-width: 861px) {
+      .rz-order .rz-wide { grid-column: span 2; }
+    }
+
+    /* ─── Barra inferiore su telefono: chiara, voce attiva in navy ─── */
+    .mobile-nav { background: var(--surface); border-top: 1px solid var(--border); }
+    .mobile-nav-item { color: var(--muted); font-size: 11px; }
+    .mobile-nav-item.active { color: var(--text); font-weight: 800; }
+
+    @media (max-width: 860px) {
+      .topbar-title { font-size: 24px; }
+    }
+    @media (max-width: 560px) {
+      .topbar { background: var(--surface); color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+      .topbar-title { color: var(--text); font-size: 24px; }
+      #btnLogoutMobile, #btnSettingsMobile { color: var(--text) !important; }
+      #btnSettingsMobile.active { color: var(--text-2) !important; }
+      .iphone-quick-card { border-color: var(--border); box-shadow: none; }
+      .iphone-quick-card.recommended { background: var(--sb-bg); border-color: var(--sb-bg); color: #FFFFFF; }
+      .iphone-quick-card.recommended .iphone-quick-icon { background: var(--brand-orange); color: var(--sb-bg); }
+      .iphone-quick-card.recommended .iphone-quick-arrow { color: var(--brand-orange); }
+      .iphone-quick-card.recommended .iphone-quick-meta { background: rgba(255,255,255,.12); color: #FFFFFF; }
+      .iphone-guide-progress span.active { color: var(--text); }
+      .iphone-guide-progress span.active b { background: var(--brand-orange); color: var(--sb-bg); }
+      .iq-primary { background: var(--sb-bg); }
+      .iq-segment.active, .iq-disc-chip.active { background: var(--accent); border-color: var(--accent); }
+    }
   </style>
 </head>
 
@@ -1609,10 +1853,10 @@
   <div id="authOverlay">
     <div class="auth-card">
       <div class="auth-logo">
-        <div class="sb-mark">W</div>
+        <div class="sb-mark">DU</div>
         <div>
-          <div class="sb-brand">doubleu kit</div>
-          <div class="sb-tag">Kit Builder</div>
+          <div class="sb-brand">doubleu</div>
+          <div class="sb-tag">Kit builder</div>
         </div>
       </div>
       <h2 class="auth-title">Accedi al tuo account</h2>
@@ -1636,10 +1880,10 @@
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
       <div class="sb-logo">
-        <div class="sb-mark">W</div>
+        <div class="sb-mark">DU</div>
         <div>
-          <div class="sb-brand">doubleu kit</div>
-          <div class="sb-tag">Tools for Champions</div>
+          <div class="sb-brand">doubleu</div>
+          <div class="sb-tag">Kit builder</div>
         </div>
       </div>
 
@@ -1755,7 +1999,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v76</span>
+            <span id="buildTxt">build v78</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2355,7 +2599,10 @@
                 </div>
               </div>
 
-              <div class="row3" style="margin-top:10px">
+              <!-- Tre gruppi con titolo: prima i valori per atleta, poi i totali
+                   dell'ordine, infine cosa e quando si incassa. -->
+              <div class="rz-section">Per atleta</div>
+              <div class="row3">
                 <div class="kpi">
                   <div class="lbl">Quantità stimata</div>
                   <div class="val" id="kQtaSum">—</div>
@@ -2373,7 +2620,8 @@
                 </div>
               </div>
 
-              <div class="row3" style="margin-top:10px">
+              <div class="rz-section">Ordine</div>
+              <div class="row4 rz-order">
                 <div class="kpi">
                   <div class="lbl">Costo totale reale</div>
                   <div class="val" id="kTotalCost">—</div>
@@ -2389,10 +2637,7 @@
                   <div class="val" id="kGiftCost">—</div>
                   <div class="note">Nel costo totale, non fatturati</div>
                 </div>
-              </div>
-
-              <div class="row3" style="margin-top:10px">
-                <div class="kpi">
+                <div class="kpi kpi-total">
                   <div class="lbl">Totale fatturato</div>
                   <div class="val" id="kGross">—</div>
                   <div class="note" id="kGrossNote">—</div>
@@ -2407,16 +2652,15 @@
                   <div class="val" id="kVatDue">—</div>
                   <div class="note" id="kVatDueNote">Incassata nel prezzo, non è tua</div>
                 </div>
-              </div>
-
-              <!-- Margine, acconto e saldo sono i totali in euro dell'ordine:
-                   quanto guadagno, quanto incasso subito, quanto alla consegna. -->
-              <div class="row3" style="margin-top:10px">
-                <div class="kpi">
+                <div class="kpi rz-wide">
                   <div class="lbl">Margine dell'ordine</div>
                   <div class="val" id="kProfit">—</div>
                   <div class="note">Guadagno totale su imponibile</div>
                 </div>
+              </div>
+
+              <div class="rz-section">Incasso</div>
+              <div class="row2">
                 <div class="kpi" id="kpiDeposit">
                   <div class="lbl">Acconto minimo sicuro</div>
                   <div class="val" id="kMinDeposit">—</div>
@@ -3365,7 +3609,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v76";
+  const BUILD = "v78";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
