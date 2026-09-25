@@ -801,6 +801,8 @@
       border: 1px dashed var(--border-2); font-size: 10px; font-weight: 700;
       text-transform: uppercase; letter-spacing: .04em; vertical-align: 2px;
     }
+    .dash-amt-unit { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .dash-amt-qty { color: var(--warn); font-weight: 600; }
     .dash-amt-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
     .dash-amt-m { font-weight: 700; }
     .dash-amt-m.good { color: var(--good); }
@@ -1754,7 +1756,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v73</span>
+            <span id="buildTxt">build v74</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3364,7 +3366,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v73";
+  const BUILD = "v74";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -6434,7 +6436,11 @@ ${tabQtaPDF ? `<div class="sec scala">
      Totale ordine (IVA inclusa se il kit la applica) e margine effettivo,
      colorato come lo stato del kit: si legge il valore senza aprirlo.
      Senza prezzo offerta il totale è ricavato dal margine obiettivo: è una
-     stima, non un prezzo concordato, e va letto come tale. */
+     stima, non un prezzo concordato, e va letto come tale.
+     Senza quantità atleti il calcolo usa 1: se anche il prezzo offerta o gli
+     articoli sono per un kit solo, l'importo è il prezzo di un kit e non il
+     totale ordine, quindi lo si dice ("/ kit"); altrimenti si avvisa che la
+     quantità non è indicata. */
   const dashAmountHtml = (kit) => {
     const st = kit.stats;
     if(!st) return `<span class="dash-amt-none">—</span>`;
@@ -6442,8 +6448,12 @@ ${tabQtaPDF ? `<div class="sec scala">
     const cls   = KIT_STATES[st.state]?.cls || "";
     const est   = !(kit.payload?.useOffer && toNum(kit.payload?.offerPrice) > 0);
     const tip   = est ? ` title="Nessun prezzo offerta: totale calcolato dal margine obiettivo"` : "";
-    return `<div class="dash-amt${est ? " est" : ""}"${tip}>${est ? `<span class="dash-amt-est">stima</span>` : ""}${eur(st.invoiceTotal)}</div>
-      <div class="dash-amt-sub">${vatOn ? "IVA incl." : "senza IVA"} · <span class="dash-amt-m ${cls}">margine ${est ? "stimato " : ""}${(st.margin * 100).toFixed(1)}%</span></div>`;
+    const noQty = !(toNum(kit.payload?.qtyEst) > 0);
+    const items = Array.isArray(kit.payload?.items) ? kit.payload.items : [];
+    const perKit= noQty && (!est || items.every(it => toNum(it.qty) <= 1));
+    const qtyNote = perKit ? "prezzo di 1 kit, quantità n.d." : noQty ? "quantità n.d." : "";
+    return `<div class="dash-amt${est ? " est" : ""}"${tip}>${est ? `<span class="dash-amt-est">stima</span>` : ""}${eur(st.invoiceTotal)}${perKit ? `<span class="dash-amt-unit"> / kit</span>` : ""}</div>
+      <div class="dash-amt-sub">${vatOn ? "IVA incl." : "senza IVA"}${qtyNote ? ` · <span class="dash-amt-qty">${qtyNote}</span>` : ""} · <span class="dash-amt-m ${cls}">margine ${est ? "stimato " : ""}${(st.margin * 100).toFixed(1)}%</span></div>`;
   };
 
   /* ─── Dashboard render ─── */
