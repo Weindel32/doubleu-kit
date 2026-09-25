@@ -1756,7 +1756,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v74</span>
+            <span id="buildTxt">build v75</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3366,7 +3366,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v74";
+  const BUILD = "v75";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -3517,6 +3517,11 @@ if("serviceWorker" in navigator) {
   const kTargetPrice   = document.getElementById("kTargetPrice");
   const kVatNote       = document.getElementById("kVatNote");
   const offerStatusBox = document.getElementById("offerStatusBox");
+  // Il prezzo proposto è per atleta: senza quantità non esiste un totale
+  // ordine né un margine credibile, quindi la quantità diventa obbligatoria.
+  const offerNeedsQty = () =>
+    useOffer.checked && toNum(offerPrice.value) > 0 && !(toNum(qtyEst.value) > 0);
+
   const kTarget        = document.getElementById("kTarget");
 
   const kTotalCost  = document.getElementById("kTotalCost");
@@ -4571,7 +4576,13 @@ if("serviceWorker" in navigator) {
 
     let offerStatus = "", offerStatusColor = "";
 
-    if(useOffer.checked && toNum(offerPrice.value) > 0){
+    if(offerNeedsQty()){
+      // Senza quantità il prezzo per atleta viene moltiplicato per 1 e
+      // confrontato col costo di tutto l'ordine: margine ed esito sarebbero
+      // falsi, quindi non si mostrano.
+      offerStatus = "⚠ Inserisci la quantità stimata: senza, il prezzo proposto vale per 1 solo atleta e il margine non è attendibile";
+      offerStatusColor = "#9A6600";
+    } else if(useOffer.checked && toNum(offerPrice.value) > 0){
       const belowSustainable = pricePerAthlete < minSustainableDisplay;
       const belowTarget      = realMargin < m;
       if(belowSustainable){
@@ -5522,6 +5533,11 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
 
   const saveProject = async () => {
+    if(offerNeedsQty()){
+      toast("Con il prezzo proposto serve la quantità stimata (numero atleti)", "warn", 5000);
+      if(qtyEst.offsetParent) qtyEst.focus();
+      return;
+    }
     const client  = (clientName.value  || "").trim();
     let project   = (projectName.value || "").trim();
     if(!project){
