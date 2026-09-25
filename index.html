@@ -793,6 +793,15 @@
     .dash-table tr:hover td { background: var(--surface-2); }
     .dash-kit-name { font-weight: 700; font-size: 15px; color: var(--text); }
     .dash-kit-sub  { font-size: 12px; color: var(--muted); margin-top: 5px; }
+    .dash-table th.dash-amt-th, .dash-table td.dash-amt-td { text-align: right; }
+    .dash-amt { font-weight: 700; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .dash-amt-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .dash-amt-m { font-weight: 700; }
+    .dash-amt-m.good { color: var(--good); }
+    .dash-amt-m.warn { color: var(--warn); }
+    .dash-amt-m.low, .dash-amt-m.bad { color: var(--bad); }
+    .dash-amt-none { color: var(--muted); }
+    .dash-kit-card-amt { margin-top: 8px; }
     .dash-badge {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 3px 9px; border-radius: 999px;
@@ -1739,7 +1748,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v71</span>
+            <span id="buildTxt">build v72</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -1867,6 +1876,7 @@
                   <tr>
                     <th>Kit</th>
                     <th>Articoli</th>
+                    <th class="dash-amt-th">Importo</th>
                     <th>Salvato il</th>
                     <th>Stato</th>
                     <th>Fonte</th>
@@ -3348,7 +3358,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v71";
+  const BUILD = "v72";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -6414,6 +6424,18 @@ ${tabQtaPDF ? `<div class="sec scala">
     return totNet > 0 ? totProfit / totNet : 0;
   };
 
+  /* ─── Importo di riferimento di un kit in dashboard ───
+     Totale ordine (IVA inclusa se il kit la applica) e margine effettivo,
+     colorato come lo stato del kit: si legge il valore senza aprirlo. */
+  const dashAmountHtml = (kit) => {
+    const st = kit.stats;
+    if(!st) return `<span class="dash-amt-none">—</span>`;
+    const vatOn = kit.payload?.applyVAT !== false;
+    const cls   = KIT_STATES[st.state]?.cls || "";
+    return `<div class="dash-amt">${eur(st.invoiceTotal)}</div>
+      <div class="dash-amt-sub">${vatOn ? "IVA incl." : "senza IVA"} · <span class="dash-amt-m ${cls}">margine ${(st.margin * 100).toFixed(1)}%</span></div>`;
+  };
+
   /* ─── Dashboard render ─── */
   const renderDashboard = () => {
     const store     = getStore();
@@ -6427,6 +6449,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         savedAt:   data.savedAt,
         payload:   data.payload,
         itemCount: Array.isArray(data.payload?.items) ? data.payload.items.length : 0,
+        stats:     calcKitStats(data.payload),
       })),
       ...cloudProjects
         .filter(p => !localNames.has(p.name))
@@ -6437,6 +6460,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           savedAt:   p.created_at ? new Date(p.created_at).getTime() : 0,
           payload:   p.data,
           itemCount: Array.isArray(p.data?.items) ? p.data.items.length : 0,
+          stats:     calcKitStats(p.data),
         })),
     ];
 
@@ -6448,7 +6472,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(dkKits)  dkKits.textContent  = rows.length;
     if(dkItems) dkItems.textContent = rows.reduce((s, k) => s + k.itemCount, 0);
 
-    const stats = rows.map(k => calcKitStats(k.payload)).filter(Boolean);
+    const stats = rows.map(k => k.stats).filter(Boolean);
     if(stats.length) {
       const avgCost = stats.reduce((s, v) => s + v.costPerAthlete, 0) / stats.length;
       if(dkMargin) dkMargin.textContent = (portfolioMargin(stats) * 100).toFixed(1) + "%";
@@ -6503,6 +6527,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           ${client ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
         </td>
         <td>${kit.itemCount}</td>
+        <td class="dash-amt-td">${dashAmountHtml(kit)}</td>
         <td>${date}</td>
         <td>${statoBadgeHtml(getKitStato(kit.payload))}</td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud"
@@ -6606,6 +6631,7 @@ ${tabQtaPDF ? `<div class="sec scala">
             <div class="dash-kit-card-meta">
               <span style="font-size:12px;color:var(--muted)">${kit.itemCount} articoli · ${date}</span>
             </div>
+            ${kit.stats ? `<div class="dash-kit-card-amt">${dashAmountHtml(kit)}</div>` : ""}
             <div class="dash-kit-card-actions">
               <button class="secondary" style="font-size:13px;padding:7px 14px;flex:1" data-ci="${i}" data-ca="load">Carica</button>
               ${kit.source === "local" && supabase ? `<button class="secondary" style="font-size:13px;padding:7px 10px;color:var(--accent)" data-ci="${i}" data-ca="sync" title="Carica su cloud">☁</button>` : ""}
