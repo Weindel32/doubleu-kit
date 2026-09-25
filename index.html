@@ -2019,7 +2019,7 @@
       padding: 16px 20px; border: 0; border-radius: 10px; background: transparent;
       text-align: left; color: var(--text); cursor: pointer; font-weight: 600;
     }
-    .dash-group-caret { color: var(--brand-orange); font-size: 14px; transition: transform .18s ease; }
+    .dash-group-caret { color: var(--brand-orange); font-size: 24px; line-height: 1; width: 20px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform .18s ease; }
     .dash-group-toggle[aria-expanded="true"] .dash-group-caret { transform: rotate(90deg); }
     .dash-group-name {
       font-family: var(--display); font-style: italic; font-weight: 800; font-size: 20px;
@@ -2302,7 +2302,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v87</span>
+            <span id="buildTxt">build v88</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3929,7 +3929,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v87";
+  const BUILD = "v88";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
