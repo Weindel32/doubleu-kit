@@ -1801,6 +1801,26 @@
     .dash-table td:first-child { border-left-color: var(--border); }
     .dash-table td:last-child { border-right-color: var(--border); }
 
+    /* ─── Riepilogo in tre sezioni: per atleta, ordine, incasso ─── */
+    .rz-section {
+      display: flex; align-items: center; gap: 12px;
+      margin: 22px 0 10px;
+      font-family: var(--display); font-style: italic; font-weight: 800;
+      font-size: 19px; text-transform: uppercase; letter-spacing: .02em; color: var(--text);
+    }
+    .rz-section::after { content: ""; flex: 1; height: 2px; background: var(--text); }
+    /* Il totale fatturato è il numero che si cerca per primo tra i totali */
+    .kpi.kpi-total { background: var(--sb-bg); border-color: var(--sb-bg); }
+    .kpi.kpi-total .lbl  { color: var(--brand-orange); }
+    .kpi.kpi-total .val  { color: #FFFFFF; }
+    .kpi.kpi-total .note { color: #A9B4C2; }
+    /* Sette tessere su quattro colonne: il margine dell'ordine chiude la riga */
+    /* Sotto gli 861px le righe diventano a colonna singola: lì uno span 2
+       creerebbe una colonna in più, quindi vale solo sopra. */
+    @media (min-width: 861px) {
+      .rz-order .rz-wide { grid-column: span 2; }
+    }
+
     /* ─── Barra inferiore su telefono: chiara, voce attiva in navy ─── */
     .mobile-nav { background: var(--surface); border-top: 1px solid var(--border); }
     .mobile-nav-item { color: var(--muted); font-size: 11px; }
@@ -1979,7 +1999,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v77</span>
+            <span id="buildTxt">build v78</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2579,7 +2599,10 @@
                 </div>
               </div>
 
-              <div class="row3" style="margin-top:10px">
+              <!-- Tre gruppi con titolo: prima i valori per atleta, poi i totali
+                   dell'ordine, infine cosa e quando si incassa. -->
+              <div class="rz-section">Per atleta</div>
+              <div class="row3">
                 <div class="kpi">
                   <div class="lbl">Quantità stimata</div>
                   <div class="val" id="kQtaSum">—</div>
@@ -2597,7 +2620,8 @@
                 </div>
               </div>
 
-              <div class="row3" style="margin-top:10px">
+              <div class="rz-section">Ordine</div>
+              <div class="row4 rz-order">
                 <div class="kpi">
                   <div class="lbl">Costo totale reale</div>
                   <div class="val" id="kTotalCost">—</div>
@@ -2613,10 +2637,7 @@
                   <div class="val" id="kGiftCost">—</div>
                   <div class="note">Nel costo totale, non fatturati</div>
                 </div>
-              </div>
-
-              <div class="row3" style="margin-top:10px">
-                <div class="kpi">
+                <div class="kpi kpi-total">
                   <div class="lbl">Totale fatturato</div>
                   <div class="val" id="kGross">—</div>
                   <div class="note" id="kGrossNote">—</div>
@@ -2631,16 +2652,15 @@
                   <div class="val" id="kVatDue">—</div>
                   <div class="note" id="kVatDueNote">Incassata nel prezzo, non è tua</div>
                 </div>
-              </div>
-
-              <!-- Margine, acconto e saldo sono i totali in euro dell'ordine:
-                   quanto guadagno, quanto incasso subito, quanto alla consegna. -->
-              <div class="row3" style="margin-top:10px">
-                <div class="kpi">
+                <div class="kpi rz-wide">
                   <div class="lbl">Margine dell'ordine</div>
                   <div class="val" id="kProfit">—</div>
                   <div class="note">Guadagno totale su imponibile</div>
                 </div>
+              </div>
+
+              <div class="rz-section">Incasso</div>
+              <div class="row2">
                 <div class="kpi" id="kpiDeposit">
                   <div class="lbl">Acconto minimo sicuro</div>
                   <div class="val" id="kMinDeposit">—</div>
@@ -3589,7 +3609,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v77";
+  const BUILD = "v78";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
