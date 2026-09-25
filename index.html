@@ -2006,7 +2006,14 @@
 
     /* ─── Dashboard: gruppi per club ─── */
     .dash-table tr[hidden], .dash-kit-card[hidden] { display: none !important; }
-    .dash-table tr.dash-group td { padding: 0; }
+    /* Riga del club: stesse colonne dei kit, fondo tinto di navy */
+    .dash-table tr.dash-group { cursor: pointer; }
+    .dash-table tr.dash-group td { background: #EDF1F6; border-color: #D5DEE8; }
+    .dash-table tr.dash-group:hover td { background: #E4EAF2; }
+    .dash-table tr.dash-group td:first-child { padding-left: 14px; }
+    .dash-table tr.dash-group .dash-group-toggle { padding: 0; flex-wrap: nowrap; background: transparent; min-height: 0; }
+    .dash-group-txt { display: flex; flex-direction: column; gap: 2px; }
+    .dash-group-count { font-size: 13px; font-weight: 500; color: var(--muted); }
     .dash-group-toggle {
       width: 100%; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
       padding: 16px 20px; border: 0; border-radius: 10px; background: transparent;
@@ -2019,7 +2026,6 @@
       text-transform: uppercase; letter-spacing: .01em;
     }
     .dash-group-meta { font-size: 13px; font-weight: 500; color: var(--muted); }
-    .dash-table tr.dash-group:hover td { background: var(--surface-2); }
     /* Varianti: rientrate sotto il club, con un filo arancio a sinistra */
     .dash-table tr.dash-grp-row td:first-child { padding-left: 44px; box-shadow: inset 3px 0 0 var(--brand-orange); }
     .dash-group-card {
@@ -2219,7 +2225,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v85</span>
+            <span id="buildTxt">build v86</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3835,7 +3841,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v85";
+  const BUILD = "v86";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7021,6 +7027,21 @@ ${tabQtaPDF ? `<div class="sec scala">
     groups.sort((a, b) => b.last - a.last);
     return groups;
   };
+  const dashGroupSummary = (g) => {
+    const st = g.kits.map(k => k.stats).filter(Boolean);
+    const out = { range: "", margin: "", last: "—", ordini: "" };
+    if(st.length) {
+      const tot = st.map(x => x.invoiceTotal), mar = st.map(x => x.margin * 100);
+      const lo = Math.min(...tot), hi = Math.max(...tot);
+      out.range = lo === hi ? eur(lo) : `${eur(lo)} – ${eur(hi)}`;
+      const mlo = Math.min(...mar), mhi = Math.max(...mar);
+      out.margin = `margine ${mlo.toFixed(1)}${mhi - mlo >= 0.05 ? "–" + mhi.toFixed(1) : ""}%`;
+    }
+    if(g.last) out.last = new Date(g.last).toLocaleDateString("it-IT");
+    const n = g.kits.filter(k => getKitStato(k.payload) === "ordine").length;
+    if(n) out.ordini = `✓ ${n} ${n === 1 ? "ordine" : "ordini"}`;
+    return out;
+  };
   const dashGroupMeta = (g) => {
     const st = g.kits.map(k => k.stats).filter(Boolean);
     const parts = [`${g.kits.length} varianti`];
@@ -7157,18 +7178,32 @@ ${tabQtaPDF ? `<div class="sec scala">
 
     let rowIdx = 0;
     tbody.innerHTML = groups.map(g => {
-      const head = g.grouped ? `<tr class="dash-group">
-        <td colspan="7">
+      // La riga del club usa le stesse colonne dei kit: nome e numero di
+      // varianti sotto Kit, range sotto Importo, ultima modifica, ordini.
+      const head = g.grouped ? (() => {
+        const sum = dashGroupSummary(g);
+        return `<tr class="dash-group" data-gkey="${esc(g.key)}">
+        <td>
           <button type="button" class="dash-group-toggle" data-gkey="${esc(g.key)}" aria-expanded="${g.open}">
             <span class="dash-group-caret" aria-hidden="true">▸</span>
-            <span class="dash-group-name">${esc(g.label)}</span>
-            <span class="dash-group-meta">${dashGroupMeta(g)}</span>
+            <span class="dash-group-txt"><span class="dash-group-name">${esc(g.label)}</span>
+            <span class="dash-group-count">${g.kits.length} varianti</span></span>
           </button>
         </td>
-      </tr>` : "";
+        <td></td>
+        <td class="dash-amt-td">${sum.range ? `<div class="dash-amt">${sum.range}</div><div class="dash-amt-sub">${sum.margin}</div>` : `<span class="dash-amt-none">—</span>`}</td>
+        <td>${sum.last}</td>
+        <td>${sum.ordini ? `<span class="mb-chip stato-chip stato-ordine">${sum.ordini}</span>` : ""}</td>
+        <td></td>
+        <td></td>
+      </tr>`;
+      })() : "";
       return head + g.kits.map(kit => dashRowHtml(kit, rowIdx++, g)).join("");
     }).join("");
     tbody.querySelectorAll(".dash-group-toggle").forEach(bindGroupToggle);
+    tbody.querySelectorAll("tr.dash-group").forEach(tr => tr.addEventListener("click", (e) => {
+      if(!e.target.closest(".dash-group-toggle")) tr.querySelector(".dash-group-toggle")?.click();
+    }));
 
     function dashRowHtml(kit, i, g) {
       const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
