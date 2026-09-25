@@ -2004,6 +2004,31 @@
       .content-area { padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px)); }
     }
 
+    /* ─── Dashboard: gruppi per club ─── */
+    .dash-table tr[hidden], .dash-kit-card[hidden] { display: none !important; }
+    .dash-table tr.dash-group td { padding: 0; }
+    .dash-group-toggle {
+      width: 100%; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 16px 20px; border: 0; border-radius: 10px; background: transparent;
+      text-align: left; color: var(--text); cursor: pointer; font-weight: 600;
+    }
+    .dash-group-caret { color: var(--brand-orange); font-size: 14px; transition: transform .18s ease; }
+    .dash-group-toggle[aria-expanded="true"] .dash-group-caret { transform: rotate(90deg); }
+    .dash-group-name {
+      font-family: var(--display); font-style: italic; font-weight: 800; font-size: 20px;
+      text-transform: uppercase; letter-spacing: .01em;
+    }
+    .dash-group-meta { font-size: 13px; font-weight: 500; color: var(--muted); }
+    .dash-table tr.dash-group:hover td { background: var(--surface-2); }
+    /* Varianti: rientrate sotto il club, con un filo arancio a sinistra */
+    .dash-table tr.dash-grp-row td:first-child { padding-left: 44px; box-shadow: inset 3px 0 0 var(--brand-orange); }
+    .dash-group-card {
+      border: 1px solid var(--border); border-radius: 16px; background: var(--surface);
+      padding: 14px 16px; gap: 6px 12px;
+    }
+    #dashCardList .dash-group-card { grid-column: 1 / -1; }
+    .dash-kit-card.dash-grp-row { margin-left: 14px; box-shadow: inset 3px 0 0 var(--brand-orange); }
+
     /* ═══ Tema DOUBLEU — fase 4: fluidità ═══ */
     /* Cambio pagina: la nuova vista entra in dissolvenza. Solo opacità: uno
        spostamento qui renderebbe la vista un contenitore per gli elementi
@@ -2194,7 +2219,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v84</span>
+            <span id="buildTxt">build v85</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2499,7 +2524,8 @@
                 <div class="row4 cliente-row">
                   <div class="fld-client">
                     <label>Cliente / Club</label>
-                    <input id="clientName" placeholder="es. Tennis Club Roma">
+                    <input id="clientName" placeholder="es. Tennis Club Roma" list="clientList" autocomplete="off">
+                    <datalist id="clientList"></datalist>
                   </div>
                   <div class="fld-project">
                     <label>Nome progetto</label>
@@ -3809,7 +3835,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v84";
+  const BUILD = "v85";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -6963,6 +6989,83 @@ ${tabQtaPDF ? `<div class="sec scala">
       <div class="dash-amt-sub">${vatOn ? "IVA incl." : "senza IVA"}${qtyNote ? ` · <span class="dash-amt-qty">${qtyNote}</span>` : ""} · <span class="dash-amt-m ${cls}">margine ${(st.margin * 100).toFixed(1)}%</span></div>`;
   };
 
+  /* ─── Dashboard: kit raggruppati per club ───
+     Più varianti per lo stesso cliente diventano un gruppo chiuso, con il
+     riepilogo in una riga; aperto, mostra le varianti dalla più economica
+     alla più cara. Un club con un solo kit resta una riga normale.
+     Il cliente si confronta ignorando maiuscole e spazi doppi. */
+  const dashOpenGroups = new Set();          // gruppi aperti, per chiave
+  const clientKeyOf = (k) => (k.payload?.clientName || "").trim().replace(/\s+/g, " ").toLowerCase();
+  const variantName = (k) => {
+    const p = (k.payload?.projectName || "").trim();
+    return p || k.name;
+  };
+  const groupDashRows = (list) => {
+    const map = new Map();
+    list.forEach(k => {
+      const key = clientKeyOf(k) || "__senza_cliente__";
+      if(!map.has(key)) map.set(key, { key, label: "", kits: [] });
+      const g = map.get(key);
+      g.kits.push(k);
+      if(!g.label) g.label = key === "__senza_cliente__" ? "Senza cliente" : (k.payload?.clientName || "").trim().replace(/\s+/g, " ");
+    });
+    const amount = (k) => k.stats ? k.stats.invoiceTotal : Infinity;
+    const groups = [...map.values()];
+    groups.forEach(g => {
+      g.grouped = g.kits.length > 1;
+      g.open    = dashOpenGroups.has(g.key);
+      g.last    = Math.max(...g.kits.map(k => k.savedAt || 0));
+      if(g.grouped) g.kits.sort((a, b) => amount(a) - amount(b));
+    });
+    // I gruppi seguono il kit modificato più di recente, come la lista di prima
+    groups.sort((a, b) => b.last - a.last);
+    return groups;
+  };
+  const dashGroupMeta = (g) => {
+    const st = g.kits.map(k => k.stats).filter(Boolean);
+    const parts = [`${g.kits.length} varianti`];
+    if(st.length) {
+      const tot = st.map(s => s.invoiceTotal), mar = st.map(s => s.margin * 100);
+      const lo = Math.min(...tot), hi = Math.max(...tot);
+      parts.push(lo === hi ? eur(lo) : `da ${eur(lo)} a ${eur(hi)}`);
+      const mlo = Math.min(...mar), mhi = Math.max(...mar);
+      parts.push(`margine ${mlo.toFixed(1)}${mhi - mlo >= 0.05 ? "–" + mhi.toFixed(1) : ""}%`);
+    }
+    const ordini = g.kits.filter(k => getKitStato(k.payload) === "ordine").length;
+    if(ordini) parts.push(`${ordini} ${ordini === 1 ? "ordine" : "ordini"}`);
+    if(g.last) parts.push(`ultima modifica ${new Date(g.last).toLocaleDateString("it-IT")}`);
+    return parts.map(esc).join(" · ");
+  };
+  // Apre/chiude un gruppo in tabella e nelle schede insieme, e se lo ricorda
+  // finché l'app resta aperta (sopravvive a sync ed eliminazioni).
+  const bindGroupToggle = (btn) => {
+    btn.addEventListener("click", () => {
+      const key  = btn.getAttribute("data-gkey");
+      const open = !dashOpenGroups.has(key);
+      if(open) dashOpenGroups.add(key); else dashOpenGroups.delete(key);
+      document.querySelectorAll("#dashboardView .dash-group-toggle").forEach(b => {
+        if(b.getAttribute("data-gkey") === key) b.setAttribute("aria-expanded", String(open));
+      });
+      document.querySelectorAll("#dashboardView [data-gm]").forEach(el => {
+        if(el.getAttribute("data-gm") === key) el.hidden = !open;
+      });
+    });
+  };
+  // Suggerimenti del campo Cliente: i club già usati, scritti come la prima volta
+  const refreshClientList = () => {
+    const dl = document.getElementById("clientList");
+    if(!dl) return;
+    const seen = new Map();
+    const add = (name) => {
+      const n = (name || "").trim().replace(/\s+/g, " ");
+      if(n && !seen.has(n.toLowerCase())) seen.set(n.toLowerCase(), n);
+    };
+    Object.values(getStore()).forEach(d => add(d.payload?.clientName));
+    cloudProjects.forEach(p => add(p.data?.clientName));
+    dl.innerHTML = [...seen.values()].sort((a, b) => a.localeCompare(b, "it"))
+      .map(n => `<option value="${esc(n)}"></option>`).join("");
+  };
+
   /* ─── Dashboard render ─── */
   const renderDashboard = () => {
     const store     = getStore();
@@ -7009,6 +7112,14 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(dkCost)   dkCost.textContent   = "—";
     }
 
+    /* Varianti dello stesso club raggruppate. Solo l'ordine di
+       visualizzazione cambia: i KPI qui sopra sono già calcolati su tutti i
+       kit, e i pulsanti puntano alla posizione nella lista riordinata. */
+    const groups = groupDashRows(rows);
+    rows.length = 0;
+    groups.forEach(g => rows.push(...g.kits));
+    refreshClientList();
+
     // Table
     const empty    = document.getElementById("dashEmpty");
     const table    = document.getElementById("dashTable");
@@ -7044,14 +7155,30 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(empty) empty.style.display = "none";
     if(table) table.style.display = "";
 
-    tbody.innerHTML = rows.map((kit, i) => {
+    let rowIdx = 0;
+    tbody.innerHTML = groups.map(g => {
+      const head = g.grouped ? `<tr class="dash-group">
+        <td colspan="7">
+          <button type="button" class="dash-group-toggle" data-gkey="${esc(g.key)}" aria-expanded="${g.open}">
+            <span class="dash-group-caret" aria-hidden="true">▸</span>
+            <span class="dash-group-name">${esc(g.label)}</span>
+            <span class="dash-group-meta">${dashGroupMeta(g)}</span>
+          </button>
+        </td>
+      </tr>` : "";
+      return head + g.kits.map(kit => dashRowHtml(kit, rowIdx++, g)).join("");
+    }).join("");
+    tbody.querySelectorAll(".dash-group-toggle").forEach(bindGroupToggle);
+
+    function dashRowHtml(kit, i, g) {
       const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
       const client = kit.payload?.clientName?.trim() || "";
       const canDel = true;
-      return `<tr>
+      const member = g.grouped;
+      return `<tr${member ? ` class="dash-grp-row" data-gm="${esc(g.key)}"${g.open ? "" : " hidden"}` : ""}>
         <td>
-          <div class="dash-kit-name">${esc(kit.name)}</div>
-          ${client ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
+          <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)}</div>
+          ${client && !member ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
         </td>
         <td>${kit.itemCount}</td>
         <td class="dash-amt-td">${dashAmountHtml(kit)}</td>
@@ -7071,7 +7198,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           </div>
         </td>
       </tr>`;
-    }).join("");
+    }
 
     tbody.querySelectorAll("[data-act='load']").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -7143,17 +7270,29 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(rows.length === 0) {
         cardList.innerHTML = "";
       } else {
-        cardList.innerHTML = rows.map((kit, i) => {
+        let cardIdx = 0;
+        cardList.innerHTML = groups.map(g => {
+          const head = g.grouped ? `<button type="button" class="dash-group-toggle dash-group-card" data-gkey="${esc(g.key)}" aria-expanded="${g.open}">
+            <span class="dash-group-caret" aria-hidden="true">▸</span>
+            <span class="dash-group-name">${esc(g.label)}</span>
+            <span class="dash-group-meta">${dashGroupMeta(g)}</span>
+          </button>` : "";
+          return head + g.kits.map(kit => dashCardHtml(kit, cardIdx++, g)).join("");
+        }).join("");
+        cardList.querySelectorAll(".dash-group-toggle").forEach(bindGroupToggle);
+
+        function dashCardHtml(kit, i, g) {
+          const member = g.grouped;
           const date   = kit.savedAt ? new Date(kit.savedAt).toLocaleDateString("it-IT") : "—";
           const client = kit.payload?.clientName?.trim() || "";
           const src    = kit.source === "cloud"
             ? `<span class="dash-badge cloud"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 10.5A4 4 0 0011.5 7H11a5 5 0 00-4.9 4A3 3 0 107 17h8a3 3 0 000-6z"/></svg> Cloud</span>`
             : `<span class="dash-badge local"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="16" height="11" rx="1.5"/><line x1="6" y1="17" x2="14" y2="17"/><line x1="10" y1="15" x2="10" y2="17"/></svg> Locale</span>`;
-          return `<div class="dash-kit-card">
+          return `<div class="dash-kit-card${member ? " dash-grp-row" : ""}"${member ? ` data-gm="${esc(g.key)}"${g.open ? "" : " hidden"}` : ""}>
             <div class="dash-kit-card-top">
               <div>
-                <div class="dash-kit-name">${esc(kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}</div>
-                ${client ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
+                <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}</div>
+                ${client && !member ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
               </div>
               ${src}
             </div>
@@ -7167,7 +7306,7 @@ ${tabQtaPDF ? `<div class="sec scala">
               <button class="ghost" style="font-size:13px;padding:7px 10px;color:var(--bad)" data-ci="${i}" data-ca="del">✕</button>
             </div>
           </div>`;
-        }).join("");
+        }
 
         cardList.querySelectorAll("[data-ca='load']").forEach(btn => {
           btn.addEventListener("click", () => {
