@@ -2035,6 +2035,69 @@
     #dashCardList .dash-group-card { grid-column: 1 / -1; }
     .dash-kit-card.dash-grp-row { margin-left: 14px; box-shadow: inset 3px 0 0 var(--brand-orange); }
 
+    /* ─── Stato del salvataggio ─── */
+    .save-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 14px; padding: 10px 12px 10px 16px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    }
+    .save-bar-info { display: flex; align-items: center; gap: 12px; min-width: 0; flex-wrap: wrap; }
+    .save-bar-kit {
+      font-family: var(--display); font-style: italic; font-weight: 800; font-size: 19px;
+      text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 48vw;
+    }
+    .save-chip {
+      display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; white-space: nowrap;
+      background: var(--surface-3); color: var(--muted);
+    }
+    .save-chip[data-state="cloud"] { background: var(--good-bg); color: var(--good); }
+    .save-chip[data-state="local"],
+    .save-chip[data-state="dirty"],
+    .save-chip[data-state="new"]   { background: var(--warn-bg); color: var(--warn); }
+    .save-bar-btn { flex-shrink: 0; min-width: 110px; justify-content: center; }
+    .save-bar-btn[data-state="dirty"], .save-bar-btn[data-state="new"] {
+      background: var(--brand-orange); color: var(--sb-bg);
+    }
+    .save-bar-btn[data-state="dirty"]:hover, .save-bar-btn[data-state="new"]:hover { background: var(--brand-orange-2); }
+    .save-bar-btn[data-state="cloud"], .save-bar-btn[data-state="local"], .save-bar-btn:disabled {
+      background: var(--surface); color: var(--muted); border: 1px solid var(--border-2); cursor: default;
+    }
+    #btnSaveStep.is-unsaved { background: var(--brand-orange); color: var(--sb-bg); }
+    .sb-kit-save { margin-top: 6px; font-size: 11px; font-weight: 700; color: #7FE3AC; }
+    .sb-kit-save[data-state="dirty"], .sb-kit-save[data-state="new"], .sb-kit-save[data-state="local"] { color: #F3D35B; }
+    .status-save-btn { display: none; }
+
+    .unsaved-modal {
+      position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: rgba(0, 29, 57, .45);
+    }
+    .unsaved-modal[hidden] { display: none; }
+    .unsaved-card {
+      width: 100%; max-width: 440px; padding: 22px; border-radius: 18px;
+      background: var(--surface); box-shadow: var(--shadow-lg);
+    }
+    .unsaved-title {
+      font-family: var(--display); font-style: italic; font-weight: 800; font-size: 24px;
+      text-transform: uppercase; color: var(--text);
+    }
+    .unsaved-text { margin-top: 8px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+    .unsaved-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    #unsavedSave { background: var(--brand-orange); color: var(--sb-bg); }
+
+    @media (max-width: 560px) {
+      .save-bar { padding: 8px 10px 8px 12px; margin-bottom: 10px; }
+      .save-bar-kit { font-size: 16px; max-width: 40vw; }
+      .save-bar-btn { display: none; }        /* su telefono è nella barra in basso */
+      .status-save-btn {
+        display: inline-flex; align-self: stretch; align-items: center; justify-content: center;
+        min-height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 800;
+        background: var(--surface); color: var(--muted);
+      }
+      .status-save-btn[data-state="dirty"], .status-save-btn[data-state="new"] { background: var(--brand-orange); color: var(--sb-bg); }
+      .unsaved-actions button { flex: 1 1 100%; min-height: 46px; justify-content: center; }
+    }
+
     /* ═══ Tema DOUBLEU — fase 4: fluidità ═══ */
     /* Cambio pagina: la nuova vista entra in dissolvenza. Solo opacità: uno
        spostamento qui renderebbe la vista un contenitore per gli elementi
@@ -2075,6 +2138,19 @@
 
 <body>
   <div id="toastWrap"></div>
+
+  <!-- Avviso modifiche non salvate -->
+  <div class="unsaved-modal" id="unsavedModal" hidden>
+    <div class="unsaved-card" role="dialog" aria-modal="true" aria-labelledby="unsavedTitle">
+      <div class="unsaved-title" id="unsavedTitle">Modifiche non salvate</div>
+      <div class="unsaved-text" id="unsavedText">Hai modifiche non salvate a questo kit. Vuoi salvarle prima di uscire?</div>
+      <div class="unsaved-actions">
+        <button type="button" class="ghost" id="unsavedCancel">Annulla</button>
+        <button type="button" class="secondary" id="unsavedDiscard">Esci senza salvare</button>
+        <button type="button" class="primary" id="unsavedSave">Salva ed esci</button>
+      </div>
+    </div>
+  </div>
 
   <div id="authOverlay">
     <div class="auth-card">
@@ -2201,6 +2277,7 @@
         </div>
         <div class="sb-kit-name" id="sbKitName">—</div>
         <div class="sb-kit-sub" id="sbKitSub">Nuovo preventivo</div>
+        <div class="sb-kit-save" id="sbKitSave" data-state="empty"></div>
       </div>
 
       <div class="sb-user">
@@ -2225,7 +2302,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v86</span>
+            <span id="buildTxt">build v87</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2249,6 +2326,7 @@
           <span class="statusLabel" id="statusLabel">Inserisci i dati per calcolare</span>
         </div>
         <div class="statusStats" id="statusStats"></div>
+        <button type="button" class="status-save-btn" id="btnSaveStatus" data-state="empty">Salva</button>
       </div>
 
       <!-- Content -->
@@ -2373,6 +2451,16 @@
 
         <!-- ── Builder View ── -->
         <div id="builderView" style="display:none">
+
+        <!-- Stato del salvataggio: sempre visibile, con il pulsante Salva a
+             portata in tutti e tre i passi. -->
+        <div class="save-bar" id="saveBar">
+          <div class="save-bar-info">
+            <span class="save-bar-kit" id="saveBarKit">Nuovo kit</span>
+            <span class="save-chip" id="saveChip" data-state="empty">—</span>
+          </div>
+          <button type="button" class="primary save-bar-btn" id="btnSaveBar" title="Salva (Ctrl+S / ⌘S)">Salva</button>
+        </div>
 
         <div class="iphone-flow-strip" id="iphoneFlowStrip">
           <div class="iphone-flow-copy">
@@ -3841,7 +3929,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v86";
+  const BUILD = "v87";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5378,8 +5466,9 @@ if("serviceWorker" in navigator) {
   };
 
   const resetAll = () => {
-    const hasData = (clientName.value.trim() || projectName.value.trim() || items.some(it => toNum(it.qty) > 0));
-    if(hasData && !confirm("Creare un nuovo preventivo? I dati non salvati andranno persi.")) return;
+    // Si chiede conferma solo se ci sono modifiche non salvate: un kit già
+    // salvato si può chiudere senza perdere nulla.
+    if(hasUnsavedChanges() && !confirm("Ci sono modifiche non salvate a questo kit.\nCreare un nuovo kit senza salvarle?")) return;
     activeCloudId = null;
     const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
@@ -5402,6 +5491,7 @@ if("serviceWorker" in navigator) {
     setBox(kpiMinPriceLive,null);
     updateSidebarKit();
     try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+    markSaveBase("new");
     toast("Nuovo preventivo pronto ✓", "ok");
   };
 
@@ -6052,6 +6142,105 @@ ${tabQtaPDF ? `<div class="sec scala">
     return `${capo} · ${new Date().toLocaleDateString("it-IT")}`;
   };
 
+  /* ─── Stato del salvataggio ───
+     Confronta il kit sullo schermo con la sua copia salvata. Non cambia
+     come si salva: nome, cloud e riconciliazione restano quelli di sempre. */
+  // JSON con chiavi ordinate e numeri come testo: il cloud (jsonb) riordina
+  // le chiavi e un "22" può tornare 22, senza che il kit sia cambiato.
+  const stableJson = (v) => JSON.stringify(v, (k, val) => {
+    if(typeof val === "number") return String(val);
+    if(val && typeof val === "object" && !Array.isArray(val)) {
+      return Object.keys(val).sort().reduce((o, kk) => { o[kk] = val[kk]; return o; }, {});
+    }
+    return val;
+  });
+  // Stessi valori predefiniti di applyPayload, per confrontare un kit salvato
+  // con quello che il builder mostra dopo averlo aperto.
+  const normalizeKit = (p) => ({
+    clientName: p.clientName || "", projectName: p.projectName || "", qtyEst: p.qtyEst || "",
+    margin: p.margin ?? "0.50", vat: p.vat ?? "22", discount: p.discount ?? "0", minMargin: p.minMargin ?? "35",
+    offerPrice: p.offerPrice ?? "", useOffer: !!p.useOffer,
+    priceIncludesVAT: p.priceIncludesVAT !== undefined ? !!p.priceIncludesVAT : true,
+    depositPct: p.depositPct ?? "60", bufferPct: p.bufferPct ?? "5",
+    applyVAT: p.applyVAT !== undefined ? !!p.applyVAT : true,
+    fixedCost: p.fixedCost ?? "", shipCost: p.shipCost ?? "",
+    shipAbsorbed: p.shipAbsorbed !== undefined ? !!p.shipAbsorbed : true,
+    staffOmaggio: p.staffOmaggio ?? "", stato: p.stato || "preventivo",
+    items: Array.isArray(p.items) ? p.items : [],
+  });
+  const currentKitName = () => {
+    const client  = (clientName.value  || "").trim();
+    const project = (projectName.value || "").trim();
+    if(!project) return "";
+    return client ? `${client} – ${project}` : project;
+  };
+  const kitHasContent = () => !!(clientName.value.trim() || projectName.value.trim() || items.some(it => toNum(it.qty) > 0));
+  // Riferimento esatto quando il kit è stato appena aperto o salvato;
+  // altrimenti (bozza ripristinata) si cerca la copia salvata con lo stesso nome.
+  let saveBase = null;          // { json, where: "cloud" | "local" | "new", at }
+  const markSaveBase = (where, at) => { saveBase = { json: stableJson(payload()), where, at: at || null }; updateSaveUI(); };
+  const savedCopy = () => {
+    if(activeCloudId) {
+      const row = cloudProjects.find(p => p.id === activeCloudId);
+      if(row) return { where: "cloud", data: row.data };
+    }
+    const name = currentKitName();
+    if(!name) return null;
+    const loc = getStore()[name];
+    if(loc) return { where: "local", data: loc.payload, at: loc.savedAt };
+    const row = cloudProjects.find(p => p.name === name);
+    return row ? { where: "cloud", data: row.data } : null;
+  };
+  const saveState = () => {
+    const now = stableJson(payload());
+    if(saveBase) {
+      if(saveBase.where === "new") return now === saveBase.json || !kitHasContent() ? "empty" : "new";
+      return now === saveBase.json ? saveBase.where : "dirty";
+    }
+    const copy = savedCopy();
+    if(!copy) return kitHasContent() ? "new" : "empty";
+    return stableJson(normalizeKit(copy.data)) === now ? copy.where : "dirty";
+  };
+  const hasUnsavedChanges = () => { const st = saveState(); return st === "new" || st === "dirty"; };
+  const SAVE_LABELS = {
+    empty: "Nuovo kit",
+    new:   "Non ancora salvato",
+    dirty: "Modifiche non salvate",
+    cloud: "Salvato sul cloud",
+    local: "Salvato solo su questo dispositivo",
+  };
+  const updateSaveUI = () => {
+    const st   = saveState();
+    const time = saveBase && saveBase.at && (st === "cloud" || st === "local")
+      ? " · " + new Date(saveBase.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "";
+    const icon = { cloud: "✓ ", local: "⚠ ", dirty: "● ", new: "● ", empty: "" }[st];
+    const label = icon + SAVE_LABELS[st] + time;
+    const chip = document.getElementById("saveChip");
+    if(chip) { chip.textContent = label; chip.dataset.state = st; }
+    const kitEl = document.getElementById("saveBarKit");
+    if(kitEl) kitEl.textContent = currentKitName() || (quickCalcMode ? "Calcolo rapido" : "Nuovo kit");
+    const sb = document.getElementById("sbKitSave");
+    if(sb) { sb.textContent = st === "empty" ? "" : label; sb.dataset.state = st; }
+    const unsaved = st === "new" || st === "dirty";
+    ["btnSaveBar", "btnSaveStatus"].forEach(id => {
+      const b = document.getElementById(id);
+      if(b) { b.dataset.state = st; b.textContent = unsaved ? "Salva" : "Salvato"; b.disabled = st === "empty"; }
+    });
+    const stepBtn = document.getElementById("btnSaveStep");
+    if(stepBtn) stepBtn.classList.toggle("is-unsaved", unsaved);
+  };
+
+  // Avviso prima di perdere modifiche: salva, esci senza salvare, annulla.
+  let unsavedPending = null;
+  const askUnsaved = (onLeave) => {
+    const modal = document.getElementById("unsavedModal");
+    if(!modal) { if(confirm("Hai modifiche non salvate. Uscire senza salvare?")) onLeave(); return; }
+    unsavedPending = onLeave;
+    modal.hidden = false;
+    document.getElementById("unsavedSave")?.focus();
+  };
+  const closeUnsaved = () => { const m = document.getElementById("unsavedModal"); if(m) m.hidden = true; };
+
   const saveProject = async () => {
     if(offerNeedsQty()){
       toast("Con il prezzo proposto serve la quantità stimata (numero atleti)", "warn", 5000);
@@ -6090,10 +6279,11 @@ ${tabQtaPDF ? `<div class="sec scala">
       // creerebbe una seconda riga cloud reale.
       const storeAfter = getStore();
       if(storeAfter[name]){ delete storeAfter[name]; setStore(storeAfter); }
+      markSaveBase("cloud", Date.now());
       toast("Progetto salvato sul cloud ✓", "ok");
       return;
     }
-    if(!supabase){ toast("Salvato solo su questo dispositivo (cloud non disponibile)", "warn", 6000); return; }
+    if(!supabase){ markSaveBase("local", Date.now()); toast("Salvato solo su questo dispositivo (cloud non disponibile)", "warn", 6000); return; }
 
     // Il cloud ha riportato un problema, ma su rete instabile (iOS) la scrittura
     // può essere comunque arrivata al server: la risposta si perde e sembra
@@ -6102,8 +6292,10 @@ ${tabQtaPDF ? `<div class="sec scala">
     const row = cloudProjects.find(k => k && k.name === name);
     if(row){
       activeCloudId = row.id;
+      markSaveBase("cloud", Date.now());
       toast("Progetto salvato sul cloud ✓", "ok");
     } else {
+      markSaveBase("local", Date.now());
       toast("Salvato solo su questo dispositivo — riprova per salvarlo sul cloud", "warn", 6000);
     }
   };
@@ -6840,7 +7032,12 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
   const ALL_VIEWS = Object.keys(VIEW_TITLES);
 
-  const showView = (view) => {
+  const showView = (view, force) => {
+    // Uscendo dal builder con modifiche non salvate si chiede prima cosa fare
+    if(!force && currentView === "builder" && view !== "builder" && hasUnsavedChanges()) {
+      askUnsaved(() => showView(view, true));
+      return;
+    }
     currentView = view;
     ALL_VIEWS.forEach(v => {
       const el = document.getElementById(v + "View");
@@ -7240,10 +7437,11 @@ ${tabQtaPDF ? `<div class="sec scala">
         const kit = rows[parseInt(btn.getAttribute("data-row"))];
         if(kit.source === "cloud") {
           const proj = cloudProjects.find(p => p.id === kit.cloudId);
-          if(proj) { activeCloudId = proj.id; applyPayload(proj.data); toast("Kit cloud caricato ☁", "ok"); }
+          if(proj) { activeCloudId = proj.id; applyPayload(proj.data); markSaveBase("cloud"); toast("Kit cloud caricato ☁", "ok"); }
         } else {
           activeCloudId = null;
           applyPayload(kit.payload);
+          markSaveBase("local", kit.savedAt);
           toast("Kit caricato ✓", "ok");
         }
         if(isIphoneLayout()) startUnifiedFlow(false);
@@ -7348,10 +7546,11 @@ ${tabQtaPDF ? `<div class="sec scala">
             const kit = rows[parseInt(btn.getAttribute("data-ci"))];
             if(kit.source === "cloud") {
               const proj = cloudProjects.find(p => p.id === kit.cloudId);
-              if(proj) { activeCloudId = proj.id; applyPayload(proj.data); toast("Kit cloud caricato ☁", "ok"); }
+              if(proj) { activeCloudId = proj.id; applyPayload(proj.data); markSaveBase("cloud"); toast("Kit cloud caricato ☁", "ok"); }
             } else {
               activeCloudId = null;
               applyPayload(kit.payload);
+              markSaveBase("local", kit.savedAt);
               toast("Kit caricato ✓", "ok");
             }
             if(isIphoneLayout()) startUnifiedFlow(false);
@@ -7662,6 +7861,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         if(!k) return;
         activeCloudId = k.source === "cloud" ? k.cloudId : null;
         applyPayload(k.payload);
+        markSaveBase(k.source === "cloud" ? "cloud" : "local", k.source === "cloud" ? null : k.date);
         toast(`"${k.name}" caricato ✓`, "ok");
         if(isIphoneLayout()) startUnifiedFlow(false);
         else { showView("builder"); goToStep(1); }
@@ -8833,6 +9033,47 @@ tr:last-child td{border-bottom:none}
       } catch(e) {
         items = []; render();
       }
+
+      /* ─── Salvataggio: pulsanti, scorciatoia, avvisi ─── */
+      ["btnSaveBar", "btnSaveStatus"].forEach(id => {
+        const b = document.getElementById(id);
+        if(b) b.addEventListener("click", () => { if(hasUnsavedChanges()) saveProject(); });
+      });
+      // Ctrl+S / Cmd+S nel builder salva il kit invece della pagina
+      document.addEventListener("keydown", (e) => {
+        if((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "s" || e.key === "S")) {
+          if(currentView !== "builder") return;
+          e.preventDefault();
+          if(hasUnsavedChanges()) saveProject();
+        }
+      });
+      const _unsaved = { save: "unsavedSave", discard: "unsavedDiscard", cancel: "unsavedCancel" };
+      document.getElementById(_unsaved.cancel)?.addEventListener("click", () => { unsavedPending = null; closeUnsaved(); });
+      document.getElementById(_unsaved.discard)?.addEventListener("click", () => {
+        const go = unsavedPending; unsavedPending = null; closeUnsaved(); if(go) go();
+      });
+      document.getElementById(_unsaved.save)?.addEventListener("click", async () => {
+        const go = unsavedPending; closeUnsaved();
+        await saveProject();
+        // Si esce solo se il salvataggio è andato a buon fine
+        if(!hasUnsavedChanges()) { unsavedPending = null; if(go) go(); }
+      });
+      document.getElementById("unsavedModal")?.addEventListener("click", (e) => {
+        if(e.target.id === "unsavedModal") { unsavedPending = null; closeUnsaved(); }
+      });
+      document.addEventListener("keydown", (e) => {
+        if(e.key === "Escape" && !document.getElementById("unsavedModal")?.hidden) { unsavedPending = null; closeUnsaved(); }
+      });
+      // Chiudendo o ricaricando la pagina il browser chiede conferma
+      window.addEventListener("beforeunload", (e) => {
+        if(hasUnsavedChanges()) { e.preventDefault(); e.returnValue = ""; }
+      });
+      // Lo stato si aggiorna mentre si lavora: a ogni modifica e comunque
+      // ogni secondo (pulsanti + e −, articoli aggiunti, cloud che arriva).
+      document.getElementById("builderView")?.addEventListener("input",  () => updateSaveUI());
+      document.getElementById("builderView")?.addEventListener("change", () => updateSaveUI());
+      setInterval(updateSaveUI, 1000);
+      updateSaveUI();
 
       // Sidebar toggle
       const _sidebarToggle = document.getElementById("sidebarToggle");
