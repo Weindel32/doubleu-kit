@@ -8038,6 +8038,7 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   const QUOTE_STATUS = (info) => {
     if(!info) return { label: "Order App", cls: "" };
+    if(info.missing) return { label: "Preventivo eliminato in Order App", cls: "lost" };
     if(info.status === "PREVENTIVO") {
       if(info.lost)    return { label: "Preventivo perso", cls: "lost" };
       if(info.standby) return { label: "Preventivo in standby", cls: "" };
@@ -8065,7 +8066,9 @@ ${tabQtaPDF ? `<div class="sec scala">
       const { data, error } = await oaTimeout(oa.from("orders")
         .select("id,status,lost,standby,date").in("id", [...ids]), 12000);
       if(error) throw error;
-      [...ids].forEach(id => { delete oaQuoteInfo[id]; });
+      // Un preventivo che non risponde più è stato eliminato in Order App:
+      // il kit resta com'è, si segnala e si decide dal riquadro.
+      [...ids].forEach(id => { oaQuoteInfo[id] = { id, missing: true }; });
       (data || []).forEach(r => { oaQuoteInfo[r.id] = r; });
       renderOaQuoteCard();
       if(currentView === "dashboard") renderDashboard();
@@ -8155,7 +8158,11 @@ ${tabQtaPDF ? `<div class="sec scala">
       const id = oaQuote.id;
       const { data: order, error: e1 } = await oaTimeout(oa.from("orders").select("*").eq("id", id).maybeSingle(), 12000);
       if(e1) throw e1;
-      if(!order) { toast(`Il preventivo ${id} non esiste più in Order App`, "warn", 5000); throw null; }
+      if(!order) {
+        oaQuoteInfo[id] = { id, missing: true };
+        toast(`Il preventivo ${id} è stato eliminato in Order App`, "warn", 5000);
+        throw null;
+      }
       oaQuoteInfo[id] = order;
       if(order.status !== "PREVENTIVO") {
         toast(`${id} è già un ordine: le modifiche si fanno in Order App`, "warn", 5000);
@@ -8224,7 +8231,10 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
 
   const oaUnlinkQuote = () => {
-    if(!oaQuote || !confirm(`Scollegare il kit dal preventivo ${oaQuote.id}?\nIn Order App il preventivo resta com'è.`)) return;
+    if(!oaQuote) return;
+    const gone = oaQuoteInfo[oaQuote.id]?.missing;
+    if(!confirm(gone ? `Scollegare il kit dal preventivo ${oaQuote.id}, eliminato in Order App?`
+      : `Scollegare il kit dal preventivo ${oaQuote.id}?\nIn Order App il preventivo resta com'è.`)) return;
     oaQuote = null;
     renderOaQuoteCard();
     clientName.dispatchEvent(new Event("input", { bubbles: true }));   // stato salvataggio
@@ -8243,6 +8253,20 @@ ${tabQtaPDF ? `<div class="sec scala">
     const body = (html) => { box.innerHTML = `<div class="card-title">Preventivo in Order App</div>${html}`; };
     if(!oaEmail) { body(`<div class="hint">Collega Order App in Impostazioni per creare il preventivo da questo kit.</div>`); return; }
     const ex = oaExport();
+    if(oaQuote && oaQuoteInfo[oaQuote.id]?.missing) {
+      body(`
+        <div class="oa-qc-head"><div><strong>${esc(oaQuote.id)}</strong> <span class="oa-q oa-q-lost">Eliminato in Order App</span></div></div>
+        <div class="oa-qc-warn">Il preventivo non esiste più in Order App. Il kit è intatto: puoi crearne uno nuovo o scollegarlo.</div>
+        <div class="oa-qc-act">
+          ${clientRef && ex
+            ? `<button type="button" class="primary" id="oaQuoteRecreate"${oaBusy ? " disabled" : ""}>${oaBusy ? "Creazione…" : "Crea di nuovo il preventivo"}</button>`
+            : `<span class="hint">${clientRef ? "Completa il kit per ricreare il preventivo." : "Scegli il club dall'anagrafica per ricreare il preventivo."}</span>`}
+          <button type="button" class="secondary" id="oaQuoteUnlink">Scollega</button>
+        </div>`);
+      document.getElementById("oaQuoteRecreate")?.addEventListener("click", oaCreateQuote);
+      document.getElementById("oaQuoteUnlink")?.addEventListener("click", oaUnlinkQuote);
+      return;
+    }
     if(oaQuote) {
       const info = oaQuoteInfo[oaQuote.id];
       const st = QUOTE_STATUS(info);
