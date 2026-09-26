@@ -2045,6 +2045,53 @@
     }
     .mat-grammatura.is-set { border-style: solid; color: var(--text); font-weight: 700; font-size: 16px; background: var(--surface-2); }
 
+    /* ─── Anagrafica club (Order App) ─── */
+    .client-pick { position: relative; }
+    .client-drop {
+      position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 60;
+      max-height: 340px; overflow-y: auto; padding: 6px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+    }
+    .client-drop[hidden] { display: none; }
+    .client-drop-h {
+      padding: 8px 10px 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .client-opt {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%;
+      padding: 9px 10px; border: 0; border-radius: 8px; background: none; color: var(--text);
+      font-weight: 600; font-size: 14px; text-align: left; text-transform: none; letter-spacing: 0; cursor: pointer;
+    }
+    .client-opt small { flex-shrink: 0; font-weight: 500; font-size: 12px; color: var(--muted); }
+    .client-opt:hover, .client-opt.is-active { background: var(--surface-2); }
+    .client-opt-new { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; color: var(--brand-orange); }
+    .client-link { margin-top: 6px; font-size: 12px; color: var(--muted); }
+    .client-link:empty { display: none; }
+    .oa-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 999px; vertical-align: middle;
+      font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; font-style: normal;
+    }
+    .oa-cliente    { background: rgba(30, 122, 70, .14); color: #1E7A46; }
+    .oa-trattativa { background: rgba(10, 65, 116, .12); color: #0A4174; }
+    .oa-none       { background: var(--surface-2); color: var(--muted); }
+    .new-club-fields { display: grid; gap: 10px; margin-top: 14px; }
+    .new-club-fields .row2 { gap: 10px; }
+    .oa-login-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+    .oa-status { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .oa-dot { width: 10px; height: 10px; border-radius: 50%; background: #1E7A46; box-shadow: 0 0 0 4px rgba(30, 122, 70, .15); }
+    .oa-status-act { margin-left: auto; display: flex; gap: 8px; }
+    .oa-match-list { display: grid; gap: 8px; }
+    .oa-match-row {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; align-items: center;
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    }
+    .oa-match-name { font-weight: 700; min-width: 0; }
+    .oa-match-name small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
+    @media (max-width: 560px) {
+      .oa-match-row { grid-template-columns: 1fr; }
+      .oa-status-act { margin-left: 0; width: 100%; }
+    }
+
     /* ─── Stato del salvataggio ─── */
     .save-bar {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -2160,6 +2207,30 @@
         <button type="button" class="primary" id="unsavedSave">Salva ed esci</button>
       </div>
     </div>
+  </div>
+
+  <!-- Nuovo club: diventa una trattativa in Order App -->
+  <div class="unsaved-modal" id="newClubModal" hidden>
+    <form class="unsaved-card" id="newClubForm" role="dialog" aria-modal="true" aria-labelledby="newClubTitle" autocomplete="off">
+      <div class="unsaved-title" id="newClubTitle">Nuovo club</div>
+      <div class="unsaved-text">Viene creato come <strong>trattativa in Order App</strong>. Quando lo segnerai come vinto, diventerà cliente e i suoi kit lo seguiranno.</div>
+      <div class="new-club-fields">
+        <div class="field"><label class="lbl" for="ncName">Nome club</label><input id="ncName" required></div>
+        <div class="row2">
+          <div class="field"><label class="lbl" for="ncCity">Città</label><input id="ncCity"></div>
+          <div class="field"><label class="lbl" for="ncProv">Provincia</label><input id="ncProv" maxlength="4" style="text-transform:uppercase"></div>
+        </div>
+        <div class="field"><label class="lbl" for="ncContact">Referente <span style="font-weight:400;color:var(--muted)">(opz.)</span></label><input id="ncContact"></div>
+        <div class="row2">
+          <div class="field"><label class="lbl" for="ncEmail">Email <span style="font-weight:400;color:var(--muted)">(opz.)</span></label><input id="ncEmail" type="email" inputmode="email"></div>
+          <div class="field"><label class="lbl" for="ncPhone">Telefono <span style="font-weight:400;color:var(--muted)">(opz.)</span></label><input id="ncPhone" inputmode="tel"></div>
+        </div>
+      </div>
+      <div class="unsaved-actions">
+        <button type="button" class="ghost" id="newClubCancel">Annulla</button>
+        <button type="submit" class="primary" id="newClubSave">Crea trattativa</button>
+      </div>
+    </form>
   </div>
 
   <div id="authOverlay">
@@ -2312,7 +2383,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v90</span>
+            <span id="buildTxt">build v91</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2628,8 +2699,13 @@
                 <div class="row4 cliente-row">
                   <div class="fld-client">
                     <label>Cliente / Club</label>
-                    <input id="clientName" placeholder="es. Tennis Club Roma" list="clientList" autocomplete="off">
-                    <datalist id="clientList"></datalist>
+                    <div class="client-pick">
+                      <input id="clientName" placeholder="es. Tennis Club Roma" list="clientList" autocomplete="off"
+                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="clientDrop">
+                      <datalist id="clientList"></datalist>
+                      <div class="client-drop" id="clientDrop" role="listbox" hidden></div>
+                    </div>
+                    <div class="client-link" id="clientLink"></div>
                   </div>
                   <div class="fld-project">
                     <label>Nome progetto</label>
@@ -3673,6 +3749,12 @@
             </div>
           </div>
 
+          <div class="card" style="margin-bottom:16px" id="oaCard">
+            <div class="card-title">Collegamento Order App</div>
+            <div class="hint" style="margin-bottom:14px">Con Order App collegata, il campo Cliente cerca tra clienti, trattative e Prospect Finder, e ogni kit resta legato al suo club. Si accede con le credenziali di Order App; la password non viene salvata.</div>
+            <div id="oaBox"></div>
+          </div>
+
           <div class="card" style="margin-bottom:16px">
             <div class="card-title">Predefiniti nuovi preventivi</div>
             <div class="hint" style="margin-bottom:14px">Questi valori vengono applicati ogni volta che crei un nuovo preventivo. Il singolo preventivo può sempre modificarli.</div>
@@ -3952,7 +4034,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v90";
+  const BUILD = "v91";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5510,6 +5592,7 @@ if("serviceWorker" in navigator) {
     activeCloudId = null;
     const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
+    clientRef = null; updateClientLink();
     margin.value      = defs.margin; vat.value = "22"; discount.value = defs.discount;
     minMargin.value   = defs.minMargin;
     offerPrice.value  = ""; useOffer.checked = false;
@@ -5848,6 +5931,7 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   const payload = () => ({
     clientName: clientName.value || "",
+    clientRef: clientRef || null,
     projectName: projectName.value || "",
     qtyEst: qtyEst.value || "",
     margin: margin.value,
@@ -5870,6 +5954,8 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   const applyPayload = (p) => {
     clientName.value  = p.clientName  || "";
+    clientRef         = p.clientRef   || null;
+    updateClientLink();
     projectName.value = p.projectName || "";
     qtyEst.value      = p.qtyEst      || "";
     margin.value      = p.margin      ?? "0.50";
@@ -6195,7 +6281,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   // Stessi valori predefiniti di applyPayload, per confrontare un kit salvato
   // con quello che il builder mostra dopo averlo aperto.
   const normalizeKit = (p) => ({
-    clientName: p.clientName || "", projectName: p.projectName || "", qtyEst: p.qtyEst || "",
+    clientName: p.clientName || "", clientRef: p.clientRef || null, projectName: p.projectName || "", qtyEst: p.qtyEst || "",
     margin: p.margin ?? "0.50", vat: p.vat ?? "22", discount: p.discount ?? "0", minMargin: p.minMargin ?? "35",
     offerPrice: p.offerPrice ?? "", useOffer: !!p.useOffer,
     priceIncludesVAT: p.priceIncludesVAT !== undefined ? !!p.priceIncludesVAT : true,
@@ -6732,6 +6818,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
 
   const renderImpostazioni = () => {
+    renderOaSettings();
     const s = getSettings();
     const el = (id) => document.getElementById(id);
     if(el("setMargin"))   el("setMargin").value      = s.margin;
@@ -7261,18 +7348,26 @@ ${tabQtaPDF ? `<div class="sec scala">
      alla più cara. Un club con un solo kit resta una riga normale.
      Il cliente si confronta ignorando maiuscole e spazi doppi. */
   const dashOpenGroups = new Set();          // gruppi aperti, per chiave
-  const clientKeyOf = (k) => (k.payload?.clientName || "").trim().replace(/\s+/g, " ").toLowerCase();
   const variantName = (k) => {
     const p = (k.payload?.projectName || "").trim();
     return p || k.name;
   };
   const groupDashRows = (list) => {
+    // Collegato a Order App: si raggruppa per club dell'anagrafica. Un kit non
+    // ancora collegato ma con lo stesso nome finisce nello stesso gruppo.
+    const byName = new Map();
+    list.forEach(k => {
+      const r = resolveRef(k.payload?.clientRef);
+      if(r) { byName.set(normName(r.name), r); byName.set(normName(k.payload?.clientName), r); }
+    });
     const map = new Map();
     list.forEach(k => {
-      const key = clientKeyOf(k) || "__senza_cliente__";
-      if(!map.has(key)) map.set(key, { key, label: "", kits: [] });
+      const r = resolveRef(k.payload?.clientRef) || byName.get(normName(k.payload?.clientName)) || null;
+      const key = r ? r.key : (normName(k.payload?.clientName) || "__senza_cliente__");
+      if(!map.has(key)) map.set(key, { key, label: "", kind: null, kits: [] });
       const g = map.get(key);
       g.kits.push(k);
+      if(r) { g.label = r.name; g.kind = r.kind; }
       if(!g.label) g.label = key === "__senza_cliente__" ? "Senza cliente" : (k.payload?.clientName || "").trim().replace(/\s+/g, " ");
     });
     const amount = (k) => k.stats ? k.stats.invoiceTotal : Infinity;
@@ -7345,6 +7440,483 @@ ${tabQtaPDF ? `<div class="sec scala">
     cloudProjects.forEach(p => add(p.data?.clientName));
     dl.innerHTML = [...seen.values()].sort((a, b) => a.localeCompare(b, "it"))
       .map(n => `<option value="${esc(n)}"></option>`).join("");
+  };
+
+  /* ─── Anagrafica club: collegamento con Order App ───
+     L'anagrafica ufficiale dei club è quella di Order App (clienti e
+     trattative), che vive in un altro progetto Supabase con un login suo:
+     qui ci si collega una volta da Impostazioni e la sessione si rinnova da
+     sola. Il kit salva un riferimento (clientRef) al club scelto, così
+     varianti scritte in modo diverso restano lo stesso cliente, e una
+     trattativa vinta in Order App porta con sé i suoi kit senza toccarli.
+     Senza collegamento il campo Cliente funziona come prima (testo libero). */
+  const OA_URL = "https://bixayovstdptbgauvsgm.supabase.co";
+  const OA_KEY = "sb_publishable_pKpjPbw4a0HSEIWbf2ZXvA_svT70I3v";
+  // Chiave di sessione volutamente senza "sb-…-auth-token": il login del Kit
+  // Builder cerca e ripulisce quelle chiavi e non deve confondere le due.
+  const OA_SESSION_KEY = "doubleu_orderapp_session";
+  let oa = null;
+  try {
+    if(window.supabase && typeof window.supabase.createClient === "function") {
+      oa = window.supabase.createClient(OA_URL, OA_KEY, {
+        auth: { storageKey: OA_SESSION_KEY, lock: lockConScadenza, detectSessionInUrl: false },
+      });
+    }
+  } catch(e) { console.error("Order App init error:", e); }
+
+  let oaEmail     = null;   // collegato se valorizzato
+  let oaClients   = [];     // { id, name, city, province }
+  let oaProspects = [];     // { id, name, city, province, stage, client_id, hibernated_at }
+  let clientRef   = null;   // club del kit aperto: { src: "client"|"prospect", id, name }
+
+  const oaTimeout = (promise, ms) => Promise.race([
+    promise, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
+  ]);
+
+  // Confronto dei nomi: minuscole, senza accenti e punteggiatura.
+  const normName = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  // Parole che non distinguono un club da un altro ("TC", "Tennis Club", "S.r.l."…)
+  const NAME_STOP = new Set(["tennis", "club", "tc", "ct", "asd", "ssd", "a", "s", "d", "r", "l", "srl", "spa",
+    "sporting", "circolo", "associazione", "sportiva", "dilettantistica", "padel", "del", "della", "dei", "di", "il", "la", "lo", "e"]);
+  const levenshtein = (a, b) => {
+    const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for(let i = 1; i <= a.length; i++) {
+      let prev = row[0]; row[0] = i;
+      for(let j = 1; j <= b.length; j++) {
+        const tmp = row[j];
+        row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = tmp;
+      }
+    }
+    return row[b.length];
+  };
+  // Somiglianza 0–1 tra due nomi di club: regge refusi ("Stella"/"Stelle"),
+  // prefissi societari e nomi abbreviati ("MTC" → "MTC Ausstellungspark").
+  const nameSim = (a, b) => {
+    const tok = (s) => normName(s).split(" ").filter(t => t && !NAME_STOP.has(t));
+    const A = tok(a), B = tok(b);
+    if(!A.length || !B.length) return normName(a) && normName(a) === normName(b) ? 1 : 0;
+    const hit = (t, L) => L.some(u => u === t
+      || (t.length >= 4 && u.length >= 4 && levenshtein(t, u) <= 1)
+      || (Math.min(t.length, u.length) >= 3 && (u.startsWith(t) || t.startsWith(u))));
+    const ma = A.filter(t => hit(t, B)).length;
+    const mb = B.filter(t => hit(t, A)).length;
+    const covSmall = A.length <= B.length ? ma / A.length : mb / B.length;
+    const covBig   = A.length <= B.length ? mb / B.length : ma / A.length;
+    return covSmall === 1 ? Math.max(0.8, covBig) : (ma + mb) / (A.length + B.length);
+  };
+
+  // Da riferimento salvato nel kit a club attuale in Order App. Una
+  // trattativa vinta punta al cliente creato da Order App: stessa chiave.
+  const resolveRef = (ref) => {
+    if(!ref || !ref.id) return null;
+    if(ref.src === "prospect") {
+      const p = oaProspects.find(x => x.id === ref.id);
+      if(p && p.client_id) {
+        const c = oaClients.find(x => x.id === p.client_id);
+        return { kind: "cliente", key: "c:" + p.client_id, name: c?.name || p.name };
+      }
+      return { kind: "trattativa", key: "p:" + ref.id, name: p?.name || ref.name };
+    }
+    const c = oaClients.find(x => x.id === ref.id);
+    return { kind: "cliente", key: "c:" + ref.id, name: c?.name || ref.name };
+  };
+  const OA_KIND_LABEL = { cliente: "Cliente", trattativa: "Trattativa", none: "Non collegato" };
+  const oaBadge = (kind) => kind ? `<span class="oa-badge oa-${kind}">${OA_KIND_LABEL[kind] || kind}</span>` : "";
+  // Trattative da proporre: quelle vinte compaiono già come clienti.
+  const openProspects = () => oaProspects.filter(p => !p.client_id);
+
+  const oaLoad = async () => {
+    if(!oa) { oaChanged(); return false; }
+    try {
+      const { data } = await oaTimeout(oa.auth.getSession(), 8000);
+      const session = data?.session || null;
+      oaEmail = session?.user?.email || null;
+      if(!session) { oaClients = []; oaProspects = []; oaChanged(); return false; }
+      const [c, p] = await oaTimeout(Promise.all([
+        oa.from("clients").select("id,name,city,province").order("name"),
+        oa.from("prospects").select("id,name,city,province,stage,client_id,hibernated_at").order("name"),
+      ]), 12000);
+      if(c.error || p.error) throw (c.error || p.error);
+      oaClients   = c.data || [];
+      oaProspects = p.data || [];
+    } catch(e) {
+      console.error("Order App load:", e);
+      toast("Order App non raggiungibile: il campo Cliente resta libero", "warn");
+    }
+    oaChanged();
+    return !!oaEmail;
+  };
+
+  const oaChanged = () => {
+    // Collegati: il menu anagrafica sostituisce i suggerimenti del browser.
+    if(oaEmail) clientName.removeAttribute("list"); else clientName.setAttribute("list", "clientList");
+    updateClientLink();
+    if(currentView === "dashboard") renderDashboard();
+    if(currentView === "impostazioni") renderOaSettings();
+  };
+
+  /* ─── Campo Cliente: scelta dall'anagrafica ─── */
+  const clientDrop = document.getElementById("clientDrop");
+  const clientLink = document.getElementById("clientLink");
+  let dropItems = [];
+  let dropIdx   = -1;
+  let pfTimer   = null;
+  let pfSeq     = 0;
+  let pfRows    = [];
+
+  const updateClientLink = () => {
+    if(!clientLink) return;
+    const name = clientName.value.trim();
+    if(!oaEmail) { clientLink.innerHTML = ""; return; }
+    const r = resolveRef(clientRef);
+    if(r) {
+      clientLink.innerHTML = `${oaBadge(r.kind)} ${normName(r.name) === normName(name)
+        ? "collegato a Order App" : `Order App: <strong>${esc(r.name)}</strong>`}`;
+    } else if(name) {
+      clientLink.innerHTML = `${oaBadge("none")} sceglilo dall'elenco o crealo come nuovo club`;
+    } else {
+      clientLink.innerHTML = "";
+    }
+  };
+
+  const matchScore = (name, q) => {
+    const n = normName(name), nq = normName(q);
+    if(!nq) return 0;
+    if(n.startsWith(nq)) return 3;
+    if(n.includes(nq)) return 2;
+    const s = nameSim(name, q);
+    return s >= 0.6 ? s : 0;
+  };
+  const place = (c) => [c.city, c.province].filter(Boolean).join(" ");
+
+  const renderDrop = (q) => {
+    if(!clientDrop) return;
+    const top = (arr, nameOf) => arr.map(x => ({ x, s: matchScore(nameOf(x), q) }))
+      .filter(o => o.s > 0).sort((a, b) => b.s - a.s).slice(0, 6).map(o => o.x);
+    const cl = top(oaClients, c => c.name);
+    const pr = top(openProspects(), p => p.name);
+    const known = new Set([...oaClients, ...oaProspects].map(x => normName(x.name)));
+    const pf = pfRows.filter(r => !known.has(normName(r.nome_club))).slice(0, 6);
+    dropItems = [];
+    let html = "";
+    const section = (title, list, type, nameOf, sub) => {
+      if(!list.length) return;
+      html += `<div class="client-drop-h">${title}</div>`;
+      list.forEach(rec => {
+        const i = dropItems.push({ type, rec }) - 1;
+        html += `<button type="button" class="client-opt" role="option" data-i="${i}" tabindex="-1">
+          <span>${esc(nameOf(rec))}</span><small>${esc(sub(rec))}</small></button>`;
+      });
+    };
+    section("Clienti Order App", cl, "client", c => c.name, place);
+    section("Trattative Order App", pr, "prospect", p => p.name, p => [place(p), p.stage].filter(Boolean).join(" · "));
+    section("Prospect Finder", pf, "pf", r => r.nome_club, r => [r["città"], r.provincia].filter(Boolean).join(" "));
+    const qt = q.trim();
+    if(qt) {
+      const i = dropItems.push({ type: "new", rec: { name: qt } }) - 1;
+      html += `<button type="button" class="client-opt client-opt-new" role="option" data-i="${i}" tabindex="-1">
+        <span>+ Nuovo club «${esc(qt)}»</span><small>crea trattativa</small></button>`;
+    }
+    clientDrop.innerHTML = html;
+    dropIdx = -1;
+    const show = !!html;
+    clientDrop.hidden = !show;
+    clientName.setAttribute("aria-expanded", String(show));
+  };
+  const closeDrop = () => {
+    if(!clientDrop) return;
+    clientDrop.hidden = true;
+    clientName.setAttribute("aria-expanded", "false");
+    dropIdx = -1;
+  };
+  const highlight = (i) => {
+    dropIdx = i;
+    clientDrop.querySelectorAll(".client-opt").forEach(b => b.classList.toggle("is-active", +b.dataset.i === i));
+    clientDrop.querySelector(`.client-opt[data-i="${i}"]`)?.scrollIntoView({ block: "nearest" });
+  };
+
+  // Prospect Finder sta nello stesso database del Kit Builder: 678 club,
+  // troppi da caricare, si cercano mentre si scrive.
+  const searchProspectFinder = (q) => {
+    clearTimeout(pfTimer);
+    const nq = q.trim().replace(/[%_,()*\\]/g, " ").trim();
+    if(!supabase || nq.length < 2) { pfRows = []; return; }
+    const seq = ++pfSeq;
+    pfTimer = setTimeout(async () => {
+      try {
+        const { data, error } = await oaTimeout(supabase.from("prospects").select("*")
+          .ilike("nome_club", `%${nq}%`).neq("stato", "non_rilevante").limit(8), 8000);
+        if(seq !== pfSeq) return;
+        pfRows = error ? [] : (data || []);
+        if(!clientDrop.hidden || document.activeElement === clientName) renderDrop(clientName.value);
+      } catch(_) { /* la ricerca su Prospect Finder è un di più: senza, restano Order App e "Nuovo club" */ }
+    }, 250);
+  };
+
+  const setClientRef = (ref) => {
+    clientRef = ref;
+    clientName.value = ref.name;
+    closeDrop();
+    // Stessi effetti di una digitazione: riepilogo laterale, bozza, stato salvataggio.
+    clientName.dispatchEvent(new Event("input", { bubbles: true }));
+    updateClientLink();
+  };
+  const findExisting = (name) => {
+    const n = normName(name);
+    const c = oaClients.find(x => normName(x.name) === n);
+    if(c) return { src: "client", id: c.id, name: c.name };
+    const p = oaProspects.find(x => normName(x.name) === n);
+    if(p) return { src: "prospect", id: p.id, name: p.name };
+    return null;
+  };
+
+  const createProspect = async (fields, origine) => {
+    const existing = findExisting(fields.name);
+    if(existing) {
+      setClientRef(existing);
+      toast(`«${existing.name}» è già in Order App: kit collegato`, "ok");
+      return true;
+    }
+    const row = {
+      name: fields.name.trim(),
+      city: fields.city || null,
+      province: fields.province ? fields.province.toUpperCase() : null,
+      country: fields.country || "Italia",
+      contact_name: fields.contact_name || null,
+      contact_email: fields.contact_email || null,
+      contact_phone: fields.contact_phone || null,
+      // Un kit con prezzi per un club è già una trattativa aperta.
+      stage: "negoziazione",
+      contact_type: "cliente",
+      notes: `Creato dal Kit Builder${origine ? ` (${origine})` : ""}`,
+    };
+    try {
+      const { data, error } = await oaTimeout(
+        oa.from("prospects").insert(row).select("id,name,city,province,stage,client_id,hibernated_at").single(), 12000);
+      if(error) throw error;
+      oaProspects.push(data);
+      setClientRef({ src: "prospect", id: data.id, name: data.name });
+      toast(`Trattativa «${data.name}» creata in Order App ✓`, "ok");
+      return true;
+    } catch(e) {
+      console.error("Order App insert prospect:", e);
+      toast("Non riesco a creare la trattativa in Order App: riprova", "err");
+      return false;
+    }
+  };
+
+  const newClubModal = document.getElementById("newClubModal");
+  const openNewClub = (name) => {
+    closeDrop();
+    ["ncCity", "ncProv", "ncContact", "ncEmail", "ncPhone"].forEach(id => { document.getElementById(id).value = ""; });
+    document.getElementById("ncName").value = name || "";
+    newClubModal.hidden = false;
+    document.getElementById(name ? "ncCity" : "ncName").focus();
+  };
+  const closeNewClub = () => { newClubModal.hidden = true; };
+
+  const pickDropItem = async (it) => {
+    if(!it) return;
+    if(it.type === "client")   return setClientRef({ src: "client", id: it.rec.id, name: it.rec.name });
+    if(it.type === "prospect") return setClientRef({ src: "prospect", id: it.rec.id, name: it.rec.name });
+    if(it.type === "new")      return openNewClub(it.rec.name);
+    if(it.type === "pf") {
+      const r = it.rec;
+      closeDrop();
+      if(!confirm(`Creare «${r.nome_club}» come trattativa in Order App con i dati di Prospect Finder?`)) return;
+      await createProspect({
+        name: r.nome_club, city: r["città"], province: r.provincia, country: r.paese,
+        contact_name: r.contatto_nome, contact_email: r.contatto_email, contact_phone: r.telefono,
+      }, "da Prospect Finder");
+    }
+  };
+
+  const bindClientPicker = () => {
+    clientName.addEventListener("input", (e) => {
+      // Riscrivere il nome a mano scollega il club scelto dall'elenco.
+      if(clientRef && e.isTrusted && normName(clientName.value) !== normName(clientRef.name)) clientRef = null;
+      updateClientLink();
+      if(!oaEmail || !e.isTrusted) return;
+      const q = clientName.value;
+      if(q.trim().length < 2) { pfRows = []; closeDrop(); return; }
+      searchProspectFinder(q);
+      renderDrop(q);
+    });
+    clientName.addEventListener("focus", () => {
+      if(oaEmail && clientName.value.trim().length >= 2 && !clientRef) renderDrop(clientName.value);
+    });
+    clientName.addEventListener("keydown", (e) => {
+      if(clientDrop.hidden) return;
+      const n = dropItems.length;
+      if(e.key === "ArrowDown") { e.preventDefault(); highlight((dropIdx + 1) % n); }
+      else if(e.key === "ArrowUp") { e.preventDefault(); highlight((dropIdx - 1 + n) % n); }
+      else if(e.key === "Enter" && dropIdx >= 0) { e.preventDefault(); pickDropItem(dropItems[dropIdx]); }
+      else if(e.key === "Escape") { closeDrop(); }
+    });
+    // mousedown e non click: il campo perderebbe il focus prima della scelta.
+    clientDrop.addEventListener("mousedown", (e) => {
+      const b = e.target.closest(".client-opt");
+      if(!b) return;
+      e.preventDefault();
+      pickDropItem(dropItems[+b.dataset.i]);
+    });
+    clientName.addEventListener("blur", () => setTimeout(closeDrop, 120));
+
+    document.getElementById("newClubCancel").addEventListener("click", closeNewClub);
+    newClubModal.addEventListener("click", (e) => { if(e.target === newClubModal) closeNewClub(); });
+    newClubModal.addEventListener("keydown", (e) => { if(e.key === "Escape") closeNewClub(); });
+    document.getElementById("newClubForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const v = (id) => document.getElementById(id).value.trim();
+      if(!v("ncName")) return;
+      const btn = document.getElementById("newClubSave");
+      btn.disabled = true;
+      const ok = await createProspect({
+        name: v("ncName"), city: v("ncCity"), province: v("ncProv"),
+        contact_name: v("ncContact"), contact_email: v("ncEmail"), contact_phone: v("ncPhone"),
+      });
+      btn.disabled = false;
+      if(ok) closeNewClub();
+    });
+  };
+
+  /* ─── Impostazioni: collegamento e abbinamento dei kit già salvati ─── */
+  // Tutti i kit salvati, locali e cloud, con il loro payload.
+  const allSavedKits = () => {
+    const out = [];
+    Object.entries(getStore()).forEach(([name, d]) => { if(d?.payload) out.push({ where: "local", name, payload: d.payload }); });
+    cloudProjects.forEach(p => { if(p?.data) out.push({ where: "cloud", id: p.id, name: p.name, payload: p.data }); });
+    return out;
+  };
+  // Club dei kit non ancora collegati, con il candidato più somigliante in Order App.
+  const unlinkedGroups = () => {
+    const map = new Map();
+    allSavedKits().forEach(k => {
+      const cn = (k.payload.clientName || "").trim();
+      if(!cn || k.payload.clientRef) return;
+      const key = normName(cn);
+      if(!map.has(key)) map.set(key, { key, label: cn.replace(/\s+/g, " "), kits: [] });
+      map.get(key).kits.push(k);
+    });
+    const cands = [
+      ...oaClients.map(c => ({ val: "client:" + c.id, src: "client", id: c.id, name: c.name, kind: "cliente" })),
+      ...openProspects().map(p => ({ val: "prospect:" + p.id, src: "prospect", id: p.id, name: p.name, kind: "trattativa" })),
+    ];
+    return [...map.values()].map(g => {
+      const ranked = cands.map(c => ({ ...c, s: nameSim(g.label, c.name) })).sort((a, b) => b.s - a.s);
+      return { ...g, ranked, best: ranked[0] && ranked[0].s >= 0.6 ? ranked[0].val : "" };
+    }).sort((a, b) => a.label.localeCompare(b.label, "it"));
+  };
+
+  const renderOaSettings = () => {
+    const box = document.getElementById("oaBox");
+    if(!box) return;
+    if(!oa) { box.innerHTML = `<div class="hint">Libreria di collegamento non caricata: controlla la connessione e ricarica.</div>`; return; }
+    if(!oaEmail) {
+      box.innerHTML = `<form id="oaLoginForm" class="oa-login" autocomplete="on">
+          <div class="row2">
+            <div class="field"><label class="lbl" for="oaEmailIn">Email Order App</label><input id="oaEmailIn" type="email" autocomplete="username" required></div>
+            <div class="field"><label class="lbl" for="oaPassIn">Password Order App</label><input id="oaPassIn" type="password" autocomplete="current-password" required></div>
+          </div>
+          <div class="oa-login-foot">
+            <button type="submit" class="primary" id="oaLoginBtn">Collega Order App</button>
+            <span class="hint" id="oaLoginErr" style="color:var(--bad)"></span>
+          </div>
+        </form>`;
+      document.getElementById("oaLoginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("oaLoginBtn"), err = document.getElementById("oaLoginErr");
+        btn.disabled = true; btn.textContent = "Collegamento…"; err.textContent = "";
+        try {
+          const { error } = await oaTimeout(oa.auth.signInWithPassword({
+            email: document.getElementById("oaEmailIn").value.trim(),
+            password: document.getElementById("oaPassIn").value,
+          }), 12000);
+          if(error) throw error;
+          await oaLoad();
+          toast("Order App collegata ✓", "ok");
+        } catch(ex) {
+          err.textContent = /invalid/i.test(ex?.message || "") ? "Email o password di Order App non corrette." : "Collegamento non riuscito: riprova.";
+          btn.disabled = false; btn.textContent = "Collega Order App";
+        }
+      });
+      return;
+    }
+    const groups = unlinkedGroups();
+    const optHtml = (g) => `<option value="">— Non collegare —</option>` + g.ranked.map(c =>
+      `<option value="${esc(c.val)}"${c.val === g.best ? " selected" : ""}>${esc(c.name)} · ${OA_KIND_LABEL[c.kind]}</option>`).join("");
+    box.innerHTML = `
+      <div class="oa-status">
+        <span class="oa-dot"></span>
+        <div><strong>Collegato</strong> come ${esc(oaEmail)}<div class="hint">${oaClients.length} clienti · ${openProspects().length} trattative aperte</div></div>
+        <div class="oa-status-act">
+          <button type="button" class="secondary" id="oaRefresh">Aggiorna</button>
+          <button type="button" class="ghost" id="oaLogout">Scollega</button>
+        </div>
+      </div>
+      <div class="oa-match">
+        <div class="section-lbl" style="margin-top:18px">Kit da collegare a un club</div>
+        ${groups.length ? `
+          <div class="hint" style="margin-bottom:10px">Kit salvati prima del collegamento, raggruppati per nome cliente. Ti propongo il club più somigliante: controlla, correggi o lascia "Non collegare". Il nome scritto nel kit non cambia.</div>
+          <div class="oa-match-list">${groups.map((g, i) => `
+            <div class="oa-match-row">
+              <div class="oa-match-name">${esc(g.label)}<small>${g.kits.length} ${g.kits.length === 1 ? "kit" : "kit"}</small></div>
+              <select data-gi="${i}" aria-label="Club Order App per ${esc(g.label)}">${optHtml(g)}</select>
+            </div>`).join("")}
+          </div>
+          <button type="button" class="primary" id="oaApplyMatch" style="margin-top:12px">Collega i kit selezionati</button>`
+        : `<div class="hint">✓ Tutti i kit salvati sono collegati a un club.</div>`}
+      </div>`;
+    document.getElementById("oaRefresh").addEventListener("click", async () => { await oaLoad(); toast("Anagrafica aggiornata", "ok"); });
+    document.getElementById("oaLogout").addEventListener("click", async () => {
+      try { await oaTimeout(oa.auth.signOut({ scope: "local" }), 5000); } catch(_) {}
+      try { localStorage.removeItem(OA_SESSION_KEY); } catch(_) {}
+      oaEmail = null; oaClients = []; oaProspects = [];
+      oaChanged();
+    });
+    document.getElementById("oaApplyMatch")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const scelte = [...box.querySelectorAll("select[data-gi]")]
+        .map(sel => ({ g: groups[+sel.dataset.gi], c: groups[+sel.dataset.gi].ranked.find(x => x.val === sel.value) }))
+        .filter(x => x.c);
+      if(!scelte.length) { toast("Nessun club selezionato", "warn"); return; }
+      btn.disabled = true; btn.textContent = "Collegamento…";
+      const statoPrima = saveState();
+      const store = getStore();
+      let ok = 0, ko = 0, apertoRef = null;
+      for(const { g, c } of scelte) {
+        const ref = { src: c.src, id: c.id, name: c.name };
+        for(const k of g.kits) {
+          const data = { ...k.payload, clientRef: ref };
+          if(k.where === "cloud") {
+            try {
+              const { error } = await oaTimeout(supabase.from("projects").update({ data }).eq("id", k.id), 12000);
+              if(error) throw error;
+              const row = cloudProjects.find(p => p.id === k.id);
+              if(row) row.data = data;
+              ok++;
+              if(activeCloudId === k.id || currentKitName() === k.name) apertoRef = ref;
+            } catch(_) { ko++; }
+          } else if(store[k.name]) {
+            store[k.name].payload = data;
+            ok++;
+            if(currentKitName() === k.name) apertoRef = ref;
+          }
+        }
+      }
+      setStore(store);
+      // Il kit aperto nel builder era tra questi: la copia salvata ora ha il
+      // riferimento, quindi lo prende anche lui senza risultare modificato.
+      if(apertoRef && !clientRef) {
+        clientRef = apertoRef;
+        if(statoPrima === "cloud" || statoPrima === "local") markSaveBase(statoPrima, saveBase?.at);
+        updateClientLink();
+      }
+      toast(ko ? `${ok} kit collegati, ${ko} non riusciti: riprova` : `${ok} kit collegati ✓`, ko ? "warn" : "ok");
+      renderOaSettings();
+    });
   };
 
   /* ─── Dashboard render ─── */
@@ -7447,7 +8019,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           <button type="button" class="dash-group-toggle" data-gkey="${esc(g.key)}" aria-expanded="${g.open}">
             <span class="dash-group-caret" aria-hidden="true">▸</span>
             <span class="dash-group-txt"><span class="dash-group-name">${esc(g.label)}</span>
-            <span class="dash-group-count">${g.kits.length} varianti</span></span>
+            <span class="dash-group-count">${g.kits.length} varianti ${oaBadge(g.kind)}</span></span>
           </button>
         </td>
         <td></td>
@@ -7473,7 +8045,7 @@ ${tabQtaPDF ? `<div class="sec scala">
       return `<tr${member ? ` class="dash-grp-row" data-gm="${esc(g.key)}"${g.open ? "" : " hidden"}` : ""}>
         <td>
           <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)}</div>
-          ${client && !member ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
+          ${client && !member ? `<div class="dash-kit-sub">${esc(g.label)} ${oaBadge(g.kind)}</div>` : ""}
         </td>
         <td>${kit.itemCount}</td>
         <td class="dash-amt-td">${dashAmountHtml(kit)}</td>
@@ -7570,7 +8142,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         cardList.innerHTML = groups.map(g => {
           const head = g.grouped ? `<button type="button" class="dash-group-toggle dash-group-card" data-gkey="${esc(g.key)}" aria-expanded="${g.open}">
             <span class="dash-group-caret" aria-hidden="true">▸</span>
-            <span class="dash-group-name">${esc(g.label)}</span>
+            <span class="dash-group-name">${esc(g.label)} ${oaBadge(g.kind)}</span>
             <span class="dash-group-meta">${dashGroupMeta(g)}</span>
           </button>` : "";
           return head + g.kits.map(kit => dashCardHtml(kit, cardIdx++, g)).join("");
@@ -7588,7 +8160,7 @@ ${tabQtaPDF ? `<div class="sec scala">
             <div class="dash-kit-card-top">
               <div>
                 <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}</div>
-                ${client && !member ? `<div class="dash-kit-sub">${esc(client)}</div>` : ""}
+                ${client && !member ? `<div class="dash-kit-sub">${esc(g.label)} ${oaBadge(g.kind)}</div>` : ""}
               </div>
               ${src}
             </div>
@@ -8979,6 +9551,9 @@ tr:last-child td{border-bottom:none}
       if(sbKitReset) sbKitReset.addEventListener("click", () => { resetAll(); showView("builder"); goToStep(1); });
 
       clientName.addEventListener("input",  updateSidebarKit);
+      bindClientPicker();
+      if(oa) oa.auth.onAuthStateChange((ev) => { if(ev === "SIGNED_OUT" && oaEmail) { oaEmail = null; oaChanged(); } });
+      oaLoad();
       projectName.addEventListener("input", updateSidebarKit);
 
       const dateEl = document.getElementById("topbarDate");
@@ -9347,6 +9922,10 @@ tr:last-child td{border-bottom:none}
     } catch(_){}
     // Revoca il token sul server in background (fire and forget)
     if(supabase) supabase.auth.signOut().catch(() => {});
+    // Uscendo dal Kit Builder si chiude anche il collegamento a Order App.
+    try { localStorage.removeItem(OA_SESSION_KEY); } catch(_){}
+    if(oa) oa.auth.signOut({ scope: "local" }).catch(() => {});
+    oaEmail = null; oaClients = []; oaProspects = [];
   };
 
   const btnLogout = document.getElementById("btnLogout");
