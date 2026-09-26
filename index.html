@@ -2074,6 +2074,25 @@
     .oa-cliente    { background: rgba(30, 122, 70, .14); color: #1E7A46; }
     .oa-trattativa { background: rgba(10, 65, 116, .12); color: #0A4174; }
     .oa-none       { background: var(--surface-2); color: var(--muted); }
+    .oa-q {
+      display: inline-block; margin-left: 6px; padding: 3px 8px; border-radius: 999px; vertical-align: middle;
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0; text-transform: none; font-style: normal; white-space: nowrap;
+      background: var(--surface-2); color: var(--muted);
+    }
+    .oa-q-quote { background: rgba(10, 65, 116, .12); color: #0A4174; }
+    .oa-q-order { background: rgba(30, 122, 70, .14); color: #1E7A46; }
+    .oa-q-lost  { background: rgba(180, 40, 40, .10); color: #A33; }
+    .oa-qc-head { display: flex; align-items: center; gap: 12px; }
+    .oa-qc-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .oa-qc-sum > div { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
+    .oa-qc-sum span { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .oa-qc-sum strong { display: block; font-size: 16px; margin-top: 2px; overflow-wrap: anywhere; }
+    .oa-qc-sum small { display: block; font-size: 12px; color: var(--muted); }
+    .oa-qc-act { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .oa-qc-warn { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(232, 124, 43, .12); color: var(--text); font-size: 13px; font-weight: 600; }
+    .oa-qc-ok { margin-top: 8px; color: #1E7A46; font-weight: 600; }
+    .oa-qc-foot { margin-top: 10px; }
+    .oa-qc-foot .ghost { font-size: 12px; padding: 5px 10px; }
     .new-club-fields { display: grid; gap: 10px; margin-top: 14px; }
     .new-club-fields .row2 { gap: 10px; }
     .oa-login-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
@@ -2383,7 +2402,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v91</span>
+            <span id="buildTxt">build v92</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2954,6 +2973,7 @@
 
             <!-- Step 3: Riepilogo -->
             <div class="step-content" data-step="3">
+            <div class="card oa-quote-card" id="oaQuoteCard" style="margin-bottom:14px"></div>
             <div class="card bottom-zone">
               <div class="card-title">Riepilogo ordine</div>
 
@@ -4034,7 +4054,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v91";
+  const BUILD = "v92";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4365,7 +4385,7 @@ if("serviceWorker" in navigator) {
     "sweatshirt":"felpa", "jacket":"felpa", "sweatpants":"pantalone", "skirt":"gonna",
     "short":"short", "dress":"dress", "cap":"cappello", "tank top":"canotta", "canotta":"canotta",
   };
-  const garmentIcon = (article, tipo) => {
+  const garmentKey = (article, tipo) => {
     const a = String(article || "").toLowerCase();
     // Il pantaloncino va riconosciuto prima del pantalone: "pantaloncino"
     // contiene "pantalon" e finiva sull'icona del pantalone lungo.
@@ -4383,7 +4403,10 @@ if("serviceWorker" in navigator) {
       : "tshirt");
     // Pantaloncino da donna (DDR): icona dedicata
     if(k === "short" && (a.includes("ddr") || a.includes("donna"))) k = "shortddr";
-    const ic = GARMENT_ICONS[k] || GARMENT_ICONS.tshirt;
+    return k;
+  };
+  const garmentIcon = (article, tipo) => {
+    const ic = GARMENT_ICONS[garmentKey(article, tipo)] || GARMENT_ICONS.tshirt;
     return `<svg class="art-thumb-ico" viewBox="${ic.vb}" fill="currentColor" ${ic.attrs} aria-hidden="true">${ic.svg}</svg>`;
   };
 
@@ -5592,7 +5615,7 @@ if("serviceWorker" in navigator) {
     activeCloudId = null;
     const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
-    clientRef = null; updateClientLink();
+    clientRef = null; oaQuote = null; updateClientLink();
     margin.value      = defs.margin; vat.value = "22"; discount.value = defs.discount;
     minMargin.value   = defs.minMargin;
     offerPrice.value  = ""; useOffer.checked = false;
@@ -5932,6 +5955,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const payload = () => ({
     clientName: clientName.value || "",
     clientRef: clientRef || null,
+    oaQuote: oaQuote || null,
     projectName: projectName.value || "",
     qtyEst: qtyEst.value || "",
     margin: margin.value,
@@ -5955,6 +5979,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const applyPayload = (p) => {
     clientName.value  = p.clientName  || "";
     clientRef         = p.clientRef   || null;
+    oaQuote           = p.oaQuote     || null;
     updateClientLink();
     projectName.value = p.projectName || "";
     qtyEst.value      = p.qtyEst      || "";
@@ -6189,6 +6214,7 @@ ${tabQtaPDF ? `<div class="sec scala">
       cloudCatalogRow  = all.find(p => p.name === CLOUD_CATALOG_NAME)  || cloudCatalogRow;
       cloudSettingsRow = all.find(p => p.name === CLOUD_SETTINGS_NAME) || cloudSettingsRow;
       cloudProjects = all.filter(p => !SPECIAL_ROW_NAMES.includes(p.name));
+      if(typeof oaRefreshQuotes === "function") setTimeout(oaRefreshQuotes, 0);
       mergeCatalogFromCloud();
       applyCloudSettings();
       if(cloudProjects.length > 0) toast(`☁ ${cloudProjects.length} kit caricati`, "ok");
@@ -6281,7 +6307,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   // Stessi valori predefiniti di applyPayload, per confrontare un kit salvato
   // con quello che il builder mostra dopo averlo aperto.
   const normalizeKit = (p) => ({
-    clientName: p.clientName || "", clientRef: p.clientRef || null, projectName: p.projectName || "", qtyEst: p.qtyEst || "",
+    clientName: p.clientName || "", clientRef: p.clientRef || null, oaQuote: p.oaQuote || null, projectName: p.projectName || "", qtyEst: p.qtyEst || "",
     margin: p.margin ?? "0.50", vat: p.vat ?? "22", discount: p.discount ?? "0", minMargin: p.minMargin ?? "35",
     offerPrice: p.offerPrice ?? "", useOffer: !!p.useOffer,
     priceIncludesVAT: p.priceIncludesVAT !== undefined ? !!p.priceIncludesVAT : true,
@@ -6334,6 +6360,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     local: "Salvato solo su questo dispositivo",
   };
   const updateSaveUI = () => {
+    renderOaQuoteCard(false);
     const st   = saveState();
     const time = saveBase && saveBase.at && (st === "cloud" || st === "local")
       ? " · " + new Date(saveBase.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "";
@@ -7541,6 +7568,7 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(c.error || p.error) throw (c.error || p.error);
       oaClients   = c.data || [];
       oaProspects = p.data || [];
+      setTimeout(oaRefreshQuotes, 0);
     } catch(e) {
       console.error("Order App load:", e);
       toast("Order App non raggiungibile: il campo Cliente resta libero", "warn");
@@ -7550,6 +7578,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
 
   const oaChanged = () => {
+    renderOaQuoteCard();
     // Collegati: il menu anagrafica sostituisce i suggerimenti del browser.
     if(oaEmail) clientName.removeAttribute("list"); else clientName.setAttribute("list", "clientList");
     updateClientLink();
@@ -7919,6 +7948,345 @@ ${tabQtaPDF ? `<div class="sec scala">
     });
   };
 
+  /* ─── Preventivo in Order App ───
+     Dal kit si crea il preventivo in Order App (stato PREVENTIVO, prezzo a
+     kit): club collegato, prezzo per atleta senza IVA (Order App la aggiunge
+     sopra), quantità e articoli senza taglie né codici SP, che si completano
+     in Order App. Il prezzo si decide qui; Order App non riscrive il kit.
+     Il preventivo NON si aggiorna da solo: può essere già stato mandato al
+     club. Se il kit cambia dopo, lo si aggiorna con un clic, conservando
+     codici SP, colori, taglie e note inseriti in Order App, e solo finché in
+     Order App è ancora un preventivo. */
+  let oaQuote = null;            // { id, kitName, hash, lines: [{ kbId, description }], createdAt, updatedAt }
+  const oaQuoteInfo = {};        // id → { status, lost, standby, date } letto da Order App
+
+  // Linea e categoria come in Order App (tabella concordata con Marco).
+  const oaLineOf = (it) => it.line === "BASIC" ? "Basic" : it.line === "LS24" ? "LS24" : "Premium";
+  const oaCategoryOf = (it) => {
+    const t = String(it.tipo || "").trim().toLowerCase();
+    const a = String(it.article || "").toLowerCase();
+    const line = oaLineOf(it);
+    if(t === "calzini" || a.includes("calz")) return "Altro";
+    if(t === "jacket" || a.includes("giacc") || a.includes("jacket")) return "Giacca";
+    switch(garmentKey(it.article, it.tipo)) {
+      case "zip":       return "Zip Hoodie";
+      case "hoodie":    return "Hoodie";
+      case "short":
+      case "shortddr":  return "Short";
+      case "pantalone": return "Sweatpants";
+      case "felpa":     return "Sweatshirt";
+      case "gonna":     return "Skirt";
+      case "dress":     return "Dress";
+      case "canotta":   return "T-Shirt Ws";
+      case "polo":      return "Polo";
+      case "cappello":  return line === "Premium" ? "Cap PRF" : "Cap BSC";
+    }
+    if(it.line === "T-Shirt PRF Ws" || /\bws\b/.test(a)) return "T-Shirt Ws";
+    if(it.line === "T-Shirt Cotone" || a.includes("cotone")) return "T-Shirt Cot";
+    if(line === "Basic" || line === "LS24") return "T-Shirt Bsc";
+    return "T-Shirt PRF";
+  };
+
+  // Quello che andrebbe in Order App adesso; null se il kit non è completo.
+  const oaExport = () => {
+    const c = ultimoCalcolo;
+    const q = Math.round(toNum(qtyEst.value));
+    if(!c || !(q > 0) || !(c.prezzoUnitNet > 0)) return null;
+    const staff = Math.max(0, Math.floor(toNum(staffOmaggio?.value)));
+    const articles = items.filter(it => toNum(it.qty) > 0).map(it => ({
+      kbId: it.id,
+      description: String(it.article || "").trim() || "Articolo",
+      category: oaCategoryOf(it),
+      line: oaLineOf(it),
+      qty: Math.round(toNum(it.qty)),
+      gift: !!it.isGift,
+    }));
+    if(!articles.length) return null;
+    return {
+      kitName: (projectName.value || "").trim() || "Kit",
+      price: Math.round(c.prezzoUnitNet * 100) / 100,
+      // In Order App la quantità del kit comprende gli omaggi, che poi
+      // vengono esclusi dal fatturato: così il totale coincide con l'incasso.
+      quantity: q + staff,
+      omaggio: staff,
+      ivaEnabled: !!applyVAT.checked,
+      ivaRate: toNum(vat.value) || 22,
+      articles,
+    };
+  };
+  const oaExportHash = (ex) => ex ? stableJson({
+    price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio, ivaEnabled: ex.ivaEnabled, ivaRate: ex.ivaRate,
+    articles: ex.articles.map(a => [a.description, a.category, a.line, a.qty, a.gift]),
+  }) : "";
+
+  const oaArticleRow = (a, base = {}) => ({
+    sp: base.sp || "",
+    category: a.category,
+    line: a.line,
+    description: a.description,
+    color: base.color || "",
+    price: base.price ?? null,
+    notes: base.notes ?? (a.gift ? "Omaggio" : null),
+    delivered: base.delivered || false,
+    omaggio: a.gift ? a.qty : 0,
+    discount_type: base.discount_type || "percentuale",
+    discount_value: base.discount_value || 0,
+    // Order App tiene la quantità stimata dentro sizes_adult.__qty
+    sizes_adult: { ...(base.sizes_adult || {}), __qty: a.qty },
+    sizes_kids: base.sizes_kids || {},
+  });
+
+  const QUOTE_STATUS = (info) => {
+    if(!info) return { label: "Order App", cls: "" };
+    if(info.status === "PREVENTIVO") {
+      if(info.lost)    return { label: "Preventivo perso", cls: "lost" };
+      if(info.standby) return { label: "Preventivo in standby", cls: "" };
+      return { label: "Preventivo in Order App", cls: "quote" };
+    }
+    if(info.status === "ANNULLATO") return { label: "Ordine annullato", cls: "lost" };
+    const s = String(info.status || "").toLowerCase();
+    return { label: `Ordine · ${s}`, cls: "order" };
+  };
+  const oaQuoteBadge = (p) => {
+    const id = p?.oaQuote?.id;
+    if(!id || !oaEmail) return "";
+    const st = QUOTE_STATUS(oaQuoteInfo[id]);
+    return `<span class="oa-q oa-q-${st.cls || "none"}" title="${esc(id)}">${esc(st.label)}</span>`;
+  };
+
+  // Stato dei preventivi collegati ai kit salvati (e a quello aperto).
+  const oaRefreshQuotes = async () => {
+    if(!oa || !oaEmail) return;
+    const ids = new Set();
+    allSavedKits().forEach(k => { if(k.payload?.oaQuote?.id) ids.add(k.payload.oaQuote.id); });
+    if(oaQuote?.id) ids.add(oaQuote.id);
+    if(!ids.size) return;
+    try {
+      const { data, error } = await oaTimeout(oa.from("orders")
+        .select("id,status,lost,standby,date").in("id", [...ids]), 12000);
+      if(error) throw error;
+      [...ids].forEach(id => { delete oaQuoteInfo[id]; });
+      (data || []).forEach(r => { oaQuoteInfo[r.id] = r; });
+      renderOaQuoteCard();
+      if(currentView === "dashboard") renderDashboard();
+    } catch(e) { console.error("Order App quotes:", e); }
+  };
+
+  // Stesso schema di numerazione di Order App (DU-anno-numero, da 1601).
+  const oaNextQuoteId = async () => {
+    const year = new Date().getFullYear();
+    const BASE = 1600;
+    const { data, error } = await oaTimeout(oa.from("orders").select("id")
+      .like("id", `DU-${year}-%`).order("id", { ascending: false }).limit(1), 12000);
+    if(error) throw error;
+    const last = parseInt(String(data?.[0]?.id || "").split("-")[2]) || BASE;
+    let n = last < BASE ? BASE + 1 : last + 1;
+    // save_order_atomic aggiorna un ordine con lo stesso numero: mai riusarne uno.
+    for(let i = 0; i < 20; i++, n++) {
+      const id = `DU-${year}-${n}`;
+      const { data: ex } = await oaTimeout(oa.from("orders").select("id").eq("id", id).limit(1), 12000);
+      if(!ex || !ex.length) return id;
+    }
+    throw new Error("Numero preventivo non disponibile");
+  };
+
+  const oaClientFields = () => {
+    const r = resolveRef(clientRef);
+    let clientId = null, city = null;
+    if(clientRef?.src === "client") {
+      clientId = clientRef.id;
+      city = oaClients.find(c => c.id === clientRef.id)?.city || null;
+    } else if(clientRef?.src === "prospect") {
+      const p = oaProspects.find(x => x.id === clientRef.id);
+      clientId = p?.client_id || null;
+      city = p?.city || null;
+    }
+    return { name: r?.name || clientRef?.name || clientName.value.trim(), clientId, city };
+  };
+
+  let oaBusy = false;
+  const oaCreateQuote = async () => {
+    const ex = oaExport();
+    if(oaBusy || !ex || !clientRef || !oa || !oaEmail) return;
+    const cl = oaClientFields();
+    const vatTxt = ex.ivaEnabled ? ` + IVA ${ex.ivaRate}%` : " (senza IVA)";
+    if(!confirm(`Creare in Order App il preventivo per «${cl.name}»?\n\n${ex.kitName}: ${ex.quantity - ex.omaggio} kit a ${eur(ex.price)}${vatTxt}`
+      + `${ex.omaggio ? `\n+ ${ex.omaggio} kit staff in omaggio` : ""}\n${ex.articles.length} articoli, senza taglie né codici SP.\n\nIl kit viene salvato con il collegamento al preventivo.`)) return;
+    oaBusy = true; renderOaQuoteCard();
+    try {
+      const id = await oaNextQuoteId();
+      const p_order = {
+        id, client: cl.name, client_id: cl.clientId, client_city: cl.city, client_country: "Italia",
+        date: new Date().toLocaleDateString("it-IT"), alert_days: 7, status: "PREVENTIVO", pieces: 0,
+        pricing_mode: "kit", iva_enabled: ex.ivaEnabled, iva_rate: ex.ivaRate,
+        // Il prezzo arriva già trattato dal Kit Builder: nessuno sconto sopra.
+        discount_mode: "nessuno", discount_type: "percentuale", discount_value: 0,
+        notes: `Creato dal Kit Builder — ${ex.kitName}`, production_notes: "",
+        show_total_in_client_pdf: true, order_type: "istituzionale",
+      };
+      const p_kits = [{
+        name: ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio,
+        discount_type: "percentuale", discount_value: 0,
+        articles: ex.articles.map(a => oaArticleRow(a)),
+      }];
+      const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments: [] }), 15000);
+      if(error) throw error;
+      oaQuote = {
+        id, kitName: ex.kitName, hash: oaExportHash(ex),
+        lines: ex.articles.map(a => ({ kbId: a.kbId, description: a.description })),
+        createdAt: Date.now(), updatedAt: Date.now(),
+      };
+      oaQuoteInfo[id] = { id, status: "PREVENTIVO", lost: false, standby: false, date: p_order.date };
+      toast(`Preventivo ${id} creato in Order App ✓`, "ok", 4500);
+      // Il collegamento vive nel kit: va salvato subito.
+      await saveProject();
+    } catch(e) {
+      console.error("Order App create quote:", e);
+      toast("Preventivo non creato in Order App: riprova", "err", 5000);
+    }
+    oaBusy = false; renderOaQuoteCard();
+  };
+
+  const oaUpdateQuote = async () => {
+    const ex = oaExport();
+    if(oaBusy || !ex || !oaQuote || !oa || !oaEmail) return;
+    oaBusy = true; renderOaQuoteCard();
+    try {
+      const id = oaQuote.id;
+      const { data: order, error: e1 } = await oaTimeout(oa.from("orders").select("*").eq("id", id).maybeSingle(), 12000);
+      if(e1) throw e1;
+      if(!order) { toast(`Il preventivo ${id} non esiste più in Order App`, "warn", 5000); throw null; }
+      oaQuoteInfo[id] = order;
+      if(order.status !== "PREVENTIVO") {
+        toast(`${id} è già un ordine: le modifiche si fanno in Order App`, "warn", 5000);
+        throw null;
+      }
+      if(!confirm(`Aggiornare il preventivo ${id} in Order App?\n\nCambiano prezzo, quantità, omaggi, IVA e articoli.\nCodici SP, colori, taglie e note già inseriti restano.`)) throw null;
+      const [{ data: kits, error: e2 }, { data: pays, error: e3 }] = await oaTimeout(Promise.all([
+        oa.from("kits").select("*").eq("order_id", id).order("position"),
+        oa.from("payments").select("*").eq("order_id", id),
+      ]), 12000);
+      if(e2 || e3) throw (e2 || e3);
+      const kitIds = (kits || []).map(k => k.id);
+      let arts = [];
+      if(kitIds.length) {
+        const { data, error } = await oaTimeout(oa.from("articles").select("*").in("kit_id", kitIds), 12000);
+        if(error) throw error;
+        arts = data || [];
+      }
+      const target = (kits || []).find(k => k.name === oaQuote.kitName) || (kits || [])[0] || null;
+      const oldArts = arts.filter(a => target && a.kit_id === target.id);
+      const sentByKb = new Set((oaQuote.lines || []).map(l => normName(l.description)));
+      const used = new Set();
+      const matchFor = (a) => {
+        const sent = (oaQuote.lines || []).find(l => l.kbId === a.kbId);
+        const names = [sent && normName(sent.description), normName(a.description)].filter(Boolean);
+        return oldArts.find(o => !used.has(o.id) && names.includes(normName(o.description))) || null;
+      };
+      const newArts = ex.articles.map(a => {
+        const m = matchFor(a);
+        if(m) used.add(m.id);
+        return oaArticleRow(a, m || {});
+      });
+      // Articoli aggiunti a mano in Order App (non mandati dal Kit Builder): restano.
+      oldArts.filter(o => !used.has(o.id) && !sentByKb.has(normName(o.description)))
+        .forEach(o => newArts.push(o));
+      const kitRow = (k, articles) => ({
+        name: k.name, price: k.price, quantity: k.quantity, omaggio: k.omaggio,
+        discount_type: k.discount_type, discount_value: k.discount_value,
+        articles: articles.map(a => ({
+          sp: a.sp, category: a.category, line: a.line, description: a.description, color: a.color,
+          price: a.price, notes: a.notes, delivered: a.delivered, omaggio: a.omaggio,
+          discount_type: a.discount_type, discount_value: a.discount_value,
+          sizes_adult: a.sizes_adult || {}, sizes_kids: a.sizes_kids || {},
+        })),
+      });
+      const p_kits = (kits || []).map(k => k === target
+        ? { ...kitRow(k, []), name: k.name || ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio, articles: kitRow(k, newArts).articles }
+        : kitRow(k, arts.filter(a => a.kit_id === k.id)));
+      if(!target) p_kits.push({ name: ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio,
+        discount_type: "percentuale", discount_value: 0, articles: ex.articles.map(a => oaArticleRow(a)) });
+      const p_order = { ...order, iva_enabled: ex.ivaEnabled, iva_rate: ex.ivaRate };
+      const p_payments = (pays || []).map(p => ({
+        id: p.id, type: p.type, amount: p.amount, date: p.date, method: p.method, note: p.note, paid: p.paid,
+        due_mode: p.due_mode, due_offset_days: p.due_offset_days, paid_date: p.paid_date, paid_date_verified: p.paid_date_verified,
+      }));
+      const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments }), 15000);
+      if(error) throw error;
+      oaQuote = { ...oaQuote, kitName: target?.name || ex.kitName, hash: oaExportHash(ex),
+        lines: ex.articles.map(a => ({ kbId: a.kbId, description: a.description })), updatedAt: Date.now() };
+      toast(`Preventivo ${id} aggiornato ✓`, "ok", 4500);
+      await saveProject();
+    } catch(e) {
+      if(e) { console.error("Order App update quote:", e); toast("Aggiornamento non riuscito: riprova", "err", 5000); }
+    }
+    oaBusy = false; renderOaQuoteCard();
+  };
+
+  const oaUnlinkQuote = () => {
+    if(!oaQuote || !confirm(`Scollegare il kit dal preventivo ${oaQuote.id}?\nIn Order App il preventivo resta com'è.`)) return;
+    oaQuote = null;
+    renderOaQuoteCard();
+    clientName.dispatchEvent(new Event("input", { bubbles: true }));   // stato salvataggio
+  };
+
+  let oaCardSig = "";
+  const renderOaQuoteCard = (force = true) => {
+    const box = document.getElementById("oaQuoteCard");
+    if(!box) return;
+    // Chiamata anche a ogni aggiornamento dello stato di salvataggio: si
+    // ridisegna solo se cambia qualcosa, altrimenti un clic sul pulsante
+    // potrebbe cadere nel mezzo di un ridisegno.
+    const sig = stableJson([oaEmail, clientRef, oaQuote, oaBusy, oaQuoteInfo[oaQuote?.id] || null, oaExportHash(oaExport()), kitStato?.value]);
+    if(!force && sig === oaCardSig) return;
+    oaCardSig = sig;
+    const body = (html) => { box.innerHTML = `<div class="card-title">Preventivo in Order App</div>${html}`; };
+    if(!oaEmail) { body(`<div class="hint">Collega Order App in Impostazioni per creare il preventivo da questo kit.</div>`); return; }
+    const ex = oaExport();
+    if(oaQuote) {
+      const info = oaQuoteInfo[oaQuote.id];
+      const st = QUOTE_STATUS(info);
+      const isQuote = !info || info.status === "PREVENTIVO";
+      const stale = ex && oaExportHash(ex) !== oaQuote.hash;
+      const when = new Date(oaQuote.updatedAt || oaQuote.createdAt).toLocaleDateString("it-IT");
+      body(`
+        <div class="oa-qc-head">
+          <div><strong>${esc(oaQuote.id)}</strong> <span class="oa-q oa-q-${st.cls || "none"}">${esc(st.label)}</span>
+            <div class="hint">Inviato dal Kit Builder il ${when}</div></div>
+        </div>
+        ${stale
+          ? (isQuote
+            ? `<div class="oa-qc-warn">⚠ Kit modificato dopo il preventivo: in Order App ci sono ancora i valori precedenti.</div>
+               <div class="oa-qc-act"><button type="button" class="primary" id="oaQuoteUpdate"${oaBusy ? " disabled" : ""}>${oaBusy ? "Aggiornamento…" : "Aggiorna preventivo in Order App"}</button></div>`
+            : `<div class="oa-qc-warn">Kit modificato, ma in Order App è già un ordine: le modifiche si fanno lì.</div>`)
+          : `<div class="hint oa-qc-ok">✓ Allineato con il kit.</div>`}
+        ${info && info.status !== "PREVENTIVO" && info.status !== "ANNULLATO" && kitStato?.value !== "ordine"
+          ? `<div class="oa-qc-act"><button type="button" class="secondary" id="oaMarkOrder">Segna il kit come Ordine</button>
+             <span class="hint">In Order App è diventato ordine.</span></div>` : ""}
+        <div class="oa-qc-foot"><button type="button" class="ghost" id="oaQuoteUnlink">Scollega dal preventivo</button></div>`);
+      document.getElementById("oaQuoteUpdate")?.addEventListener("click", oaUpdateQuote);
+      document.getElementById("oaQuoteUnlink")?.addEventListener("click", oaUnlinkQuote);
+      document.getElementById("oaMarkOrder")?.addEventListener("click", async () => {
+        setKitStatoPicker("ordine");
+        await saveProject();
+        renderOaQuoteCard();
+      });
+      return;
+    }
+    if(!clientRef) { body(`<div class="hint">Scegli il club dall'anagrafica (campo Cliente, step Articoli) per creare il preventivo.</div>`); return; }
+    if(!ex) { body(`<div class="hint">Completa il kit (quantità stimata e articoli) per creare il preventivo.</div>`); return; }
+    const cl = oaClientFields();
+    body(`
+      <div class="oa-qc-sum">
+        <div><span>Club</span><strong>${esc(cl.name)}</strong></div>
+        <div><span>Kit</span><strong>${ex.quantity - ex.omaggio} × ${eur(ex.price)}</strong><small>${ex.ivaEnabled ? `+ IVA ${ex.ivaRate}%` : "senza IVA"}</small></div>
+        ${ex.omaggio ? `<div><span>Omaggi staff</span><strong>${ex.omaggio} kit</strong></div>` : ""}
+        <div><span>Articoli</span><strong>${ex.articles.length}</strong><small>senza taglie né codici SP</small></div>
+      </div>
+      <div class="oa-qc-act"><button type="button" class="primary" id="oaQuoteCreate"${oaBusy ? " disabled" : ""}>${oaBusy ? "Creazione…" : "Crea preventivo in Order App"}</button></div>`);
+    document.getElementById("oaQuoteCreate")?.addEventListener("click", oaCreateQuote);
+  };
+
   /* ─── Dashboard render ─── */
   const renderDashboard = () => {
     const store     = getStore();
@@ -8050,7 +8418,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         <td>${kit.itemCount}</td>
         <td class="dash-amt-td">${dashAmountHtml(kit)}</td>
         <td>${date}</td>
-        <td>${statoBadgeHtml(getKitStato(kit.payload))}</td>
+        <td>${statoBadgeHtml(getKitStato(kit.payload))}${oaQuoteBadge(kit.payload)}</td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud"
           ? `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 10.5A4 4 0 0011.5 7H11a5 5 0 00-4.9 4A3 3 0 107 17h8a3 3 0 000-6z"/></svg> Cloud`
           : `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="16" height="11" rx="1.5"/><line x1="6" y1="17" x2="14" y2="17"/><line x1="10" y1="15" x2="10" y2="17"/></svg> Locale`
@@ -8159,7 +8527,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           return `<div class="dash-kit-card${member ? " dash-grp-row" : ""}"${member ? ` data-gm="${esc(g.key)}"${g.open ? "" : " hidden"}` : ""}>
             <div class="dash-kit-card-top">
               <div>
-                <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}</div>
+                <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}${oaQuoteBadge(kit.payload)}</div>
                 ${client && !member ? `<div class="dash-kit-sub">${esc(g.label)} ${oaBadge(g.kind)}</div>` : ""}
               </div>
               ${src}
