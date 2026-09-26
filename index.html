@@ -2427,7 +2427,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v93</span>
+            <span id="buildTxt">build v94</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4079,7 +4079,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v93";
+  const BUILD = "v94";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8060,7 +8060,10 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!articles.length) return null;
     return {
       kitName: (projectName.value || "").trim() || "Kit",
-      price: Math.round(c.prezzoUnitNet * 100) / 100,
+      // 4 decimali: Order App aggiunge l'IVA sopra il netto, e un netto
+      // arrotondato a 2 cifre sposta il totale di qualche centesimo (26,67 × 30
+      // + IVA = 976,12 invece di 976,00). A video resta sempre a 2 decimali.
+      price: Math.round(c.prezzoUnitNet * 10000) / 10000,
       // In Order App la quantità del kit comprende gli omaggi, che poi
       // vengono esclusi dal fatturato: così il totale coincide con l'incasso.
       quantity: q + staff,
