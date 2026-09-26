@@ -2035,6 +2035,16 @@
     #dashCardList .dash-group-card { grid-column: 1 / -1; }
     .dash-kit-card.dash-grp-row { margin-left: 14px; box-shadow: inset 3px 0 0 var(--brand-orange); }
 
+    /* ─── Tessuti: peso da scheda tecnica e grammatura commerciale ─── */
+    .mat-peso-wrap { display: flex; gap: 8px; }
+    .mat-peso-wrap input { flex: 1 1 auto; min-width: 0; }
+    .mat-peso-wrap select { flex: 0 0 auto; width: auto; }
+    .mat-grammatura {
+      min-height: 42px; display: flex; align-items: center; padding: 0 12px;
+      border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 14px;
+    }
+    .mat-grammatura.is-set { border-style: solid; color: var(--text); font-weight: 700; font-size: 16px; background: var(--surface-2); }
+
     /* ─── Stato del salvataggio ─── */
     .save-bar {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -2302,7 +2312,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v88</span>
+            <span id="buildTxt">build v89</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3527,6 +3537,22 @@
                 <input type="text" id="matNote" placeholder="es. felpa garzata, invernale" autocomplete="off">
               </div>
             </div>
+            <div class="row2" style="margin-bottom:12px">
+              <div class="field">
+                <label class="lbl">Peso da scheda tecnica</label>
+                <div class="mat-peso-wrap">
+                  <input type="text" id="matPeso" placeholder="es. 523" inputmode="decimal">
+                  <select id="matUnitaPeso" aria-label="Unità del peso">
+                    <option value="g/m">g/m lineare</option>
+                    <option value="g/m²">g/m²</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label class="lbl">Grammatura commerciale <span style="font-weight:400;color:var(--muted)">(calcolata)</span></label>
+                <div class="mat-grammatura" id="matGrammatura">—</div>
+              </div>
+            </div>
 
             <div class="form-section">
               <div class="section-lbl">Costo al metro</div>
@@ -3549,13 +3575,10 @@
               </div>
               <div class="row2" id="matRigaKg" style="display:none">
                 <div class="field">
-                  <label class="lbl">Peso g/m lineare</label>
-                  <input type="text" id="matPeso" placeholder="es. 660" inputmode="decimal">
-                </div>
-                <div class="field">
                   <label class="lbl">Prezzo al kg €</label>
                   <input type="text" id="matPrezzoKg" placeholder="es. 9,50" inputmode="decimal">
                 </div>
+                <div></div>
               </div>
               <div class="hint" id="matCalcNota" style="margin-top:6px"></div>
             </div>
@@ -3929,7 +3952,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v88";
+  const BUILD = "v89";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -6383,6 +6406,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     });
     const costoEl = document.getElementById("matCostoMetro"); if(costoEl) costoEl.value = "";
     const unitaEl = document.getElementById("matUnita"); if(unitaEl) unitaEl.value = "metro";
+    const unitaPesoEl = document.getElementById("matUnitaPeso"); if(unitaPesoEl) unitaPesoEl.value = "g/m";
     const btnNew = document.getElementById("btnMaterialeNew"); if(btnNew) btnNew.style.display = "none";
     const btnSave = document.getElementById("btnMaterialeSave"); if(btnSave) btnSave.textContent = "Salva tessuto";
     aggiornaRigheUnita();
@@ -6401,37 +6425,57 @@ ${tabQtaPDF ? `<div class="sec scala">
   // metro lineare. Il €/kg non è una colonna della tabella condivisa, quindi
   // il risultato finisce in costoMetro (come fa già chi la popola a mano) e il
   // €/kg resta leggibile nella nota, senza toccare lo schema di Materiale.
-  // Grammatura commerciale (g/m²): il peso a kg qui è sempre g/m lineare (vedi
-  // unitaPeso sopra), quindi va diviso per la larghezza in metri per ottenere il
-  // numero da comunicare al cliente — non è la stessa grandezza del g/m lineare.
-  const grammaturaCommerciale = (pesoGm, larghezzaCm) =>
-    (pesoGm > 0 && larghezzaCm > 0) ? Math.round(pesoGm / (larghezzaCm / 100)) : null;
+  // Grammatura commerciale (g/m²): è il numero da comunicare al cliente. Il
+  // peso da scheda tecnica può essere in g/m lineare ("523GR MTL"), che va
+  // diviso per la larghezza in metri, oppure già in g/m². Stessa regola della
+  // Production Sheet (calcolaGrammaturaCommerciale), che legge la stessa
+  // tabella: senza unità il dato è ambiguo e non si calcola nulla.
+  const grammaturaCommerciale = (peso, unitaPeso, larghezzaCm) => {
+    if(!(peso > 0)) return null;
+    if(unitaPeso === "g/m²") return Math.round(peso);
+    if(unitaPeso === "g/m") return larghezzaCm > 0 ? Math.round(peso / (larghezzaCm / 100)) : null;
+    return null;
+  };
+  // Grammi per metro lineare, quelli che servono al costo del venduto a peso.
+  const pesoLineare = (peso, unitaPeso, larghezzaCm) => {
+    if(!(peso > 0)) return null;
+    if(unitaPeso === "g/m") return peso;
+    return larghezzaCm > 0 ? peso * larghezzaCm / 100 : null;
+  };
 
   const aggiornaCalcoloPeso = () => {
     const unita = document.getElementById("matUnita")?.value || "metro";
     const nota  = document.getElementById("matCalcNota");
-    if(unita !== "kg"){ if(nota) nota.textContent = ""; return; }
-    const pesoG    = toNum(document.getElementById("matPeso")?.value);
-    const prezzoKg = toNum(document.getElementById("matPrezzoKg")?.value);
+    const peso     = toNum(document.getElementById("matPeso")?.value);
+    const unitaPeso= document.getElementById("matUnitaPeso")?.value || "g/m";
     const larghezza= toNum(document.getElementById("matLarghezza")?.value);
+    const grammatura = grammaturaCommerciale(peso, unitaPeso, larghezza);
+    const gEl = document.getElementById("matGrammatura");
+    if(gEl){
+      gEl.textContent = grammatura != null ? `${grammatura} g/m²`
+        : peso > 0 ? "Inserisci la larghezza cm" : "—";
+      gEl.classList.toggle("is-set", grammatura != null);
+    }
+    if(unita !== "kg"){ if(nota) nota.textContent = ""; return; }
+    const pesoG    = pesoLineare(peso, unitaPeso, larghezza);
+    const prezzoKg = toNum(document.getElementById("matPrezzoKg")?.value);
     const costoEl  = document.getElementById("matCostoMetro");
     const righe = [];
     if(pesoG > 0 && prezzoKg > 0){
       const costoMetro = Math.round((pesoG / 1000) * prezzoKg * 100) / 100;
       if(costoEl) costoEl.value = String(costoMetro).replace(".", ",");
-      righe.push(`${String(pesoG).replace(".", ",")} g/m ÷ 1000 × ${eur(prezzoKg)}/kg = ${eur(costoMetro)}/m`);
+      righe.push(`${String(Math.round(pesoG * 10) / 10).replace(".", ",")} g/m ÷ 1000 × ${eur(prezzoKg)}/kg = ${eur(costoMetro)}/m`);
+    } else if(peso > 0 && unitaPeso === "g/m²" && !(larghezza > 0)){
+      righe.push("Con il peso in g/m² serve la larghezza cm per ricavare il costo al metro.");
     } else {
       righe.push("Inserisci peso e prezzo al kg per calcolarlo.");
     }
-    const grammatura = grammaturaCommerciale(pesoG, larghezza);
-    righe.push(grammatura != null
-      ? `Grammatura commerciale: ${grammatura} g/m²`
-      : "Grammatura commerciale: inserisci anche la larghezza cm.");
     if(nota) nota.innerHTML = righe.map(esc).join("<br>");
   };
 
   document.getElementById("matUnita")?.addEventListener("change", () => { aggiornaRigheUnita(); aggiornaCalcoloPeso(); });
   document.getElementById("matPeso")?.addEventListener("input", aggiornaCalcoloPeso);
+  document.getElementById("matUnitaPeso")?.addEventListener("change", aggiornaCalcoloPeso);
   document.getElementById("matPrezzoKg")?.addEventListener("input", aggiornaCalcoloPeso);
   document.getElementById("matLarghezza")?.addEventListener("input", aggiornaCalcoloPeso);
 
@@ -6446,7 +6490,9 @@ ${tabQtaPDF ? `<div class="sec scala">
     document.getElementById("matFornitore").value = m.fornitore || "";
     const unita = (m.unitaMisura || "metro").toLowerCase().includes("kg") ? "kg" : "metro";
     document.getElementById("matUnita").value = unita;
-    document.getElementById("matPeso").value = unita === "kg" ? (m.peso || "") : "";
+    document.getElementById("matPeso").value = m.peso || "";
+    // Senza unità salvata la Production Sheet intende g/m²: stessa lettura qui.
+    document.getElementById("matUnitaPeso").value = m.unitaPeso === "g/m" ? "g/m" : (m.peso ? "g/m²" : "g/m");
     document.getElementById("matPrezzoKg").value = Number.isFinite(m.prezzoKg) ? String(m.prezzoKg).replace(".", ",") : "";
     document.getElementById("matNote").value = m.note || "";
     document.getElementById("matCostoMetro").value = Number.isFinite(m.costoMetro) ? String(m.costoMetro).replace(".", ",") : "";
@@ -6482,11 +6528,11 @@ ${tabQtaPDF ? `<div class="sec scala">
       larghezza: document.getElementById("matLarghezza").value.trim() || null,
       fornitore: document.getElementById("matFornitore").value.trim() || null,
       unitaMisura: unita === "kg" ? "kg" : "metro",
-      // unitaPeso è condiviso con la Production Sheet: qui il peso a kg è sempre
-      // g/m lineare (mai g/m²), quindi lo dichiariamo esplicitamente così l'altra
-      // app può calcolare la grammatura commerciale (g/m²) senza ambiguità.
-      unitaPeso: unita === "kg" ? "g/m" : null,
-      peso: unita === "kg" ? (document.getElementById("matPeso").value.trim() || null) : null,
+      // Peso e unità sono condivisi con la Production Sheet: si salvano per
+      // ogni tessuto (anche venduto a metro), con l'unità dichiarata così
+      // entrambe le app ricavano la stessa grammatura commerciale.
+      peso: document.getElementById("matPeso").value.trim() || null,
+      unitaPeso: document.getElementById("matPeso").value.trim() ? document.getElementById("matUnitaPeso").value : null,
       // costoMetro è sempre e solo euro al metro: il prezzo al kg ha un campo
       // suo, perché tenerli nella stessa colonna faceva leggere un prezzo al
       // kg come se fosse al metro, raddoppiando i costi.
@@ -6559,11 +6605,13 @@ ${tabQtaPDF ? `<div class="sec scala">
       // Il codice va in cima perché è quello che dice a colpo d'occhio la
       // grammatura (es. COT330); il nome del fornitore è solo un dettaglio.
       const titolo = m.codice ? `${esc(m.codice)} <span style="font-weight:400;color:var(--muted)">— ${esc(m.nome)}</span>` : esc(m.nome);
-      const grammatura = grammaturaCommerciale(toNum(m.peso), toNum(m.larghezza));
+      const grammatura = grammaturaCommerciale(toNum(m.peso), m.unitaPeso, toNum(m.larghezza));
+      const pesoTxt = m.peso && m.unitaPeso === "g/m" ? `${m.peso} g/m` : "";
+      const pesoInfo = [pesoTxt, grammatura != null ? `${grammatura} g/m² comm.` : ""].filter(Boolean).join(" · ");
       return `<div class="catalog-item">
         <div class="catalog-item-info">
           <div class="catalog-item-name">${titolo}${m.codice ? "" : ' <span class="cat-badge" style="background:var(--warn);color:#fff">senza codice</span>'}</div>
-          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m${Number.isFinite(m.prezzoKg) ? ` <span style="color:var(--muted)">(${eur(m.prezzoKg)}/kg × ${esc(String(m.peso || "?"))} g/m)</span>` : ""}${grammatura != null ? ` <span style="color:var(--muted)">· ${grammatura} g/m² comm.</span>` : ""}</div>
+          <div class="catalog-item-prices">${dettagli ? esc(dettagli) + " · " : ""}${eur(toNum(m.costoMetro))}/m${Number.isFinite(m.prezzoKg) ? ` <span style="color:var(--muted)">(${eur(m.prezzoKg)}/kg)</span>` : ""}${pesoInfo ? ` <span style="color:var(--muted)">· ${esc(pesoInfo)}</span>` : ""}</div>
         </div>
         <div class="catalog-item-actions">
           <button class="secondary" style="font-size:12px;padding:5px 10px" data-mact="edit" data-mid="${m.id}">Modifica</button>
