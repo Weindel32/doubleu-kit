@@ -2178,11 +2178,22 @@
       .save-bar { padding: 8px 10px 8px 12px; margin-bottom: 10px; }
       .save-bar-kit { font-size: 16px; max-width: 40vw; }
       .save-bar-btn { display: none; }        /* su telefono è nella barra in basso */
+      /* Barra in basso compatta: Salva a destra di esito e numeri, non su una
+         riga intera. Con il pulsante a tutta larghezza la barra copriva il
+         fondo della pagina (e il pulsante Avanti del percorso guidato). */
+      #statusBar {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 10px; row-gap: 3px; align-items: center;
+      }
+      #statusBar > div:first-child, #statusBar .statusStats { grid-column: 1; min-width: 0; }
       .status-save-btn {
-        display: inline-flex; align-self: stretch; align-items: center; justify-content: center;
-        min-height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 800;
+        grid-column: 2; grid-row: 1 / span 2; align-self: center;
+        display: inline-flex; align-items: center; justify-content: center;
+        min-height: 44px; padding: 0 14px; border-radius: 12px; font-weight: 800;
         background: var(--surface); color: var(--muted);
       }
+      /* Spazio in fondo = altezza reale della barra (misurata via JS) + menu. */
+      .content-area { padding-bottom: calc(var(--sbar-h, 130px) + 66px + 24px + env(safe-area-inset-bottom, 0px)); }
       .status-save-btn[data-state="dirty"], .status-save-btn[data-state="new"] { background: var(--brand-orange); color: var(--sb-bg); }
       .unsaved-actions button { flex: 1 1 100%; min-height: 46px; justify-content: center; }
     }
@@ -2427,7 +2438,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v94</span>
+            <span id="buildTxt">build v95</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4079,7 +4090,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v94";
+  const BUILD = "v95";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -10030,6 +10041,13 @@ tr:last-child td{border-bottom:none}
 
       clientName.addEventListener("input",  updateSidebarKit);
       bindClientPicker();
+      // La barra in basso del telefono cambia altezza (esito su una o due
+      // righe): lo spazio in fondo alla pagina la segue, così niente resta
+      // coperto. Fuori dal builder la barra è nascosta e l'altezza vale 0.
+      const sbBar = document.getElementById("statusBar");
+      if(sbBar && "ResizeObserver" in window) {
+        new ResizeObserver(() => document.documentElement.style.setProperty("--sbar-h", sbBar.offsetHeight + "px")).observe(sbBar);
+      }
       if(oa) oa.auth.onAuthStateChange((ev) => { if(ev === "SIGNED_OUT" && oaEmail) { oaEmail = null; oaChanged(); } });
       oaLoad();
       projectName.addEventListener("input", updateSidebarKit);
