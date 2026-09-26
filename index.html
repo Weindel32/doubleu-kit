@@ -2093,6 +2093,19 @@
     .oa-qc-ok { margin-top: 8px; color: #1E7A46; font-weight: 600; }
     .oa-qc-foot { margin-top: 10px; }
     .oa-qc-foot .ghost { font-size: 12px; padding: 5px 10px; }
+    .app-confirm-card { max-width: 480px; }
+    .app-confirm-body { margin-top: 12px; font-size: 14px; color: var(--text); line-height: 1.45; }
+    .app-confirm-body p { margin: 0 0 8px; }
+    .acb-rows { display: grid; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .acb-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 12px; }
+    .acb-row + .acb-row { border-top: 1px solid var(--border); }
+    .acb-row span { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .acb-row strong { text-align: right; font-size: 15px; }
+    .acb-row small, .acb-arts small { font-weight: 500; color: var(--muted); font-size: 12px; }
+    .acb-arts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .acb-arts span { padding: 4px 9px; border-radius: 999px; background: var(--surface-2); font-size: 12.5px; font-weight: 600; }
+    .acb-note { margin-top: 10px !important; font-size: 12.5px; color: var(--muted); }
+    #appConfirmOk { background: var(--brand-orange); color: var(--sb-bg); }
     .new-club-fields { display: grid; gap: 10px; margin-top: 14px; }
     .new-club-fields .row2 { gap: 10px; }
     .oa-login-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
@@ -2224,6 +2237,18 @@
         <button type="button" class="ghost" id="unsavedCancel">Annulla</button>
         <button type="button" class="secondary" id="unsavedDiscard">Esci senza salvare</button>
         <button type="button" class="primary" id="unsavedSave">Salva ed esci</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conferme dell'app (al posto delle finestre grigie del browser) -->
+  <div class="unsaved-modal" id="appConfirm" hidden>
+    <div class="unsaved-card app-confirm-card" role="dialog" aria-modal="true" aria-labelledby="appConfirmTitle">
+      <div class="unsaved-title" id="appConfirmTitle"></div>
+      <div class="app-confirm-body" id="appConfirmBody"></div>
+      <div class="unsaved-actions">
+        <button type="button" class="ghost" id="appConfirmCancel">Annulla</button>
+        <button type="button" class="primary" id="appConfirmOk">Conferma</button>
       </div>
     </div>
   </div>
@@ -2402,7 +2427,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v92</span>
+            <span id="buildTxt">build v93</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4054,7 +4079,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v92";
+  const BUILD = "v93";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7477,6 +7502,31 @@ ${tabQtaPDF ? `<div class="sec scala">
      varianti scritte in modo diverso restano lo stesso cliente, e una
      trattativa vinta in Order App porta con sé i suoi kit senza toccarli.
      Senza collegamento il campo Cliente funziona come prima (testo libero). */
+  // Conferma nello stile dell'app: titolo, riepilogo in HTML, due pulsanti.
+  // Restituisce una Promise<boolean>; Esc o clic fuori equivalgono ad Annulla.
+  const appConfirm = ({ title, body, ok = "Conferma", cancel = "Annulla" }) => new Promise((resolve) => {
+    const modal = document.getElementById("appConfirm");
+    if(!modal) { resolve(confirm(title)); return; }
+    document.getElementById("appConfirmTitle").textContent = title;
+    document.getElementById("appConfirmBody").innerHTML = body || "";
+    const okBtn = document.getElementById("appConfirmOk");
+    const noBtn = document.getElementById("appConfirmCancel");
+    okBtn.textContent = ok; noBtn.textContent = cancel;
+    const done = (v) => {
+      modal.hidden = true;
+      okBtn.onclick = noBtn.onclick = modal.onclick = modal.onkeydown = null;
+      resolve(v);
+    };
+    okBtn.onclick = () => done(true);
+    noBtn.onclick = () => done(false);
+    modal.onclick = (e) => { if(e.target === modal) done(false); };
+    modal.onkeydown = (e) => { if(e.key === "Escape") done(false); };
+    modal.hidden = false;
+    okBtn.focus();
+  });
+  const confirmRows = (rows) => `<div class="acb-rows">${rows.filter(Boolean).map(([k, v]) =>
+    `<div class="acb-row"><span>${esc(k)}</span><strong>${v}</strong></div>`).join("")}</div>`;
+
   const OA_URL = "https://bixayovstdptbgauvsgm.supabase.co";
   const OA_KEY = "sb_publishable_pKpjPbw4a0HSEIWbf2ZXvA_svT70I3v";
   // Chiave di sessione volutamente senza "sb-…-auth-token": il login del Kit
@@ -7754,7 +7804,13 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(it.type === "pf") {
       const r = it.rec;
       closeDrop();
-      if(!confirm(`Creare «${r.nome_club}» come trattativa in Order App con i dati di Prospect Finder?`)) return;
+      if(!await appConfirm({
+        title: "Nuova trattativa",
+        body: `<p>«<strong>${esc(r.nome_club)}</strong>» viene creato come <strong>trattativa in Order App</strong> con i dati di Prospect Finder.</p>`
+          + confirmRows([["Città", esc([r["città"], r.provincia].filter(Boolean).join(" ") || "—")],
+            r.contatto_nome ? ["Referente", esc(r.contatto_nome)] : null]),
+        ok: "Crea trattativa",
+      })) return;
       await createProspect({
         name: r.nome_club, city: r["città"], province: r.provincia, country: r.paese,
         contact_name: r.contatto_nome, contact_email: r.contatto_email, contact_phone: r.telefono,
@@ -8112,9 +8168,21 @@ ${tabQtaPDF ? `<div class="sec scala">
     const ex = oaExport();
     if(oaBusy || !ex || !clientRef || !oa || !oaEmail) return;
     const cl = oaClientFields();
-    const vatTxt = ex.ivaEnabled ? ` + IVA ${ex.ivaRate}%` : " (senza IVA)";
-    if(!confirm(`Creare in Order App il preventivo per «${cl.name}»?\n\n${ex.kitName}: ${ex.quantity - ex.omaggio} kit a ${eur(ex.price)}${vatTxt}`
-      + `${ex.omaggio ? `\n+ ${ex.omaggio} kit staff in omaggio` : ""}\n${ex.articles.length} articoli, senza taglie né codici SP.\n\nIl kit viene salvato con il collegamento al preventivo.`)) return;
+    const paying = ex.quantity - ex.omaggio;
+    const imponibile = paying * ex.price;
+    if(!await appConfirm({
+      title: "Crea preventivo",
+      body: confirmRows([
+        ["Club", esc(cl.name)],
+        ["Kit", esc(ex.kitName)],
+        ["Prezzo per atleta", `${eur(ex.price)} <small>${ex.ivaEnabled ? `+ IVA ${ex.ivaRate}%` : "senza IVA"}</small>`],
+        ["Quantità", `${paying} kit${ex.omaggio ? ` <small>+ ${ex.omaggio} staff in omaggio</small>` : ""}`],
+        ["Totale", ex.ivaEnabled
+          ? `${eur(imponibile * (1 + ex.ivaRate / 100))} <small>IVA inclusa</small>` : eur(imponibile)],
+      ]) + `<div class="acb-arts">${ex.articles.map(a => `<span>${esc(a.description)} <small>${esc(a.category)} · ${a.qty}</small></span>`).join("")}</div>`
+        + `<p class="acb-note">Taglie e codici SP li completi in Order App. Il kit viene salvato con il collegamento al preventivo.</p>`,
+      ok: "Crea preventivo",
+    })) return;
     oaBusy = true; renderOaQuoteCard();
     try {
       const id = await oaNextQuoteId();
@@ -8122,6 +8190,8 @@ ${tabQtaPDF ? `<div class="sec scala">
         id, client: cl.name, client_id: cl.clientId, client_city: cl.city, client_country: "Italia",
         date: new Date().toLocaleDateString("it-IT"), alert_days: 7, status: "PREVENTIVO", pieces: 0,
         pricing_mode: "kit", iva_enabled: ex.ivaEnabled, iva_rate: ex.ivaRate,
+        // La lista preventivi di Order App mostra "Kit × kit_quantity".
+        kit_quantity: ex.quantity,
         // Il prezzo arriva già trattato dal Kit Builder: nessuno sconto sopra.
         discount_mode: "nessuno", discount_type: "percentuale", discount_value: 0,
         notes: `Creato dal Kit Builder — ${ex.kitName}`, production_notes: "",
@@ -8168,7 +8238,15 @@ ${tabQtaPDF ? `<div class="sec scala">
         toast(`${id} è già un ordine: le modifiche si fanno in Order App`, "warn", 5000);
         throw null;
       }
-      if(!confirm(`Aggiornare il preventivo ${id} in Order App?\n\nCambiano prezzo, quantità, omaggi, IVA e articoli.\nCodici SP, colori, taglie e note già inseriti restano.`)) throw null;
+      if(!await appConfirm({
+        title: `Aggiorna ${id}`,
+        body: confirmRows([
+          ["Prezzo per atleta", `${eur(ex.price)} <small>${ex.ivaEnabled ? `+ IVA ${ex.ivaRate}%` : "senza IVA"}</small>`],
+          ["Quantità", `${ex.quantity - ex.omaggio} kit${ex.omaggio ? ` <small>+ ${ex.omaggio} staff in omaggio</small>` : ""}`],
+          ["Articoli", String(ex.articles.length)],
+        ]) + `<p class="acb-note"><strong>Restano</strong> codici SP, colori, taglie, note e gli articoli aggiunti a mano in Order App.</p>`,
+        ok: "Aggiorna preventivo",
+      })) throw null;
       const [{ data: kits, error: e2 }, { data: pays, error: e3 }] = await oaTimeout(Promise.all([
         oa.from("kits").select("*").eq("order_id", id).order("position"),
         oa.from("payments").select("*").eq("order_id", id),
@@ -8213,7 +8291,8 @@ ${tabQtaPDF ? `<div class="sec scala">
         : kitRow(k, arts.filter(a => a.kit_id === k.id)));
       if(!target) p_kits.push({ name: ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio,
         discount_type: "percentuale", discount_value: 0, articles: ex.articles.map(a => oaArticleRow(a)) });
-      const p_order = { ...order, iva_enabled: ex.ivaEnabled, iva_rate: ex.ivaRate };
+      const p_order = { ...order, iva_enabled: ex.ivaEnabled, iva_rate: ex.ivaRate,
+        kit_quantity: (kits || []).length <= 1 ? ex.quantity : order.kit_quantity };
       const p_payments = (pays || []).map(p => ({
         id: p.id, type: p.type, amount: p.amount, date: p.date, method: p.method, note: p.note, paid: p.paid,
         due_mode: p.due_mode, due_offset_days: p.due_offset_days, paid_date: p.paid_date, paid_date_verified: p.paid_date_verified,
@@ -8230,11 +8309,15 @@ ${tabQtaPDF ? `<div class="sec scala">
     oaBusy = false; renderOaQuoteCard();
   };
 
-  const oaUnlinkQuote = () => {
+  const oaUnlinkQuote = async () => {
     if(!oaQuote) return;
     const gone = oaQuoteInfo[oaQuote.id]?.missing;
-    if(!confirm(gone ? `Scollegare il kit dal preventivo ${oaQuote.id}, eliminato in Order App?`
-      : `Scollegare il kit dal preventivo ${oaQuote.id}?\nIn Order App il preventivo resta com'è.`)) return;
+    if(!await appConfirm({
+      title: "Scollega preventivo",
+      body: `<p>Il kit non sarà più collegato a <strong>${esc(oaQuote.id)}</strong>.</p>`
+        + `<p class="acb-note">${gone ? "Il preventivo è già stato eliminato in Order App." : "In Order App il preventivo resta com'è."}</p>`,
+      ok: "Scollega",
+    })) return;
     oaQuote = null;
     renderOaQuoteCard();
     clientName.dispatchEvent(new Event("input", { bubbles: true }));   // stato salvataggio
