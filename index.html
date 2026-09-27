@@ -2464,7 +2464,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v98</span>
+            <span id="buildTxt">build v99</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4116,7 +4116,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v98";
+  const BUILD = "v99";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7643,8 +7643,22 @@ ${tabQtaPDF ? `<div class="sec scala">
   // Trattative da proporre: quelle vinte compaiono già come clienti.
   const openProspects = () => oaProspects.filter(p => !p.client_id);
 
-  const oaLoad = async () => {
+  // Email della sessione Order App salvata nel browser, senza passare dalla rete.
+  const oaStoredEmail = () => {
+    try { return JSON.parse(localStorage.getItem(OA_SESSION_KEY) || "null")?.user?.email || null; }
+    catch(_) { return null; }
+  };
+  /* Il collegamento resta salvato nel browser (sessione Order App che si
+     rinnova da sola). All'avvio però la lettura della sessione può essere
+     lenta (rinnovo del token, rete del telefono): prima, un ritardo lasciava
+     l'app "non collegata" e costringeva a rifare l'accesso anche con la
+     sessione ancora valida. Ora, se la sessione è salvata, si resta collegati
+     e si riprova da soli; si torna al modulo di accesso solo se Order App dice
+     davvero che la sessione non c'è più. */
+  let oaRetryTimer = null;
+  const oaLoad = async (tentativo = 0) => {
     if(!oa) { oaChanged(); return false; }
+    clearTimeout(oaRetryTimer);
     try {
       const { data } = await oaTimeout(oa.auth.getSession(), 8000);
       const session = data?.session || null;
@@ -7660,7 +7674,12 @@ ${tabQtaPDF ? `<div class="sec scala">
       setTimeout(oaRefreshQuotes, 0);
     } catch(e) {
       console.error("Order App load:", e);
-      toast("Order App non raggiungibile: il campo Cliente resta libero", "warn");
+      if(!oaEmail) oaEmail = oaStoredEmail();
+      if(oaEmail && tentativo < 3) {
+        oaRetryTimer = setTimeout(() => oaLoad(tentativo + 1), 4000 * (tentativo + 1));
+      } else {
+        toast("Order App non raggiungibile: il campo Cliente resta libero", "warn");
+      }
     }
     oaChanged();
     return !!oaEmail;
