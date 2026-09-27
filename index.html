@@ -2092,6 +2092,22 @@
     .oa-qc-warn { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(232, 124, 43, .12); color: var(--text); font-size: 13px; font-weight: 600; }
     .oa-qc-ok { margin-top: 8px; color: #1E7A46; font-weight: 600; }
     .oa-qc-foot { margin-top: 10px; }
+    .oa-qt { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .oa-qt-title { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+    .oa-qt-title span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); margin-left: 6px; }
+    .oa-qt-rows { display: grid; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+    .oa-qt-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; gap: 10px; align-items: baseline; padding: 8px 12px; font-size: 13.5px; }
+    .oa-qt-row + .oa-qt-row { border-top: 1px solid var(--border); }
+    .oa-qt-row.is-cur { background: var(--surface-2); font-weight: 700; }
+    .oa-qt-name { min-width: 0; overflow-wrap: anywhere; }
+    .oa-qt-name small { font-weight: 600; color: var(--muted); font-size: 11.5px; }
+    .oa-qt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .oa-qt-bad { color: var(--bad); }
+    .acb-pick { display: grid; gap: 8px; }
+    .acb-pick-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+    .acb-pick-row input { margin-top: 3px; }
+    .acb-pick-row small { color: var(--muted); font-weight: 500; }
+    .acb-pick-kits { display: block; margin-top: 2px; }
     .oa-qc-foot .ghost { font-size: 12px; padding: 5px 10px; }
     .app-confirm-card { max-width: 480px; }
     .app-confirm-body { margin-top: 12px; font-size: 14px; color: var(--text); line-height: 1.45; }
@@ -2438,7 +2454,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v95</span>
+            <span id="buildTxt">build v96</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2883,7 +2899,7 @@
                   <div>
                     <label>Spedizione €</label>
                     <input id="shipCost" value="" placeholder="es. 60,00" inputmode="decimal">
-                    <div class="hint">Una spedizione per ordine.</div>
+                    <div class="hint" id="shipHint">Una spedizione per ordine.</div>
                   </div>
                   <div>
                     <label>A tuo carico</label>
@@ -4090,7 +4106,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v95";
+  const BUILD = "v96";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5644,14 +5660,14 @@ if("serviceWorker" in navigator) {
     render();
   };
 
-  const resetAll = () => {
+  const resetAll = (opts) => {
     // Si chiede conferma solo se ci sono modifiche non salvate: un kit già
     // salvato si può chiudere senza perdere nulla.
-    if(hasUnsavedChanges() && !confirm("Ci sono modifiche non salvate a questo kit.\nCreare un nuovo kit senza salvarle?")) return;
+    if(hasUnsavedChanges() && !confirm("Ci sono modifiche non salvate a questo kit.\nCreare un nuovo kit senza salvarle?")) return false;
     activeCloudId = null;
     const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
-    clientRef = null; oaQuote = null; updateClientLink();
+    clientRef = null; oaQuote = null; oaPendingAdd = null; updateClientLink();
     margin.value      = defs.margin; vat.value = "22"; discount.value = defs.discount;
     minMargin.value   = defs.minMargin;
     offerPrice.value  = ""; useOffer.checked = false;
@@ -5672,7 +5688,8 @@ if("serviceWorker" in navigator) {
     updateSidebarKit();
     try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
     markSaveBase("new");
-    toast("Nuovo preventivo pronto ✓", "ok");
+    if(!opts?.silent) toast("Nuovo preventivo pronto ✓", "ok");
+    return true;
   };
 
   const copySummary = async () => {
@@ -6016,6 +6033,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     clientName.value  = p.clientName  || "";
     clientRef         = p.clientRef   || null;
     oaQuote           = p.oaQuote     || null;
+    oaPendingAdd      = null;
     updateClientLink();
     projectName.value = p.projectName || "";
     qtyEst.value      = p.qtyEst      || "";
@@ -8023,8 +8041,17 @@ ${tabQtaPDF ? `<div class="sec scala">
      Il preventivo NON si aggiorna da solo: può essere già stato mandato al
      club. Se il kit cambia dopo, lo si aggiorna con un clic, conservando
      codici SP, colori, taglie e note inseriti in Order App, e solo finché in
-     Order App è ancora un preventivo. */
-  let oaQuote = null;            // { id, kitName, hash, lines: [{ kbId, description }], createdAt, updatedAt }
+     Order App è ancora un preventivo.
+
+     Più kit, un preventivo. Un club può chiedere kit uomo, kit donna, una
+     tuta per tutti: ognuno è un kit a sé con prezzo e quantità suoi, e in
+     Order App diventa un blocco dello stesso preventivo. Il primo kit crea
+     il preventivo (role "main"), gli altri si aggiungono (role "added").
+     La spedizione è una per preventivo e sta solo nel primo kit: negli
+     altri il campo è bloccato. Il cliente vede il prezzo di ogni kit, non il
+     totale (le quantità sono stime): il totale resta interno, qui sotto. */
+  let oaQuote = null;            // { id, kitName, role, hash, lines: [{ kbId, description }], createdAt, updatedAt }
+  let oaPendingAdd = null;       // { id }: kit nuovo nato da "Nuovo kit per questo preventivo", non ancora aggiunto
   const oaQuoteInfo = {};        // id → { status, lost, standby, date } letto da Order App
 
   // Linea e categoria come in Order App (tabella concordata con Marco).
@@ -8177,6 +8204,45 @@ ${tabQtaPDF ? `<div class="sec scala">
     return { name: r?.name || clientRef?.name || clientName.value.trim(), clientId, city };
   };
 
+  // Ordine completo da Order App: save_order_atomic riscrive tutti i kit e i
+  // pagamenti, quindi chi aggiorna un kit deve rimandare anche gli altri.
+  const oaLoadOrder = async (id) => {
+    const { data: order, error: e1 } = await oaTimeout(oa.from("orders").select("*").eq("id", id).maybeSingle(), 12000);
+    if(e1) throw e1;
+    if(!order) return null;
+    const [{ data: kits, error: e2 }, { data: pays, error: e3 }] = await oaTimeout(Promise.all([
+      oa.from("kits").select("*").eq("order_id", id).order("position"),
+      oa.from("payments").select("*").eq("order_id", id),
+    ]), 12000);
+    if(e2 || e3) throw (e2 || e3);
+    const kitIds = (kits || []).map(k => k.id);
+    let arts = [];
+    if(kitIds.length) {
+      const { data, error } = await oaTimeout(oa.from("articles").select("*").in("kit_id", kitIds), 12000);
+      if(error) throw error;
+      arts = data || [];
+    }
+    return { order, kits: kits || [], arts, pays: pays || [] };
+  };
+  const oaKitRow = (k, articles) => ({
+    name: k.name, price: k.price, quantity: k.quantity, omaggio: k.omaggio,
+    discount_type: k.discount_type, discount_value: k.discount_value,
+    articles: articles.map(a => ({
+      sp: a.sp, category: a.category, line: a.line, description: a.description, color: a.color,
+      price: a.price, notes: a.notes, delivered: a.delivered, omaggio: a.omaggio,
+      discount_type: a.discount_type, discount_value: a.discount_value,
+      sizes_adult: a.sizes_adult || {}, sizes_kids: a.sizes_kids || {},
+    })),
+  });
+  const oaPayRows = (pays) => pays.map(p => ({
+    id: p.id, type: p.type, amount: p.amount, date: p.date, method: p.method, note: p.note, paid: p.paid,
+    due_mode: p.due_mode, due_offset_days: p.due_offset_days, paid_date: p.paid_date, paid_date_verified: p.paid_date_verified,
+  }));
+  const oaNewKitRow = (ex) => ({
+    name: ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio,
+    discount_type: "percentuale", discount_value: 0, articles: ex.articles.map(a => oaArticleRow(a)),
+  });
+
   let oaBusy = false;
   const oaCreateQuote = async () => {
     const ex = oaExport();
@@ -8209,20 +8275,19 @@ ${tabQtaPDF ? `<div class="sec scala">
         // Il prezzo arriva già trattato dal Kit Builder: nessuno sconto sopra.
         discount_mode: "nessuno", discount_type: "percentuale", discount_value: 0,
         notes: `Creato dal Kit Builder — ${ex.kitName}`, production_notes: "",
-        show_total_in_client_pdf: true, order_type: "istituzionale",
+        // Le quantità sono stime: al club si mostra il prezzo di ogni kit, il
+        // totale dell'ordine resta interno.
+        show_total_in_client_pdf: false, order_type: "istituzionale",
       };
-      const p_kits = [{
-        name: ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio,
-        discount_type: "percentuale", discount_value: 0,
-        articles: ex.articles.map(a => oaArticleRow(a)),
-      }];
+      const p_kits = [oaNewKitRow(ex)];
       const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments: [] }), 15000);
       if(error) throw error;
       oaQuote = {
-        id, kitName: ex.kitName, hash: oaExportHash(ex),
+        id, kitName: ex.kitName, role: "main", hash: oaExportHash(ex),
         lines: ex.articles.map(a => ({ kbId: a.kbId, description: a.description })),
         createdAt: Date.now(), updatedAt: Date.now(),
       };
+      oaPendingAdd = null;
       oaQuoteInfo[id] = { id, status: "PREVENTIVO", lost: false, standby: false, date: p_order.date };
       toast(`Preventivo ${id} creato in Order App ✓`, "ok", 4500);
       // Il collegamento vive nel kit: va salvato subito.
@@ -8240,8 +8305,8 @@ ${tabQtaPDF ? `<div class="sec scala">
     oaBusy = true; renderOaQuoteCard();
     try {
       const id = oaQuote.id;
-      const { data: order, error: e1 } = await oaTimeout(oa.from("orders").select("*").eq("id", id).maybeSingle(), 12000);
-      if(e1) throw e1;
+      const full = await oaLoadOrder(id);
+      const order = full?.order;
       if(!order) {
         oaQuoteInfo[id] = { id, missing: true };
         toast(`Il preventivo ${id} è stato eliminato in Order App`, "warn", 5000);
@@ -8261,19 +8326,14 @@ ${tabQtaPDF ? `<div class="sec scala">
         ]) + `<p class="acb-note"><strong>Restano</strong> codici SP, colori, taglie, note e gli articoli aggiunti a mano in Order App.</p>`,
         ok: "Aggiorna preventivo",
       })) throw null;
-      const [{ data: kits, error: e2 }, { data: pays, error: e3 }] = await oaTimeout(Promise.all([
-        oa.from("kits").select("*").eq("order_id", id).order("position"),
-        oa.from("payments").select("*").eq("order_id", id),
-      ]), 12000);
-      if(e2 || e3) throw (e2 || e3);
-      const kitIds = (kits || []).map(k => k.id);
-      let arts = [];
-      if(kitIds.length) {
-        const { data, error } = await oaTimeout(oa.from("articles").select("*").in("kit_id", kitIds), 12000);
-        if(error) throw error;
-        arts = data || [];
+      const { kits, arts, pays } = full;
+      // Con più kit nel preventivo si aggiorna solo il proprio: mai il primo
+      // per ripiego, sarebbe il kit di un altro builder.
+      const target = kits.find(k => k.name === oaQuote.kitName) || (kits.length === 1 ? kits[0] : null);
+      if(!target && kits.length) {
+        toast(`In ${id} non c'è più un kit "${oaQuote.kitName}": rinominato in Order App? Rimettigli quel nome e riprova`, "warn", 7000);
+        throw null;
       }
-      const target = (kits || []).find(k => k.name === oaQuote.kitName) || (kits || [])[0] || null;
       const oldArts = arts.filter(a => target && a.kit_id === target.id);
       const sentByKb = new Set((oaQuote.lines || []).map(l => normName(l.description)));
       const used = new Set();
@@ -8290,27 +8350,13 @@ ${tabQtaPDF ? `<div class="sec scala">
       // Articoli aggiunti a mano in Order App (non mandati dal Kit Builder): restano.
       oldArts.filter(o => !used.has(o.id) && !sentByKb.has(normName(o.description)))
         .forEach(o => newArts.push(o));
-      const kitRow = (k, articles) => ({
-        name: k.name, price: k.price, quantity: k.quantity, omaggio: k.omaggio,
-        discount_type: k.discount_type, discount_value: k.discount_value,
-        articles: articles.map(a => ({
-          sp: a.sp, category: a.category, line: a.line, description: a.description, color: a.color,
-          price: a.price, notes: a.notes, delivered: a.delivered, omaggio: a.omaggio,
-          discount_type: a.discount_type, discount_value: a.discount_value,
-          sizes_adult: a.sizes_adult || {}, sizes_kids: a.sizes_kids || {},
-        })),
-      });
-      const p_kits = (kits || []).map(k => k === target
-        ? { ...kitRow(k, []), name: k.name || ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio, articles: kitRow(k, newArts).articles }
-        : kitRow(k, arts.filter(a => a.kit_id === k.id)));
-      if(!target) p_kits.push({ name: ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio,
-        discount_type: "percentuale", discount_value: 0, articles: ex.articles.map(a => oaArticleRow(a)) });
+      const p_kits = kits.map(k => k === target
+        ? { ...oaKitRow(k, []), name: k.name || ex.kitName, price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio, articles: oaKitRow(k, newArts).articles }
+        : oaKitRow(k, arts.filter(a => a.kit_id === k.id)));
+      if(!target) p_kits.push(oaNewKitRow(ex));
       const p_order = { ...order, iva_enabled: ex.ivaEnabled, iva_rate: ex.ivaRate,
-        kit_quantity: (kits || []).length <= 1 ? ex.quantity : order.kit_quantity };
-      const p_payments = (pays || []).map(p => ({
-        id: p.id, type: p.type, amount: p.amount, date: p.date, method: p.method, note: p.note, paid: p.paid,
-        due_mode: p.due_mode, due_offset_days: p.due_offset_days, paid_date: p.paid_date, paid_date_verified: p.paid_date_verified,
-      }));
+        kit_quantity: kits.length <= 1 ? ex.quantity : order.kit_quantity };
+      const p_payments = oaPayRows(pays);
       const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments }), 15000);
       if(error) throw error;
       oaQuote = { ...oaQuote, kitName: target?.name || ex.kitName, hash: oaExportHash(ex),
@@ -8321,6 +8367,211 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(e) { console.error("Order App update quote:", e); toast("Aggiornamento non riuscito: riprova", "err", 5000); }
     }
     oaBusy = false; renderOaQuoteCard();
+  };
+
+  // Preventivi ancora aperti del club del kit, con i kit che contengono già.
+  const oaOpenQuotesForClient = async () => {
+    const cl = oaClientFields();
+    let q = oa.from("orders").select("id,client,client_id,date,status,lost,standby").eq("status", "PREVENTIVO");
+    q = cl.clientId ? q.eq("client_id", cl.clientId) : q.eq("client", cl.name);
+    const { data, error } = await oaTimeout(q.order("id", { ascending: false }).limit(20), 12000);
+    if(error) throw error;
+    const list = data || [];
+    if(list.length) {
+      const { data: ks, error: e2 } = await oaTimeout(oa.from("kits").select("order_id,name,position")
+        .in("order_id", list.map(o => o.id)).order("position"), 12000);
+      if(e2) throw e2;
+      list.forEach(o => { o.kitNames = (ks || []).filter(k => k.order_id === o.id).map(k => k.name || "Kit"); });
+    }
+    return list;
+  };
+
+  // Aggiunge questo kit come nuovo blocco di un preventivo già esistente del club.
+  const oaAddToQuote = async (targetId = null) => {
+    if(oaBusy || !clientRef || !oa || !oaEmail || !oaExport()) return;
+    oaBusy = true; renderOaQuoteCard();
+    // La spedizione è già nel primo kit del preventivo: qui va tolta, e il
+    // prezzo si ricalcola senza. Se si annulla torna com'era.
+    const shipPrima = shipCost?.value || "";
+    const togliSped = () => { if(shipCost && toNum(shipCost.value) > 0) { shipCost.value = ""; shipCost.dispatchEvent(new Event("input", { bubbles: true })); } };
+    const rimettiSped = () => { if(shipCost && shipCost.value !== shipPrima) { shipCost.value = shipPrima; shipCost.dispatchEvent(new Event("input", { bubbles: true })); } };
+    try {
+      let id = targetId;
+      if(!id) {
+        const quotes = await oaOpenQuotesForClient();
+        if(!quotes.length) { toast("Nessun preventivo aperto per questo club in Order App", "warn", 5000); throw null; }
+        if(!await appConfirm({
+          title: "Aggiungi a un preventivo",
+          body: `<div class="acb-pick">${quotes.map((o, i) => `<label class="acb-pick-row">
+              <input type="radio" name="oaAddPick" value="${esc(o.id)}"${i === 0 ? " checked" : ""}>
+              <span><strong>${esc(o.id)}</strong> <small>${esc(o.date || "")}${o.lost ? " · perso" : o.standby ? " · standby" : ""}</small>
+              <small class="acb-pick-kits">${o.kitNames?.length ? o.kitNames.map(esc).join(" · ") : "nessun kit"}</small></span>
+            </label>`).join("")}</div>`,
+          ok: "Continua",
+        })) throw null;
+        id = document.querySelector('input[name="oaAddPick"]:checked')?.value;
+        if(!id) throw null;
+      }
+      const full = await oaLoadOrder(id);
+      if(!full) { toast(`Il preventivo ${id} non esiste più in Order App`, "warn", 5000); throw null; }
+      const { order, kits, arts, pays } = full;
+      oaQuoteInfo[id] = order;
+      if(order.status !== "PREVENTIVO") { toast(`${id} è già un ordine: i kit si aggiungono in Order App`, "warn", 5000); throw null; }
+      const shipTolta = toNum(shipPrima) > 0;
+      togliSped();
+      const ex = oaExport();
+      if(!ex) throw null;
+      if(kits.some(k => normName(k.name) === normName(ex.kitName))) {
+        rimettiSped();
+        toast(`In ${id} c'è già un kit "${ex.kitName}": dai a questo kit un nome diverso (es. Kit Donna, Tuta)`, "warn", 7000);
+        throw null;
+      }
+      const paying = ex.quantity - ex.omaggio;
+      if(!await appConfirm({
+        title: `Aggiungi a ${id}`,
+        body: confirmRows([
+          ["Preventivo", `${esc(id)} <small>${kits.length} kit già dentro</small>`],
+          ["Nuovo blocco", esc(ex.kitName)],
+          ["Prezzo per atleta", `${eur(ex.price)} <small>${ex.ivaEnabled ? `+ IVA ${ex.ivaRate}%` : "senza IVA"}</small>`],
+          ["Quantità stimata", `${paying}${ex.omaggio ? ` <small>+ ${ex.omaggio} staff in omaggio</small>` : ""}`],
+        ]) + `<div class="acb-arts">${ex.articles.map(a => `<span>${esc(a.description)} <small>${esc(a.category)} · ${a.qty}</small></span>`).join("")}</div>`
+          + (shipTolta ? `<p class="acb-note"><strong>Spedizione tolta da questo kit</strong> (${eur(toNum(shipPrima))}): è una sola per preventivo e sta nel primo kit. Il prezzo qui sopra è già ricalcolato senza.</p>` : "")
+          + `<p class="acb-note">Nel preventivo ogni kit ha la sua riga con il suo prezzo. Il totale dell'ordine non compare nel PDF del cliente.</p>`,
+        ok: "Aggiungi al preventivo",
+      })) { rimettiSped(); throw null; }
+      const p_kits = [...kits.map(k => oaKitRow(k, arts.filter(a => a.kit_id === k.id))), oaNewKitRow(ex)];
+      const p_order = { ...order, show_total_in_client_pdf: false };
+      const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments: oaPayRows(pays) }), 15000);
+      if(error) throw error;
+      oaQuote = {
+        id, kitName: ex.kitName, role: "added", hash: oaExportHash(ex),
+        lines: ex.articles.map(a => ({ kbId: a.kbId, description: a.description })),
+        createdAt: Date.now(), updatedAt: Date.now(),
+      };
+      oaPendingAdd = null;
+      toast(`${ex.kitName} aggiunto al preventivo ${id} ✓`, "ok", 4500);
+      await saveProject();
+    } catch(e) {
+      if(e) { console.error("Order App add to quote:", e); toast("Kit non aggiunto al preventivo: riprova", "err", 5000); rimettiSped(); }
+    }
+    oaBusy = false; renderOaQuoteCard();
+  };
+
+  // Kit nuovo per lo stesso preventivo: stesso club e stessa IVA, il resto da zero.
+  const oaNewKitForQuote = () => {
+    const id = oaQuote?.id;
+    if(!id) return;
+    const keep = { clientName: clientName.value, clientRef, applyVAT: applyVAT.checked, vat: vat.value };
+    if(!resetAll({ silent: true })) return;
+    clientName.value = keep.clientName;
+    clientRef        = keep.clientRef;
+    applyVAT.checked = keep.applyVAT;
+    vat.value        = keep.vat;
+    oaPendingAdd     = { id };
+    updateClientLink();
+    render();
+    toast(`Nuovo kit per ${id}: dagli un nome (es. Kit Donna) e componilo`, "ok", 5000);
+    showView("builder"); goToStep(1);
+    setTimeout(() => projectName.focus(), 50);
+  };
+
+  /* ─── Totale del preventivo, solo per uso interno ───
+     Stesso calcolo del builder, rifatto dal kit salvato: serve a sommare
+     più kit dello stesso preventivo. Omaggi di riga e staff inclusi, la
+     spedizione conta dov'è (nel primo kit). Lo scenario "−20%" abbassa le
+     quantità del club e lascia fermi prezzo, costi fissi, spedizione e
+     kit staff: è ciò che succede se gli iscritti sono meno della stima. */
+  const kitEconomics = (p) => {
+    const its = Array.isArray(p?.items) ? p.items : [];
+    const q   = toNum(p?.qtyEst) > 0 ? toNum(p.qtyEst) : 1;
+    const vatOn   = p?.applyVAT !== false;
+    const vatRate = toNum(p?.vat ?? 22) / 100;
+    const m       = parseFloat(p?.margin ?? 0.5) || 0;
+    let variable = 0, giftRows = 0;
+    its.forEach(it => {
+      const c = (toNum(it.base) + toNum(it.extra)) * toNum(it.qty);
+      variable += c;
+      if(it.isGift) giftRows += c;
+    });
+    const staff     = Math.max(0, Math.floor(toNum(p?.staffOmaggio)));
+    const staffCost = staff * (variable - giftRows) / q;
+    const fixed     = Math.max(0, toNum(p?.fixedCost));
+    const ship      = Math.max(0, toNum(p?.shipCost));
+    const shipAssorb= p?.shipAbsorbed !== undefined ? !!p.shipAbsorbed : true;
+    const totalCost = variable + staffCost + fixed + ship;
+    if(totalCost <= 0) return null;
+    const paidCost  = totalCost - giftRows - staffCost - (shipAssorb ? ship : 0);
+    let invoice = 0;
+    const offer0 = toNum(p?.offerPrice);
+    if(p?.useOffer && offer0 > 0) {
+      invoice = (vatOn && p.priceIncludesVAT === false ? offer0 * (1 + vatRate) : offer0) * q;
+    } else {
+      const net = paidCost / (1 - m);
+      invoice = (vatOn ? net * (1 + vatRate) : net) * (1 - toNum(p?.discount) / 100);
+    }
+    const revenueNet = vatOn ? invoice / (1 + vatRate) : invoice;
+    const scen = (f) => {
+      const rev  = revenueNet * f;
+      const cost = variable * f + staffCost + fixed + ship;
+      return { revenueNet: rev, totalCost: cost, profit: rev - cost, margin: rev > 0 ? (rev - cost) / rev : 0 };
+    };
+    return { qty: q, price: invoice / q, vatOn, ship, ...scen(1), low: scen(0.8) };
+  };
+
+  const quoteKits = (id) => {
+    const cur = currentKitName();
+    const seen = new Set(), out = [];
+    allSavedKits().forEach(k => {
+      if(k.payload?.oaQuote?.id !== id || seen.has(k.name)) return;
+      seen.add(k.name);
+      out.push({ name: k.name, payload: k.name === cur ? payload() : k.payload, current: k.name === cur });
+    });
+    // Il kit aperto collegato ma non ancora salvato con questo nome
+    if(oaQuote?.id === id && !seen.has(cur)) out.push({ name: cur, payload: payload(), current: true });
+    const role = (k) => k.payload.oaQuote?.role === "added" ? 1 : 0;
+    return out.sort((a, b) => role(a) - role(b) || (a.payload.oaQuote?.createdAt || 0) - (b.payload.oaQuote?.createdAt || 0));
+  };
+
+  const quoteTotalsHtml = (id) => {
+    const kits = quoteKits(id).map(k => ({ ...k, eco: kitEconomics(k.payload) })).filter(k => k.eco);
+    if(!kits.length) return "";
+    const sum = (f) => kits.reduce((a, k) => a + f(k.eco), 0);
+    const rev = sum(e => e.revenueNet), cost = sum(e => e.totalCost), prof = rev - cost;
+    const lrev = sum(e => e.low.revenueNet), lprof = lrev - sum(e => e.low.totalCost);
+    const pct = (a, b) => b > 0 ? (a / b * 100).toFixed(1) + "%" : "—";
+    const ships = kits.filter(k => k.eco.ship > 0);
+    const name = (k) => (k.payload.projectName || "").trim() || k.name;
+    return `<div class="oa-qt">
+      <div class="oa-qt-title">Totale preventivo <span>solo uso interno · non va al cliente</span></div>
+      <div class="oa-qt-rows">${kits.map(k => `<div class="oa-qt-row${k.current ? " is-cur" : ""}">
+          <span class="oa-qt-name">${esc(name(k))}${k.payload.oaQuote?.role !== "added" ? ` <small>primo kit</small>` : ""}</span>
+          <span class="oa-qt-num">${Math.round(k.eco.qty)} × ${eur(k.eco.price)}</span>
+          <span class="oa-qt-num">${pct(k.eco.profit, k.eco.revenueNet)}</span>
+        </div>`).join("")}</div>
+      <div class="oa-qc-sum oa-qt-sum">
+        <div><span>Fatturato stimato</span><strong>${eur(rev)}</strong><small>netto IVA · ${kits.length} kit</small></div>
+        <div><span>Margine</span><strong>${pct(prof, rev)}</strong><small>${eur(prof)}</small></div>
+        <div><span>A −20% quantità</span><strong class="${lprof <= 0 ? "oa-qt-bad" : ""}">${pct(lprof, lrev)}</strong><small>${eur(lprof)} · costi fissi e spedizione restano</small></div>
+      </div>
+      ${ships.length > 1 ? `<div class="oa-qc-warn">⚠ Spedizione presente in ${ships.length} kit: nel preventivo va una volta sola, nel primo kit.</div>` : ""}
+      ${kits.length < quoteKits(id).length ? `<div class="hint">Alcuni kit non hanno ancora articoli con quantità: esclusi dal totale.</div>` : ""}
+    </div>`;
+  };
+
+  // Nei kit aggiunti a un preventivo la spedizione non si inserisce: c'è già nel primo.
+  const syncShipLock = () => {
+    const locked = !!(oaQuote && oaQuote.role === "added");
+    const extra  = locked && toNum(shipCost?.value) > 0;
+    // Con un valore già dentro il campo resta libero, altrimenti non si potrebbe togliere.
+    if(shipCost) shipCost.disabled = locked && !extra;
+    if(shipAbsorbed) shipAbsorbed.disabled = locked && !extra;
+    const hint = document.getElementById("shipHint");
+    if(hint) {
+      hint.textContent = extra ? `⚠ Già nel primo kit di ${oaQuote.id}: togli la spedizione da qui`
+        : locked ? `Già nel primo kit del preventivo ${oaQuote.id}.`
+        : (oaPendingAdd && !oaQuote) ? `Aggiungendo il kit a ${oaPendingAdd.id} la spedizione si toglie: è già nel primo kit.`
+        : "Una spedizione per ordine.";
+    }
   };
 
   const oaUnlinkQuote = async () => {
@@ -8339,12 +8590,14 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   let oaCardSig = "";
   const renderOaQuoteCard = (force = true) => {
+    syncShipLock();
     const box = document.getElementById("oaQuoteCard");
     if(!box) return;
     // Chiamata anche a ogni aggiornamento dello stato di salvataggio: si
     // ridisegna solo se cambia qualcosa, altrimenti un clic sul pulsante
     // potrebbe cadere nel mezzo di un ridisegno.
-    const sig = stableJson([oaEmail, clientRef, oaQuote, oaBusy, oaQuoteInfo[oaQuote?.id] || null, oaExportHash(oaExport()), kitStato?.value]);
+    const totals = oaQuote && oaEmail ? quoteTotalsHtml(oaQuote.id) : "";
+    const sig = stableJson([oaEmail, clientRef, oaQuote, oaPendingAdd, oaBusy, oaQuoteInfo[oaQuote?.id] || null, oaExportHash(oaExport()), kitStato?.value, totals]);
     if(!force && sig === oaCardSig) return;
     oaCardSig = sig;
     const body = (html) => { box.innerHTML = `<div class="card-title">Preventivo in Order App</div>${html}`; };
@@ -8373,7 +8626,7 @@ ${tabQtaPDF ? `<div class="sec scala">
       body(`
         <div class="oa-qc-head">
           <div><strong>${esc(oaQuote.id)}</strong> <span class="oa-q oa-q-${st.cls || "none"}">${esc(st.label)}</span>
-            <div class="hint">Inviato dal Kit Builder il ${when}</div></div>
+            <div class="hint">${oaQuote.role === "added" ? "Aggiunto al preventivo" : "Inviato dal Kit Builder"} il ${when} · blocco «${esc(oaQuote.kitName)}»</div></div>
         </div>
         ${stale
           ? (isQuote
@@ -8384,7 +8637,11 @@ ${tabQtaPDF ? `<div class="sec scala">
         ${info && info.status !== "PREVENTIVO" && info.status !== "ANNULLATO" && kitStato?.value !== "ordine"
           ? `<div class="oa-qc-act"><button type="button" class="secondary" id="oaMarkOrder">Segna il kit come Ordine</button>
              <span class="hint">In Order App è diventato ordine.</span></div>` : ""}
+        ${totals}
+        ${isQuote ? `<div class="oa-qc-act"><button type="button" class="secondary" id="oaQuoteNewKit">+ Nuovo kit per questo preventivo</button>
+          <span class="hint">Es. kit donna, tuta o felpa per tutti: stesso club, prezzo a parte.</span></div>` : ""}
         <div class="oa-qc-foot"><button type="button" class="ghost" id="oaQuoteUnlink">Scollega dal preventivo</button></div>`);
+      document.getElementById("oaQuoteNewKit")?.addEventListener("click", oaNewKitForQuote);
       document.getElementById("oaQuoteUpdate")?.addEventListener("click", oaUpdateQuote);
       document.getElementById("oaQuoteUnlink")?.addEventListener("click", oaUnlinkQuote);
       document.getElementById("oaMarkOrder")?.addEventListener("click", async () => {
@@ -8395,7 +8652,7 @@ ${tabQtaPDF ? `<div class="sec scala">
       return;
     }
     if(!clientRef) { body(`<div class="hint">Scegli il club dall'anagrafica (campo Cliente, step Articoli) per creare il preventivo.</div>`); return; }
-    if(!ex) { body(`<div class="hint">Completa il kit (quantità stimata e articoli) per creare il preventivo.</div>`); return; }
+    if(!ex) { body(`<div class="hint">Completa il kit (quantità stimata e articoli) per ${oaPendingAdd ? `aggiungerlo al preventivo ${esc(oaPendingAdd.id)}` : "creare il preventivo"}.</div>`); return; }
     const cl = oaClientFields();
     body(`
       <div class="oa-qc-sum">
@@ -8404,8 +8661,19 @@ ${tabQtaPDF ? `<div class="sec scala">
         ${ex.omaggio ? `<div><span>Omaggi staff</span><strong>${ex.omaggio} kit</strong></div>` : ""}
         <div><span>Articoli</span><strong>${ex.articles.length}</strong><small>senza taglie né codici SP</small></div>
       </div>
-      <div class="oa-qc-act"><button type="button" class="primary" id="oaQuoteCreate"${oaBusy ? " disabled" : ""}>${oaBusy ? "Creazione…" : "Crea preventivo in Order App"}</button></div>`);
+      ${oaPendingAdd
+        ? `<div class="oa-qc-act">
+            <button type="button" class="primary" id="oaQuoteAddPending"${oaBusy ? " disabled" : ""}>${oaBusy ? "Invio…" : `Aggiungi al preventivo ${esc(oaPendingAdd.id)}`}</button>
+            <button type="button" class="secondary" id="oaQuoteCreate"${oaBusy ? " disabled" : ""}>Crea un preventivo nuovo</button>
+          </div>`
+        : `<div class="oa-qc-act">
+            <button type="button" class="primary" id="oaQuoteCreate"${oaBusy ? " disabled" : ""}>${oaBusy ? "Invio…" : "Crea preventivo in Order App"}</button>
+            <button type="button" class="secondary" id="oaQuoteAdd"${oaBusy ? " disabled" : ""}>Aggiungi a un preventivo esistente</button>
+          </div>`}
+      <div class="hint" style="margin-top:8px">Più kit per lo stesso club (uomo, donna, tuta…) vanno nello stesso preventivo, ognuno con la sua riga e il suo prezzo.</div>`);
     document.getElementById("oaQuoteCreate")?.addEventListener("click", oaCreateQuote);
+    document.getElementById("oaQuoteAdd")?.addEventListener("click", () => oaAddToQuote());
+    document.getElementById("oaQuoteAddPending")?.addEventListener("click", () => oaAddToQuote(oaPendingAdd?.id));
   };
 
   /* ─── Dashboard render ─── */
