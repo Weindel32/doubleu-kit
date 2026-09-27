@@ -2464,7 +2464,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v97</span>
+            <span id="buildTxt">build v98</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4116,7 +4116,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v97";
+  const BUILD = "v98";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8284,7 +8284,8 @@ ${tabQtaPDF ? `<div class="sec scala">
         kit_quantity: ex.quantity,
         // Il prezzo arriva già trattato dal Kit Builder: nessuno sconto sopra.
         discount_mode: "nessuno", discount_type: "percentuale", discount_value: 0,
-        notes: `Creato dal Kit Builder — ${ex.kitName}`, production_notes: "",
+        // "notes" finisce nel PDF del cliente: niente note interne qui.
+        notes: "", production_notes: "",
         // Le quantità sono stime: al club si mostra il prezzo di ogni kit, il
         // totale dell'ordine resta interno.
         show_total_in_client_pdf: false, order_type: "istituzionale",
