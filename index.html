@@ -2103,11 +2103,21 @@
     .oa-qt-name small { font-weight: 600; color: var(--muted); font-size: 11.5px; }
     .oa-qt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .oa-qt-bad { color: var(--bad); }
-    .acb-pick { display: grid; gap: 8px; }
-    .acb-pick-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
-    .acb-pick-row input { margin-top: 3px; }
-    .acb-pick-row small { color: var(--muted); font-weight: 500; }
-    .acb-pick-kits { display: block; margin-top: 2px; }
+    .acb-sec { margin: 14px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .acb-sec:first-child { margin-top: 0; }
+    .acb-pick { display: grid; gap: 8px; margin-bottom: 4px; }
+    /* label e input hanno stili globali da campo modulo (maiuscolo, larghezza piena): qui si azzerano */
+    .acb-pick-row { display: flex; gap: 10px; align-items: flex-start; justify-content: flex-start; margin: 0; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 10px; cursor: pointer; text-align: left;
+      font-family: inherit; font-size: 14px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text); }
+    .acb-pick-row.is-single { cursor: default; }
+    .acb-pick-row.is-off { opacity: .55; cursor: not-allowed; }
+    .acb-pick-row:has(input:checked) { border-color: var(--input-focus); }
+    .acb-pick-row input { width: auto; flex: 0 0 auto; margin: 3px 0 0; padding: 0; }
+    .acb-pick-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .acb-pick-txt strong { font-size: 15px; overflow-wrap: anywhere; }
+    .acb-pick-txt small { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+    .acb-pick-txt .acb-pick-bad { color: var(--bad); font-weight: 600; }
     .oa-qc-foot .ghost { font-size: 12px; padding: 5px 10px; }
     .app-confirm-card { max-width: 480px; }
     .app-confirm-body { margin-top: 12px; font-size: 14px; color: var(--text); line-height: 1.45; }
@@ -2454,7 +2464,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v96</span>
+            <span id="buildTxt">build v97</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4106,7 +4116,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v96";
+  const BUILD = "v97";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8370,79 +8380,102 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
 
   // Preventivi ancora aperti del club del kit, con i kit che contengono già.
-  const oaOpenQuotesForClient = async () => {
+  // Si cerca per anagrafica e anche per nome: un preventivo creato a mano in
+  // Order App può avere solo il nome del club, senza collegamento.
+  const oaOpenQuotesForClient = async (extraId = null) => {
     const cl = oaClientFields();
-    let q = oa.from("orders").select("id,client,client_id,date,status,lost,standby").eq("status", "PREVENTIVO");
-    q = cl.clientId ? q.eq("client_id", cl.clientId) : q.eq("client", cl.name);
-    const { data, error } = await oaTimeout(q.order("id", { ascending: false }).limit(20), 12000);
-    if(error) throw error;
-    const list = data || [];
+    const cols = "id,client,client_id,date,status,lost,standby";
+    const likeName = String(cl.name || "").trim().replace(/[\\%_]/g, (c) => "\\" + c);
+    const reqs = [];
+    if(cl.clientId) reqs.push(oa.from("orders").select(cols).eq("status", "PREVENTIVO").eq("client_id", cl.clientId).limit(30));
+    if(likeName)    reqs.push(oa.from("orders").select(cols).eq("status", "PREVENTIVO").ilike("client", likeName).limit(30));
+    if(extraId)     reqs.push(oa.from("orders").select(cols).eq("id", extraId).limit(1));
+    const res = await oaTimeout(Promise.all(reqs), 12000);
+    const byId = new Map();
+    res.forEach(r => { if(r.error) throw r.error; (r.data || []).forEach(o => byId.set(o.id, o)); });
+    const list = [...byId.values()].filter(o => o.status === "PREVENTIVO").sort((a, b) => String(b.id).localeCompare(String(a.id)));
     if(list.length) {
-      const { data: ks, error: e2 } = await oaTimeout(oa.from("kits").select("order_id,name,position")
+      const { data: ks, error } = await oaTimeout(oa.from("kits").select("order_id,name,position")
         .in("order_id", list.map(o => o.id)).order("position"), 12000);
-      if(e2) throw e2;
+      if(error) throw error;
       list.forEach(o => { o.kitNames = (ks || []).filter(k => k.order_id === o.id).map(k => k.name || "Kit"); });
     }
     return list;
   };
 
-  // Aggiunge questo kit come nuovo blocco di un preventivo già esistente del club.
+  // Aggiunge questo kit come nuovo blocco di un preventivo già esistente del
+  // club. Una finestra sola: quale preventivo (se ce n'è più d'uno) e cosa
+  // si manda. "Invio…" compare solo dopo la conferma.
+  let oaPicking = false;
   const oaAddToQuote = async (targetId = null) => {
-    if(oaBusy || !clientRef || !oa || !oaEmail || !oaExport()) return;
-    oaBusy = true; renderOaQuoteCard();
+    if(oaBusy || oaPicking || !clientRef || !oa || !oaEmail || !oaExport()) return;
+    oaPicking = true;
     // La spedizione è già nel primo kit del preventivo: qui va tolta, e il
     // prezzo si ricalcola senza. Se si annulla torna com'era.
     const shipPrima = shipCost?.value || "";
     const togliSped = () => { if(shipCost && toNum(shipCost.value) > 0) { shipCost.value = ""; shipCost.dispatchEvent(new Event("input", { bubbles: true })); } };
     const rimettiSped = () => { if(shipCost && shipCost.value !== shipPrima) { shipCost.value = shipPrima; shipCost.dispatchEvent(new Event("input", { bubbles: true })); } };
+    const cl = oaClientFields();
+    let sent = false;
     try {
-      let id = targetId;
-      if(!id) {
-        const quotes = await oaOpenQuotesForClient();
-        if(!quotes.length) { toast("Nessun preventivo aperto per questo club in Order App", "warn", 5000); throw null; }
-        if(!await appConfirm({
-          title: "Aggiungi a un preventivo",
-          body: `<div class="acb-pick">${quotes.map((o, i) => `<label class="acb-pick-row">
-              <input type="radio" name="oaAddPick" value="${esc(o.id)}"${i === 0 ? " checked" : ""}>
-              <span><strong>${esc(o.id)}</strong> <small>${esc(o.date || "")}${o.lost ? " · perso" : o.standby ? " · standby" : ""}</small>
-              <small class="acb-pick-kits">${o.kitNames?.length ? o.kitNames.map(esc).join(" · ") : "nessun kit"}</small></span>
-            </label>`).join("")}</div>`,
-          ok: "Continua",
-        })) throw null;
-        id = document.querySelector('input[name="oaAddPick"]:checked')?.value;
-        if(!id) throw null;
+      let quotes = await oaOpenQuotesForClient(targetId);
+      if(targetId) quotes = quotes.filter(o => o.id === targetId);
+      if(!quotes.length) {
+        toast(targetId ? `${targetId} non è più un preventivo aperto in Order App` : `Nessun preventivo aperto per ${cl.name} in Order App`, "warn", 5000);
+        throw null;
       }
+      const shipTolta = toNum(shipPrima) > 0;
+      togliSped();
+      const ex = oaExport();
+      if(!ex) throw null;
+      const clash = (o) => (o.kitNames || []).some(n => normName(n) === normName(ex.kitName));
+      const free = quotes.filter(o => !clash(o));
+      if(!free.length) {
+        toast(`C'è già un kit "${ex.kitName}" nel preventivo: dai a questo kit un nome diverso (es. Kit Donna, Tuta)`, "warn", 7000);
+        throw null;
+      }
+      const quoteRow = (o, pick) => {
+        const blocked = clash(o);
+        const info = `<span class="acb-pick-txt"><strong>${o.kitNames?.length ? o.kitNames.map(esc).join(" · ") : "Nessun kit"}</strong>
+            <small>${o.kitNames?.length || 0} kit · ${esc(o.date || "")}${o.lost ? " · perso" : o.standby ? " · standby" : ""} · ${esc(o.id)}</small>
+            ${blocked ? `<small class="acb-pick-bad">C'è già un kit «${esc(ex.kitName)}»: rinomina questo kit</small>` : ""}</span>`;
+        return pick
+          ? `<label class="acb-pick-row${blocked ? " is-off" : ""}"><input type="radio" name="oaAddPick" value="${esc(o.id)}"${blocked ? " disabled" : o === free[0] ? " checked" : ""}>${info}</label>`
+          : `<div class="acb-pick-row is-single">${info}</div>`;
+      };
+      const paying = ex.quantity - ex.omaggio;
+      if(!await appConfirm({
+        title: `Aggiungi a un preventivo di ${cl.name}`,
+        body: `<div class="acb-sec">${quotes.length > 1 ? "Scegli il preventivo" : "Preventivo"}</div>
+          <div class="acb-pick">${quotes.map(o => quoteRow(o, quotes.length > 1)).join("")}</div>
+          <div class="acb-sec">Kit che aggiungi</div>`
+          + confirmRows([
+            ["Nuovo blocco", esc(ex.kitName)],
+            ["Prezzo per atleta", `${eur(ex.price)} <small>${ex.ivaEnabled ? `+ IVA ${ex.ivaRate}%` : "senza IVA"}</small>`],
+            ["Quantità stimata", `${paying}${ex.omaggio ? ` <small>+ ${ex.omaggio} staff in omaggio</small>` : ""}`],
+          ]) + `<div class="acb-arts">${ex.articles.map(a => `<span>${esc(a.description)} <small>${esc(a.category)} · ${a.qty}</small></span>`).join("")}</div>`
+          + (shipTolta ? `<p class="acb-note"><strong>Spedizione tolta da questo kit</strong> (${eur(toNum(shipPrima))}): è una sola per preventivo e sta nel primo kit. Il prezzo qui sopra è già ricalcolato senza.</p>` : "")
+          + `<p class="acb-note">Nel preventivo ogni kit ha la sua riga con il suo prezzo. Il totale dell'ordine non compare nel PDF del cliente.</p>`,
+        ok: "Aggiungi al preventivo",
+      })) throw null;
+      const id = quotes.length > 1 ? document.querySelector('input[name="oaAddPick"]:checked')?.value : free[0].id;
+      if(!id) throw null;
+      oaPicking = false;
+      oaBusy = true; renderOaQuoteCard();
       const full = await oaLoadOrder(id);
       if(!full) { toast(`Il preventivo ${id} non esiste più in Order App`, "warn", 5000); throw null; }
       const { order, kits, arts, pays } = full;
       oaQuoteInfo[id] = order;
       if(order.status !== "PREVENTIVO") { toast(`${id} è già un ordine: i kit si aggiungono in Order App`, "warn", 5000); throw null; }
-      const shipTolta = toNum(shipPrima) > 0;
-      togliSped();
-      const ex = oaExport();
-      if(!ex) throw null;
       if(kits.some(k => normName(k.name) === normName(ex.kitName))) {
-        rimettiSped();
-        toast(`In ${id} c'è già un kit "${ex.kitName}": dai a questo kit un nome diverso (es. Kit Donna, Tuta)`, "warn", 7000);
+        toast(`In ${id} c'è già un kit "${ex.kitName}": dai a questo kit un nome diverso`, "warn", 7000);
         throw null;
       }
-      const paying = ex.quantity - ex.omaggio;
-      if(!await appConfirm({
-        title: `Aggiungi a ${id}`,
-        body: confirmRows([
-          ["Preventivo", `${esc(id)} <small>${kits.length} kit già dentro</small>`],
-          ["Nuovo blocco", esc(ex.kitName)],
-          ["Prezzo per atleta", `${eur(ex.price)} <small>${ex.ivaEnabled ? `+ IVA ${ex.ivaRate}%` : "senza IVA"}</small>`],
-          ["Quantità stimata", `${paying}${ex.omaggio ? ` <small>+ ${ex.omaggio} staff in omaggio</small>` : ""}`],
-        ]) + `<div class="acb-arts">${ex.articles.map(a => `<span>${esc(a.description)} <small>${esc(a.category)} · ${a.qty}</small></span>`).join("")}</div>`
-          + (shipTolta ? `<p class="acb-note"><strong>Spedizione tolta da questo kit</strong> (${eur(toNum(shipPrima))}): è una sola per preventivo e sta nel primo kit. Il prezzo qui sopra è già ricalcolato senza.</p>` : "")
-          + `<p class="acb-note">Nel preventivo ogni kit ha la sua riga con il suo prezzo. Il totale dell'ordine non compare nel PDF del cliente.</p>`,
-        ok: "Aggiungi al preventivo",
-      })) { rimettiSped(); throw null; }
       const p_kits = [...kits.map(k => oaKitRow(k, arts.filter(a => a.kit_id === k.id))), oaNewKitRow(ex)];
       const p_order = { ...order, show_total_in_client_pdf: false };
       const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments: oaPayRows(pays) }), 15000);
       if(error) throw error;
+      sent = true;
       oaQuote = {
         id, kitName: ex.kitName, role: "added", hash: oaExportHash(ex),
         lines: ex.articles.map(a => ({ kbId: a.kbId, description: a.description })),
@@ -8452,9 +8485,11 @@ ${tabQtaPDF ? `<div class="sec scala">
       toast(`${ex.kitName} aggiunto al preventivo ${id} ✓`, "ok", 4500);
       await saveProject();
     } catch(e) {
-      if(e) { console.error("Order App add to quote:", e); toast("Kit non aggiunto al preventivo: riprova", "err", 5000); rimettiSped(); }
+      if(e) { console.error("Order App add to quote:", e); toast("Kit non aggiunto al preventivo: riprova", "err", 5000); }
     }
-    oaBusy = false; renderOaQuoteCard();
+    // Non inviato (annullato o errore): la spedizione torna com'era.
+    if(!sent) rimettiSped();
+    oaPicking = false; oaBusy = false; renderOaQuoteCard();
   };
 
   // Kit nuovo per lo stesso preventivo: stesso club e stessa IVA, il resto da zero.
