@@ -2464,7 +2464,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v99</span>
+            <span id="buildTxt">build v100</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4116,7 +4116,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v99";
+  const BUILD = "v100";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -10741,10 +10741,8 @@ tr:last-child td{border-bottom:none}
     } catch(_){}
     // Revoca il token sul server in background (fire and forget)
     if(supabase) supabase.auth.signOut().catch(() => {});
-    // Uscendo dal Kit Builder si chiude anche il collegamento a Order App.
-    try { localStorage.removeItem(OA_SESSION_KEY); } catch(_){}
-    if(oa) oa.auth.signOut({ scope: "local" }).catch(() => {});
-    oaEmail = null; oaClients = []; oaProspects = [];
+    // Il collegamento a Order App resta: si chiude solo con "Scollega" in
+    // Impostazioni. Al prossimo accesso si riprende da solo (oaLoad all'avvio).
   };
 
   const btnLogout = document.getElementById("btnLogout");
