@@ -2470,7 +2470,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v102</span>
+            <span id="buildTxt">build v103</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4122,7 +4122,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v102";
+  const BUILD = "v103";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7169,6 +7169,19 @@ ${tabQtaPDF ? `<div class="sec scala">
     renderQuickWorkspace();
   };
 
+  /* Kit completo, con Cliente e Nome progetto. resetAll() svuota il kit ma
+     non tocca la modalità: dopo un "Calcolo rapido", "+ Nuovo kit" ripartiva
+     ancora in calcolo rapido, cioè senza i campi del cliente. */
+  const startFullKit = () => {
+    if(!resetAll()) return false;
+    quickCalcMode = false;
+    iphoneUnifiedActive = false;
+    showView("builder");
+    goToStep(1);
+    renderQuickWorkspace();
+    return true;
+  };
+
   const startUnifiedFlow = (reset = true) => {
     if(reset) { resetAll(); discount.value = "0"; }
     quickCalcMode = false;
@@ -8518,8 +8531,11 @@ ${tabQtaPDF ? `<div class="sec scala">
     applyVAT.checked = keep.applyVAT;
     vat.value        = keep.vat;
     oaPendingAdd     = { id };
+    // Kit per un cliente: sempre con i campi Cliente e Nome, mai in calcolo rapido
+    quickCalcMode    = false;
     updateClientLink();
     render();
+    renderQuickWorkspace();
     toast(`Nuovo kit per ${id}: dagli un nome (es. Kit Donna) e componilo`, "ok", 5000);
     showView("builder"); goToStep(1);
     setTimeout(() => projectName.focus(), 50);
@@ -10157,7 +10173,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   if(_btnNewKitDash) _btnNewKitDash.addEventListener("click", () => {
     try {
       if(isIphoneLayout()) startUnifiedFlow(true);
-      else { resetAll(); showView("builder"); goToStep(1); }
+      else startFullKit();
     } catch(err) { console.error(err); }
   });
 
@@ -10355,7 +10371,9 @@ tr:last-child td{border-bottom:none}
       if(btnCopy)  btnCopy.addEventListener("click",  copySummary);
       if(btnPrint) btnPrint.addEventListener("click", printPDF);
       const sbKitReset = document.getElementById("sbKitReset");
-      if(sbKitReset) sbKitReset.addEventListener("click", () => { resetAll(); showView("builder"); goToStep(1); });
+      if(sbKitReset) sbKitReset.addEventListener("click", () => {
+        if(isIphoneLayout()) startUnifiedFlow(true); else startFullKit();
+      });
 
       clientName.addEventListener("input",  updateSidebarKit);
       bindClientPicker();
