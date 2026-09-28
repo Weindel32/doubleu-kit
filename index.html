@@ -2473,7 +2473,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v104</span>
+            <span id="buildTxt">build v105</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4125,7 +4125,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v104";
+  const BUILD = "v105";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8175,10 +8175,12 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!articles.length) return null;
     return {
       kitName: (projectName.value || "").trim() || "Kit",
-      // 4 decimali: Order App aggiunge l'IVA sopra il netto, e un netto
-      // arrotondato a 2 cifre sposta il totale di qualche centesimo (26,67 × 30
-      // + IVA = 976,12 invece di 976,00). A video resta sempre a 2 decimali.
-      price: Math.round(c.prezzoUnitNet * 10000) / 10000,
+      // 6 decimali: Order App aggiunge l'IVA sopra il netto, e un netto
+      // arrotondato sposta il totale (26,67 × 30 + IVA = 976,12 invece di
+      // 976,00). Con 4 decimali restava qualche centesimo sulle quantità alte;
+      // con 6 il totale coincide. Order App mostra il prezzo IVA inclusa
+      // ricavandolo da questo netto (37,704918 → 46,00).
+      price: Math.round(c.prezzoUnitNet * 1e6) / 1e6,
       // In Order App la quantità del kit comprende gli omaggi, che poi
       // vengono esclusi dal fatturato: così il totale coincide con l'incasso.
       quantity: q + staff,
@@ -8188,8 +8190,10 @@ ${tabQtaPDF ? `<div class="sec scala">
       articles,
     };
   };
+  // Prezzo a 4 decimali nel confronto: i preventivi mandati prima dei 6
+  // decimali non devono risultare "modificati" per la sola precisione.
   const oaExportHash = (ex) => ex ? stableJson({
-    price: ex.price, quantity: ex.quantity, omaggio: ex.omaggio, ivaEnabled: ex.ivaEnabled, ivaRate: ex.ivaRate,
+    price: Math.round(ex.price * 1e4) / 1e4, quantity: ex.quantity, omaggio: ex.omaggio, ivaEnabled: ex.ivaEnabled, ivaRate: ex.ivaRate,
     articles: ex.articles.map(a => [a.description, a.category, a.line, a.qty, a.gift]),
   }) : "";
 
