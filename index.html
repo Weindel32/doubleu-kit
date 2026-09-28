@@ -2098,6 +2098,9 @@
     .oa-qc-warn { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(232, 124, 43, .12); color: var(--text); font-size: 13px; font-weight: 600; }
     .oa-qc-ok { margin-top: 8px; color: #1E7A46; font-weight: 600; }
     .oa-qc-foot { margin-top: 10px; }
+    .art-filter-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; padding: 9px 12px;
+      border-radius: 10px; background: var(--warn-bg); border: 1px solid var(--warn-bd); font-size: 13px; font-weight: 600; color: var(--text); }
+    .art-filter-note button { font-size: 12px; padding: 5px 10px; }
     .oa-qt { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
     .oa-qt-title { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
     .oa-qt-title span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); margin-left: 6px; }
@@ -2470,7 +2473,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v103</span>
+            <span id="buildTxt">build v104</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4122,7 +4125,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v103";
+  const BUILD = "v104";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4388,15 +4391,49 @@ if("serviceWorker" in navigator) {
   let artFilterLine = "ALL";
   let artFilterText = "";
 
+  /* Ricerca e filtro linea nascondono righe del kit: senza un avviso, un
+     articolo appena aggiunto (o un filtro rimasto dal kit precedente)
+     sembrava semplicemente non esserci. Ora le righe nascoste si contano e
+     si possono rimostrare con un clic; se la ricerca non trova nulla nel kit
+     si propone di cercare nel catalogo. */
   const applyArtFilter = () => {
     const txt = artFilterText.trim().toLowerCase();
+    let hidden = 0, total = 0;
     itemsBody.querySelectorAll(".art-card").forEach(card => {
       const name = card.getAttribute("data-name") || "";
       const line = card.getAttribute("data-line") || "";
       const show = (artFilterLine === "ALL" || line === artFilterLine)
         && (!txt || name.includes(txt));
       card.style.display = show ? "" : "none";
+      total++;
+      if(!show) hidden++;
     });
+    itemsBody.querySelector(".art-filter-note")?.remove();
+    if(!txt && artFilterLine === "ALL") return;
+    const note = document.createElement("div");
+    note.className = "art-filter-note";
+    const noMatch = txt && hidden === total;
+    note.innerHTML = (noMatch
+        ? `Nessun articolo del kit corrisponde a «${esc(artFilterText.trim())}».`
+        : `${hidden} ${hidden === 1 ? "articolo nascosto" : "articoli nascosti"} dal filtro.`)
+      + ` <button type="button" class="ghost" data-af="all">Mostra tutti</button>`
+      + (noMatch ? ` <button type="button" class="secondary" data-af="catalog">Cerca nel catalogo</button>` : "");
+    if(!hidden && !noMatch) return;
+    itemsBody.prepend(note);
+    note.querySelector('[data-af="all"]').addEventListener("click", () => { resetArtFilter(); applyArtFilter(); });
+    note.querySelector('[data-af="catalog"]')?.addEventListener("click", () => {
+      const q = artFilterText.trim();
+      resetArtFilter(); applyArtFilter();
+      togglePicker(true);
+      if(pickerSearchInput) { pickerSearchInput.value = q; pickerFilterText = q; applyPickerFilter(); pickerSearchInput.focus(); }
+    });
+  };
+  const resetArtFilter = () => {
+    artFilterText = ""; artFilterLine = "ALL";
+    const inp = document.getElementById("artSearch");
+    if(inp) inp.value = "";
+    document.querySelectorAll("#artFilters .filter-pill").forEach(x =>
+      x.classList.toggle("active", x.getAttribute("data-line") === "ALL"));
   };
 
   const artSearchInput = document.getElementById("artSearch");
@@ -4780,6 +4817,7 @@ if("serviceWorker" in navigator) {
         const line  = LINE_ORDER.includes(art.categoria) ? art.categoria : "ALTRO";
         const label = catalogLabel(art);
         items.push(kitItemFromCatalog(art, line, label));
+        resetArtFilter();   // la riga appena aggiunta deve vedersi
         render();
         renderPicker();
         toast(`"${label}" aggiunto al kit ✓`, "ok");
@@ -5668,7 +5706,7 @@ if("serviceWorker" in navigator) {
     return { kit, costoKit, valore: kit * costoKit };
   };
 
-  const addItem = () => { items.push(newItem()); render(); };
+  const addItem = () => { items.push(newItem()); resetArtFilter(); render(); };
 
   const applyQtyToRows = () => {
     const q = toNum(qtyEst.value);
@@ -5695,6 +5733,7 @@ if("serviceWorker" in navigator) {
     if(staffOmaggio) staffOmaggio.value = "";
     setKitStatoPicker("preventivo");
     items = [];
+    resetArtFilter();
     render(); showAlerts([]);
     togglePicker(false);
     offerStatusBox.textContent = ""; offerStatusBox.style.color = "";
@@ -6072,6 +6111,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(staffOmaggio) staffOmaggio.value = p.staffOmaggio ?? "";
     setKitStatoPicker(p.stato || "preventivo");
     items = Array.isArray(p.items) ? p.items : [];
+    resetArtFilter();
     render();
     updateSidebarKit();
   };
