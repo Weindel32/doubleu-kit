@@ -2464,7 +2464,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v100</span>
+            <span id="buildTxt">build v101</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2665,11 +2665,11 @@
               <div class="iq-fields" id="iqBudgetFields">
                 <div class="iq-field">
                   <label for="iqPrice">Budget per atleta</label>
-                  <input id="iqPrice" inputmode="decimal" placeholder="79,00">
+                  <input id="iqPrice" inputmode="decimal" autocomplete="off" placeholder="79,00">
                 </div>
                 <div class="iq-field">
                   <label for="iqQty">Atleti</label>
-                  <input id="iqQty" inputmode="decimal" placeholder="80">
+                  <input id="iqQty" inputmode="decimal" autocomplete="off" placeholder="80">
                 </div>
               </div>
               <div class="iq-toggle-row" id="iqVatIncludeRow">
@@ -2795,7 +2795,7 @@
                   </div>
                   <div>
                     <label>Quantità stimata</label>
-                    <input id="qtyEst" placeholder="es. 80" inputmode="decimal">
+                    <input id="qtyEst" placeholder="es. 80" inputmode="decimal" autocomplete="off">
                     <div class="hint">Stima del numero atleti/kit. Default quantità nelle righe.</div>
                   </div>
                   <div class="fld-stato">
@@ -2873,7 +2873,7 @@
                 <div class="staff-omaggio-row">
                   <div class="field staff-omaggio-campo">
                     <label class="lbl">Kit completi</label>
-                    <input type="text" id="staffOmaggio" placeholder="es. 12" inputmode="numeric">
+                    <input type="text" id="staffOmaggio" placeholder="es. 12" inputmode="numeric" autocomplete="off">
                   </div>
                   <div class="staff-omaggio-esito" id="staffOmaggioNota"></div>
                 </div>
@@ -2889,7 +2889,7 @@
                 <div class="row2">
                   <div>
                     <label>Costi fissi totali €</label>
-                    <input id="fixedCost" value="" placeholder="es. 150,00" inputmode="decimal">
+                    <input id="fixedCost" value="" placeholder="es. 150,00" inputmode="decimal" autocomplete="off">
                     <div class="hint">Setup stampa/ricamo, grafica, campionario: non dipendono dal numero di atleti.</div>
                   </div>
                   <div>
@@ -2908,7 +2908,7 @@
                 <div class="row2" style="margin-top:12px">
                   <div>
                     <label>Spedizione €</label>
-                    <input id="shipCost" value="" placeholder="es. 60,00" inputmode="decimal">
+                    <input id="shipCost" value="" placeholder="es. 60,00" inputmode="decimal" autocomplete="off">
                     <div class="hint" id="shipHint">Una spedizione per ordine.</div>
                   </div>
                   <div>
@@ -2959,12 +2959,12 @@
                   </div>
                   <div>
                     <label>Margine minimo accettabile %</label>
-                    <input id="minMargin" value="35" inputmode="decimal">
+                    <input id="minMargin" value="35" inputmode="decimal" autocomplete="off">
                     <div class="hint">Il margine sotto cui non scendi mai. Definisce il prezzo minimo di trattativa.</div>
                   </div>
                   <div>
                     <label>Sconto trattativa %</label>
-                    <input id="discount" value="0" inputmode="decimal">
+                    <input id="discount" value="0" inputmode="decimal" autocomplete="off">
                     <div class="hint">Sconto sul prezzo finale (solo modalità "target").</div>
                   </div>
                 </div>
@@ -2975,7 +2975,7 @@
                 <div class="row2">
                   <div>
                     <label>Prezzo proposto per atleta</label>
-                    <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal">
+                    <input id="offerPrice" placeholder="es. 79,00" inputmode="decimal" autocomplete="off">
                     <div class="hint">Budget club. Se attivi, calcolo sostenibilità su questo prezzo.</div>
                   </div>
                   <div>
@@ -3007,12 +3007,12 @@
                 <div class="row3">
                   <div>
                     <label>Acconto %</label>
-                    <input id="depositPct" value="60" inputmode="decimal">
+                    <input id="depositPct" value="60" inputmode="decimal" autocomplete="off">
                     <div class="hint">Obiettivo: coprire produzione senza anticipare.</div>
                   </div>
                   <div>
                     <label>Buffer sicurezza %</label>
-                    <input id="bufferPct" value="5" inputmode="decimal">
+                    <input id="bufferPct" value="5" inputmode="decimal" autocomplete="off">
                     <div class="hint">Cuscinetto su costo (imprevisti, extra).</div>
                   </div>
                   <div>
@@ -3433,11 +3433,11 @@
             <div class="row2" style="margin-bottom:16px">
               <div class="field">
                 <label class="lbl">Costo base €</label>
-                <input type="number" id="catalogBase" placeholder="0.00" min="0" step="0.01">
+                <input type="number" autocomplete="off" id="catalogBase" placeholder="0.00" min="0" step="0.01">
               </div>
               <div class="field">
                 <label class="lbl">Extra € <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
-                <input type="number" id="catalogExtra" placeholder="0.00" min="0" step="0.01">
+                <input type="number" autocomplete="off" id="catalogExtra" placeholder="0.00" min="0" step="0.01">
               </div>
             </div>
             <div style="display:flex;gap:8px">
@@ -3557,38 +3557,38 @@
                     </div>
                     <div class="field">
                       <label class="lbl">Consumo m</label>
-                      <input type="text" id="costoConsumo" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoConsumo" placeholder="0,00" inputmode="decimal" autocomplete="off">
                     </div>
                   </div>
                   <div class="row2">
                     <div class="field">
                       <label class="lbl">Tessuto €</label>
-                      <input type="text" id="costoTessuto" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoTessuto" placeholder="0,00" inputmode="decimal" autocomplete="off">
                       <div class="hint" id="costoTessutoNota">Scegli tessuto e consumo per calcolarlo.</div>
                     </div>
                     <div class="field">
                       <label class="lbl">Taglio €</label>
-                      <input type="text" id="costoTaglio" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoTaglio" placeholder="0,00" inputmode="decimal" autocomplete="off">
                     </div>
                   </div>
                   <div class="row2" style="margin-top:10px">
                     <div class="field">
                       <label class="lbl">Produzione €</label>
-                      <input type="text" id="costoProduzione" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoProduzione" placeholder="0,00" inputmode="decimal" autocomplete="off">
                     </div>
                     <div class="field">
                       <label class="lbl">Accessori €</label>
-                      <input type="text" id="costoAccessori" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoAccessori" placeholder="0,00" inputmode="decimal" autocomplete="off">
                     </div>
                   </div>
                   <div class="row2" style="margin-top:10px">
                     <div class="field">
                       <label class="lbl">Etichetta stampata €</label>
-                      <input type="text" id="costoEtichetta" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoEtichetta" placeholder="0,00" inputmode="decimal" autocomplete="off">
                     </div>
                     <div class="field">
                       <label class="lbl" id="costoAltroLbl">Altro €</label>
-                      <input type="text" id="costoAltro" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoAltro" placeholder="0,00" inputmode="decimal" autocomplete="off">
                       <input type="text" id="costoAltroNome" placeholder="Descrizione (opz.)" autocomplete="off" style="margin-top:6px;font-size:12px">
                     </div>
                   </div>
@@ -3599,7 +3599,7 @@
                   <div class="row2">
                     <div class="field">
                       <label class="lbl">Stampa / Ricamo €</label>
-                      <input type="text" id="costoStampa" placeholder="0,00" inputmode="decimal">
+                      <input type="text" id="costoStampa" placeholder="0,00" inputmode="decimal" autocomplete="off">
                       <div class="hint">Tenuta separata: nel kit finisce nel campo "Extra", così puoi comporre lo stesso capo con o senza personalizzazione.</div>
                     </div>
                     <div></div>
@@ -3688,7 +3688,7 @@
             <div class="row2" style="margin-bottom:12px">
               <div class="field">
                 <label class="lbl">Larghezza cm</label>
-                <input type="text" id="matLarghezza" placeholder="es. 190" inputmode="decimal">
+                <input type="text" id="matLarghezza" placeholder="es. 190" inputmode="decimal" autocomplete="off">
               </div>
               <div class="field">
                 <label class="lbl">Note <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
@@ -3699,7 +3699,7 @@
               <div class="field">
                 <label class="lbl">Peso da scheda tecnica</label>
                 <div class="mat-peso-wrap">
-                  <input type="text" id="matPeso" placeholder="es. 523" inputmode="decimal">
+                  <input type="text" id="matPeso" placeholder="es. 523" inputmode="decimal" autocomplete="off">
                   <select id="matUnitaPeso" aria-label="Unità del peso">
                     <option value="g/m">g/m lineare</option>
                     <option value="g/m²">g/m²</option>
@@ -3727,14 +3727,14 @@
               <div class="row2" id="matRigaMetro">
                 <div class="field">
                   <label class="lbl">Costo al metro €</label>
-                  <input type="text" id="matCostoMetro" placeholder="0,00" inputmode="decimal">
+                  <input type="text" id="matCostoMetro" placeholder="0,00" inputmode="decimal" autocomplete="off">
                 </div>
                 <div></div>
               </div>
               <div class="row2" id="matRigaKg" style="display:none">
                 <div class="field">
                   <label class="lbl">Prezzo al kg €</label>
-                  <input type="text" id="matPrezzoKg" placeholder="es. 9,50" inputmode="decimal">
+                  <input type="text" id="matPrezzoKg" placeholder="es. 9,50" inputmode="decimal" autocomplete="off">
                 </div>
                 <div></div>
               </div>
@@ -3857,24 +3857,24 @@
               </div>
               <div>
                 <label>Margine minimo accettabile %</label>
-                <input id="setMinMargin" inputmode="decimal">
+                <input id="setMinMargin" inputmode="decimal" autocomplete="off">
               </div>
             </div>
             <div class="row2" style="margin-bottom:12px">
               <div>
                 <label>Sconto trattativa %</label>
-                <input id="setDiscount" inputmode="decimal">
+                <input id="setDiscount" inputmode="decimal" autocomplete="off">
               </div>
               <div></div>
             </div>
             <div class="row3" style="margin-bottom:16px">
               <div>
                 <label>Acconto %</label>
-                <input id="setDeposit" inputmode="decimal">
+                <input id="setDeposit" inputmode="decimal" autocomplete="off">
               </div>
               <div>
                 <label>Buffer sicurezza %</label>
-                <input id="setBuffer" inputmode="decimal">
+                <input id="setBuffer" inputmode="decimal" autocomplete="off">
               </div>
               <div>
                 <label>IVA predefinita</label>
@@ -4116,7 +4116,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v100";
+  const BUILD = "v101";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4500,7 +4500,7 @@ if("serviceWorker" in navigator) {
         const consumoStr = cp.consumo_default ? String(cp.consumo_default).replace(".", ",") : "";
         return `<div class="art-tessuto" style="display:flex;gap:6px;align-items:center;margin-top:4px">
           <select data-act="tessuto" data-id="${it.id}" style="font-size:11px;padding:3px 6px;flex:1;min-width:0">${opts}</select>
-          <input data-act="consumo" data-id="${it.id}" value="${esc(consumoStr)}" inputmode="decimal" placeholder="m" title="Consumo in metri" style="width:48px;font-size:11px;padding:3px 6px">
+          <input data-act="consumo" data-id="${it.id}" value="${esc(consumoStr)}" inputmode="decimal" autocomplete="off" placeholder="m" title="Consumo in metri" style="width:48px;font-size:11px;padding:3px 6px">
         </div>`;
       })() : "";
       const subtot     = unitCost * toNum(it.qty);
@@ -4527,16 +4527,16 @@ if("serviceWorker" in navigator) {
       <div class="art-pricing">
         <div class="art-field">
           <label>Base €</label>
-          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal">
+          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off">
         </div>
         <div class="art-field">
           <label>Extra €</label>
-          <input data-act="extra" data-id="${it.id}" value="${it.extra}" inputmode="decimal">
+          <input data-act="extra" data-id="${it.id}" value="${it.extra}" inputmode="decimal" autocomplete="off">
         </div>
       </div>
       <div class="art-qty">
         <button class="qty-btn" type="button" data-act="minus" data-id="${it.id}">−</button>
-        <input data-act="qty" data-id="${it.id}" value="${it.qty}" inputmode="decimal">
+        <input data-act="qty" data-id="${it.id}" value="${it.qty}" inputmode="decimal" autocomplete="off">
         <button class="qty-btn" type="button" data-act="plus" data-id="${it.id}">+</button>
       </div>
     </div>
@@ -9674,7 +9674,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!body) return;
     const tipoOpts = CATALOG_TIPI.map(t => `<option value="${t}">${t}</option>`).join("");
     const lineOpts = LINES.map(l => `<option value="${l.value}">${l.label}</option>`).join("");
-    const num = (k, v) => `<td data-label="${k}"><input data-ic="${k}" value="${v || ""}" inputmode="decimal" style="width:64px;padding:4px 6px;font-size:12px;text-align:right"></td>`;
+    const num = (k, v) => `<td data-label="${k}"><input data-ic="${k}" value="${v || ""}" inputmode="decimal" autocomplete="off" style="width:64px;padding:4px 6px;font-size:12px;text-align:right"></td>`;
 
     body.innerHTML = LISTINO_2025.map((r, i) => {
       const [name, tipo, linea, tess, tag, prod, etic, acc, pack, stam, check] = r;
