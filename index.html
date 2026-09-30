@@ -2112,6 +2112,31 @@
     .oa-qt-name small { font-weight: 600; color: var(--muted); font-size: 11.5px; }
     .oa-qt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .oa-qt-bad { color: var(--bad); }
+    /* Analisi ordine */
+    .ao-list { display: grid; gap: 6px; }
+    .ao-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center; margin: 0; padding: 9px 12px;
+      border: 1px solid var(--border); border-radius: 10px; cursor: pointer; text-align: left;
+      font-family: inherit; font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text); }
+    .ao-row:has(input:checked) { border-color: var(--input-focus); background: var(--surface-2); }
+    .ao-row input { width: auto; margin: 0; padding: 0; }
+    .ao-row-name { min-width: 0; overflow-wrap: anywhere; }
+    .ao-row-name small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .ao-row-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ao-table { display: grid; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 4px; }
+    .ao-tr { display: grid; grid-template-columns: minmax(0, 2fr) repeat(5, minmax(0, 1fr)); gap: 10px; align-items: baseline; padding: 9px 12px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+    .ao-tr > span:not(:first-child) { text-align: right; }
+    .ao-tr + .ao-tr { border-top: 1px solid var(--border); }
+    .ao-th { background: var(--surface-2); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .ao-td-name { font-weight: 700; overflow-wrap: anywhere; }
+    .ao-td-name small { font-weight: 500; color: var(--muted); }
+    .ao-m { font-weight: 700; }
+    .ao-m.good { color: var(--good); } .ao-m.warn { color: var(--warn); } .ao-m.bad, .ao-bad { color: var(--bad); }
+    @media (max-width: 700px) {
+      .ao-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+      .ao-row-st { display: none; }
+      .ao-tr { grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
+      .ao-tr > span:nth-child(2), .ao-tr > span:nth-child(4) { display: none; }
+    }
     .oa-qt-num s { color: var(--muted); font-weight: 500; margin-right: 4px; }
     /* Confronto prima/dopo: stesso linguaggio delle card, una riga per metrica */
     .oa-qt-cmp { margin-bottom: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--surface-2); }
@@ -2488,7 +2513,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v106</span>
+            <span id="buildTxt">build v107</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3326,6 +3351,7 @@
           <div class="tab-bar">
             <button class="tab-btn active" data-analisi-tab="kit">Articoli &amp; linee</button>
             <button class="tab-btn"        data-analisi-tab="confronto">Confronto kit</button>
+            <button class="tab-btn"        data-analisi-tab="ordine">Analisi ordine</button>
           </div>
 
           <!-- Filtro stato: condiviso da entrambe le tab, perché sommare
@@ -3378,6 +3404,26 @@
           </div>
 
           <!-- Confronto kit -->
+          <!-- Analisi ordine: lo stesso Riepilogo del builder, ma sommato su
+               più builder dello stesso club (kit uomo + kit donna + tuta…).
+               I builder si scelgono a mano: sei tu a dire cosa fa parte
+               dell'ordine. Usa le versioni salvate dei builder. -->
+          <div class="tab-content" data-analisi-tab="ordine">
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-title">Club e builder dell'ordine</div>
+              <div class="row2" style="align-items:end">
+                <div>
+                  <label for="aoClub">Club</label>
+                  <input id="aoClub" list="aoClubList" placeholder="Scrivi il nome del club…" autocomplete="off">
+                  <datalist id="aoClubList"></datalist>
+                  <div class="hint">Compaiono i builder salvati di quel club: spunta quelli che fanno parte di questo ordine.</div>
+                </div>
+              </div>
+              <div id="aoBuilders" style="margin-top:12px"></div>
+            </div>
+            <div id="aoResult"></div>
+          </div>
+
           <div class="tab-content" data-analisi-tab="confronto">
             <div class="dash-kpis" id="cmpSummary" style="margin-bottom:12px">
               <div class="kpi dk-navy"><div class="lbl">Kit salvati</div><div class="val" id="cmpCount">—</div><div class="note">Totale preventivi</div></div>
@@ -4140,7 +4186,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v106";
+  const BUILD = "v107";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7390,7 +7436,11 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(el.classList.contains("tab-btn"))     el.classList.toggle("active", t === tab);
       if(el.classList.contains("tab-content")) el.classList.toggle("active", t === tab);
     });
+    // Il filtro stato serve al portafoglio, non a un singolo ordine
+    const sf = document.getElementById("portfolioStatoFilter");
+    if(sf) sf.style.display = tab === "ordine" ? "none" : "";
     if(tab === "confronto") renderConfronto();
+    else if(tab === "ordine") renderAnalisiOrdine();
     else renderKitAttivo();
   };
 
@@ -8640,7 +8690,15 @@ ${tabQtaPDF ? `<div class="sec scala">
       const cost = variable * f + staffCost + fixed + ship;
       return { revenueNet: rev, totalCost: cost, profit: rev - cost, margin: rev > 0 ? (rev - cost) / rev : 0 };
     };
-    return { qty: q, price: invoice / q, vatOn, ship, ...scen(1), low: scen(0.8) };
+    const mMin = Math.min(0.95, Math.max(0, toNum(p?.minMargin ?? 35) / 100));
+    return { qty: q, price: invoice / q, invoice, vatOn, vatRate, ship, fixed, staff, staffCost,
+      giftCost: giftRows + staffCost, target: m, mMin,
+      buf: toNum(p?.bufferPct ?? 5) / 100, dep: toNum(p?.depositPct ?? 60) / 100,
+      // Costo di un kit pagato: serve a tradurre lo spazio omaggi in kit
+      kitCost: (variable - giftRows) / q,
+      // Prezzo minimo di trattativa del kit (IVA come nel builder)
+      minPrice: (vatOn ? (variable + staffCost + fixed + ship) / (1 - mMin) * (1 + vatRate) : (variable + staffCost + fixed + ship) / (1 - mMin)) / q,
+      ...scen(1), low: scen(0.8) };
   };
 
   const quoteKits = (id) => {
@@ -8715,6 +8773,181 @@ ${tabQtaPDF ? `<div class="sec scala">
       ${ships.length > 1 ? `<div class="oa-qc-warn">⚠ Spedizione presente in ${ships.length} kit: nel preventivo va una volta sola, nel primo kit.</div>` : ""}
       ${kits.length < quoteKits(id).length ? `<div class="hint">Alcuni kit non hanno ancora articoli con quantità: esclusi dal totale.</div>` : ""}
     </div>`;
+  };
+
+  /* ─── Analisi ordine: Riepilogo sommato su più builder ───
+     Stesse voci del Riepilogo del builder (margine, minimo di trattativa,
+     costi, fatturato, IVA, acconto, saldo), sommate sui builder scelti. Le
+     voci "per atleta" non esistono per l'ordine intero (ogni kit ha il suo
+     prezzo): diventano la tabella per builder. Target e minimo dell'ordine
+     sono la media dei builder pesata sul fatturato. */
+  const AO_SEL_KEY = "doubleu_analisi_ordine_v1";
+  let aoGroupKey = null;
+  const aoLoadSel = () => { try { return JSON.parse(localStorage.getItem(AO_SEL_KEY) || "{}"); } catch(_) { return {}; } };
+  const aoSaveSel = (key, names) => { try { const all = aoLoadSel(); all[key] = names; localStorage.setItem(AO_SEL_KEY, JSON.stringify(all)); } catch(_) {} };
+
+  // Kit salvati (versione salvata, locale prima del cloud) raggruppati per club
+  const aoGroups = () => {
+    const store = getStore();
+    const local = Object.entries(store).map(([name, d]) => ({ name, payload: d.payload, savedAt: d.savedAt || 0, source: "local" }));
+    const names = new Set(local.map(k => k.name));
+    const cloud = cloudProjects.filter(p => !names.has(p.name)).map(p => ({
+      name: p.name || "Progetto cloud", payload: p.data, source: "cloud", cloudId: p.id,
+      savedAt: p.created_at ? new Date(p.created_at).getTime() : 0 }));
+    return groupDashRows([...local, ...cloud].filter(k => k.payload && Array.isArray(k.payload.items)))
+      .filter(g => g.key !== "__senza_cliente__");
+  };
+
+  const aoDefaultSel = (g) => {
+    const saved = aoLoadSel()[g.key];
+    const valid = Array.isArray(saved) ? saved.filter(n => g.kits.some(k => k.name === n)) : [];
+    if(valid.length) return new Set(valid);
+    // Builder già nello stesso preventivo Order App: quello più recente
+    const withQ = g.kits.filter(k => k.payload?.oaQuote?.id).sort((a, b) => b.savedAt - a.savedAt);
+    if(withQ.length) {
+      const id = withQ[0].payload.oaQuote.id;
+      return new Set(g.kits.filter(k => k.payload?.oaQuote?.id === id).map(k => k.name));
+    }
+    return new Set(g.kits.map(k => k.name));
+  };
+
+  const renderAnalisiOrdine = () => {
+    const input = document.getElementById("aoClub");
+    const dl    = document.getElementById("aoClubList");
+    const box   = document.getElementById("aoBuilders");
+    const out   = document.getElementById("aoResult");
+    if(!input || !box || !out) return;
+    const groups = aoGroups();
+    if(dl) dl.innerHTML = groups.map(g => `<option value="${esc(g.label)}"></option>`).join("");
+    const g = groups.find(x => x.key === aoGroupKey);
+    if(!g) {
+      box.innerHTML = groups.length ? `<div class="hint">Scegli un club per vedere i suoi builder.</div>`
+        : `<div class="hint">Nessun builder salvato con un cliente.</div>`;
+      out.innerHTML = "";
+      return;
+    }
+    if(input.value.trim() === "" ) input.value = g.label;
+    const sel = aoDefaultSel(g);
+    const kits = [...g.kits].sort((a, b) => b.savedAt - a.savedAt);
+    box.innerHTML = `<div class="ao-list">${kits.map((k, i) => {
+      const e = kitEconomics(k.payload);
+      const q = k.payload?.oaQuote?.id;
+      return `<label class="ao-row">
+        <input type="checkbox" data-ao="${i}"${sel.has(k.name) ? " checked" : ""}>
+        <span class="ao-row-name">${esc(variantName(k))}
+          <small>${k.savedAt ? new Date(k.savedAt).toLocaleDateString("it-IT") : "—"}${q ? ` · ${esc(q)}` : ""}</small></span>
+        <span class="ao-row-st">${statoBadgeHtml(getKitStato(k.payload))}</span>
+        <span class="ao-row-num">${e ? `${Math.round(e.qty)} × ${eur(e.price)}` : "—"}</span>
+      </label>`;
+    }).join("")}</div>`;
+    box.querySelectorAll("[data-ao]").forEach(cb => cb.addEventListener("change", () => {
+      const names = [...box.querySelectorAll("[data-ao]")].filter(x => x.checked).map(x => kits[+x.dataset.ao].name);
+      aoSaveSel(g.key, names);
+      renderAnalisiOrdine();
+    }));
+
+    const chosen = kits.filter(k => sel.has(k.name)).map(k => ({ ...k, eco: kitEconomics(k.payload) })).filter(k => k.eco);
+    const excluded = kits.length - kits.filter(k => sel.has(k.name)).length;
+    if(!chosen.length) { out.innerHTML = `<div class="card"><div class="hint">Seleziona almeno un builder con articoli e quantità.</div></div>`; return; }
+
+    const sum = (f) => chosen.reduce((a, k) => a + f(k.eco), 0);
+    const rev = sum(e => e.revenueNet), cost = sum(e => e.totalCost), prof = rev - cost;
+    const inv = sum(e => e.invoice), gift = sum(e => e.giftCost), vat = inv - rev;
+    const w = (f) => rev > 0 ? chosen.reduce((a, k) => a + f(k.eco) * k.eco.revenueNet, 0) / rev : 0;
+    const target = w(e => e.target), mMin = w(e => e.mMin), buf = w(e => e.buf), dep = w(e => e.dep);
+    const margin = rev > 0 ? prof / rev : 0;
+    const lrev = sum(e => e.low.revenueNet), lprof = lrev - sum(e => e.low.totalCost);
+    const vatOn = chosen.some(k => k.eco.vatOn);
+    const vatRate = vatOn ? (chosen.find(k => k.eco.vatOn).eco.vatRate) : 0;
+    // Sconto uniforme massimo su tutti i prezzi restando al minimo
+    const scontoMax = rev > 0 ? Math.max(0, 1 - (cost / (1 - mMin)) / rev) : 0;
+    // Spazio omaggi sull'ordine: costo in più sostenibile restando al minimo
+    const space = Math.max(0, rev * (1 - mMin) - cost);
+    // Acconto: al netto IVA deve coprire produzione + buffer
+    const secure = cost * (1 + buf);
+    const depMinGross = vatOn ? secure * (1 + vatRate) : secure;
+    const depPctReq = inv > 0 ? depMinGross / inv : 0;
+    const depNow = inv * dep;
+    const pct = (v) => (v * 100).toFixed(1) + "%";
+    // Tolleranza di mezzo decimo di punto: un kit "al 40,0%" è a target, non sotto
+    const state = (m) => m + 5e-4 >= target ? "good" : m + 5e-4 >= mMin ? "warn" : "bad";
+    const flag = (st) => `<div class="kpi-flag ${st}"><span class="kpi-flag-ico">${STATE_FLAG[st].icon}</span>${STATE_FLAG[st].txt}</div>`;
+    const kpi = (lbl, val, note, st, extra = "") => `<div class="kpi${st ? " " + st : ""}"><div class="lbl">${lbl}</div><div class="val">${val}</div>${note ? `<div class="note">${note}</div>` : ""}${extra}${st ? flag(st) : ""}</div>`;
+    const mini = (l, v) => `<div class="kpi-mini-list"><div class="kpi-mini"><span class="kpi-mini-lbl">${l}</span><span class="kpi-mini-val">${v}</span></div></div>`;
+    const sameT = chosen.every(k => Math.abs(k.eco.target - chosen[0].eco.target) < 1e-9);
+    const sameM = chosen.every(k => Math.abs(k.eco.mMin - chosen[0].eco.mMin) < 1e-9);
+    const giftKits = chosen.filter(k => k.eco.kitCost > 0)
+      .map(k => `${Math.floor(space / k.eco.kitCost)} ${esc(variantName(k))}`).join(" · ");
+    const depOk = depNow / (vatOn ? 1 + vatRate : 1) + 1e-6 >= secure;
+
+    out.innerHTML = `
+      <div class="card bottom-zone">
+        <div class="card-title">Riepilogo ordine · ${esc(g.label)} <span class="hint" style="font-weight:400">${chosen.length} builder${excluded ? ` · <b>${excluded} non inclus${excluded === 1 ? "o" : "i"}</b>` : ""}</span></div>
+        <div class="row3" style="margin-bottom:10px">
+          ${kpi("Margine reale", pct(margin), `${sameT ? "Target" : "Target medio"}: ${(target * 100).toFixed(0)}% · ${sameM ? "minimo" : "minimo medio"} ${(mMin * 100).toFixed(0)}%`, state(margin), mini("Calcolato su imponibile", eur(rev)))}
+          ${kpi("A −20% quantità", pct(lrev > 0 ? lprof / lrev : 0), `Se il club ordina il 20% in meno · ${eur(lprof)}`, state(lrev > 0 ? lprof / lrev : 0))}
+          ${kpi("Sconto massimo sull'ordine", pct(scontoMax), `Stesso sconto su tutti i prezzi, fino al minimo ${(mMin * 100).toFixed(0)}%`, scontoMax > 0 ? "good" : "bad")}
+        </div>
+
+        <div class="rz-section">Per builder</div>
+        <div class="ao-table">
+          <div class="ao-tr ao-th"><span>Builder</span><span>Quantità</span><span>Prezzo</span><span>Minimo trattativa</span><span>Margine</span><span>Margine €</span></div>
+          ${chosen.map(k => { const st = state(k.eco.margin); return `<div class="ao-tr">
+            <span class="ao-td-name">${esc(variantName(k))}${k.eco.staff ? ` <small>+ ${k.eco.staff} staff omaggio</small>` : ""}</span>
+            <span>${Math.round(k.eco.qty)}</span>
+            <span>${eur(k.eco.price)}</span>
+            <span class="${k.eco.price + 0.005 < k.eco.minPrice ? "ao-bad" : ""}">${eur(k.eco.minPrice)}</span>
+            <span class="ao-m ${st}">${pct(k.eco.margin)}</span>
+            <span>${eur(k.eco.profit)}</span>
+          </div>`; }).join("")}
+        </div>
+
+        <div class="rz-section">Ordine</div>
+        <div class="row4 rz-order">
+          ${kpi("Costo totale reale", eur(cost), "Produzione completa (incl. omaggi, costi fissi, spedizioni)")}
+          ${kpi("Costo fatturato", eur(cost - gift), "Senza omaggi")}
+          ${kpi("Costo omaggi (assorbiti)", gift > 0 ? eur(gift) : "—", "Nel costo totale, non fatturati")}
+          <div class="kpi kpi-total"><div class="lbl">Totale fatturato</div><div class="val">${eur(inv)}</div><div class="note">${vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
+          ${kpi("Imponibile stimato", eur(rev), "Totale netto (senza IVA)")}
+          ${kpi("IVA da versare", vatOn ? eur(vat) : "—", vatOn ? "Incassata nel prezzo, non è tua" : "Nessuna IVA applicata")}
+          <div class="kpi rz-wide"><div class="lbl">Margine dell'ordine</div><div class="val">${eur(prof)}</div><div class="note">Guadagno totale su imponibile</div></div>
+        </div>
+
+        <div class="rz-section">Omaggi</div>
+        <div class="row2">
+          ${kpi("Spazio omaggi sull'ordine", eur(space), space > 0 ? `Costo in più sostenibile restando al minimo ${(mMin * 100).toFixed(0)}%` : "Nessuno: l'ordine è già al minimo", space > 0 ? "" : "bad")}
+          ${kpi("In kit completi", space > 0 && giftKits ? giftKits.split(" · ")[0] : "—", space > 0 && giftKits ? `oppure ${giftKits.split(" · ").slice(1).join(" · ") || "—"}` : "", "")}
+        </div>
+
+        <div class="rz-section">Incasso</div>
+        <div class="row2">
+          ${kpi("Acconto minimo sicuro", eur(depMinGross), `Serve almeno ${pct(depPctReq)} · ora ${(dep * 100).toFixed(0)}% = ${eur(depNow)}`, depOk ? "good" : "bad")}
+          ${kpi("Saldo alla consegna", eur(Math.max(0, inv - depNow)), `Totale − acconto ${(dep * 100).toFixed(0)}%`)}
+        </div>
+        <div class="hint" style="margin-top:10px">Valori delle versioni salvate dei builder. Per simulare una modifica apri il builder: il confronto prima/dopo è nel riquadro del preventivo.</div>
+      </div>`;
+  };
+
+  const aoPickClub = () => {
+    const input = document.getElementById("aoClub");
+    const v = normName(input?.value || "");
+    const g = aoGroups().find(x => normName(x.label) === v);
+    if(g && g.key !== aoGroupKey) { aoGroupKey = g.key; renderAnalisiOrdine(); }
+    else if(!v && aoGroupKey) { aoGroupKey = null; renderAnalisiOrdine(); }
+  };
+  document.getElementById("aoClub")?.addEventListener("input", aoPickClub);
+  document.getElementById("aoClub")?.addEventListener("change", aoPickClub);
+
+  // Apre l'analisi ordine sul club del kit aperto (dal riquadro preventivo)
+  const openAnalisiOrdine = () => {
+    const r = resolveRef(clientRef);
+    const key = r ? r.key : normName(clientName.value);
+    const g = aoGroups().find(x => x.key === key || normName(x.label) === normName(clientName.value));
+    aoGroupKey = g ? g.key : null;
+    const input = document.getElementById("aoClub");
+    if(input) input.value = g ? g.label : "";
+    showView("analisi");
+    switchAnalisiTab("ordine");
   };
 
   // Nei kit aggiunti a un preventivo la spedizione non si inserisce: c'è già nel primo.
@@ -8797,10 +9030,13 @@ ${tabQtaPDF ? `<div class="sec scala">
           ? `<div class="oa-qc-act"><button type="button" class="secondary" id="oaMarkOrder">Segna il kit come Ordine</button>
              <span class="hint">In Order App è diventato ordine.</span></div>` : ""}
         ${totals}
+        <div class="oa-qc-act"><button type="button" class="secondary" id="oaOpenAnalisi">Analisi ordine completa →</button>
+          <span class="hint">Riepilogo sommato di tutti i builder dell'ordine.</span></div>
         ${isQuote ? `<div class="oa-qc-act"><button type="button" class="secondary" id="oaQuoteNewKit">+ Nuovo kit per questo preventivo</button>
           <span class="hint">Es. kit donna, tuta o felpa per tutti: stesso club, prezzo a parte.</span></div>` : ""}
         <div class="oa-qc-foot"><button type="button" class="ghost" id="oaQuoteUnlink">Scollega dal preventivo</button></div>`);
       document.getElementById("oaQuoteNewKit")?.addEventListener("click", oaNewKitForQuote);
+      document.getElementById("oaOpenAnalisi")?.addEventListener("click", openAnalisiOrdine);
       document.getElementById("oaQuoteUpdate")?.addEventListener("click", oaUpdateQuote);
       document.getElementById("oaQuoteUnlink")?.addEventListener("click", oaUnlinkQuote);
       document.getElementById("oaMarkOrder")?.addEventListener("click", async () => {
