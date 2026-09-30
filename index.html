@@ -2446,14 +2446,6 @@
           Kit builder
         </a>
 
-        <a class="nav-item" href="javascript:void(0)" data-view="analisi">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
-            <rect x="3" y="11" width="3" height="6" rx="1"/>
-            <rect x="8.5" y="7" width="3" height="10" rx="1"/>
-            <rect x="14" y="3" width="3" height="14" rx="1"/>
-          </svg>
-          Analytics
-        </a>
 
         <a class="nav-item" href="javascript:void(0)" data-view="ordine">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
@@ -2484,6 +2476,14 @@
             <path d="M4 4l12 12M4 4v5.5M4 4h5.5M16 16v-5.5M16 16h-5.5"/>
           </svg>
           Materiali
+        </a>
+        <a class="nav-item" href="javascript:void(0)" data-view="analisi">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="3" y="11" width="3" height="6" rx="1"/>
+            <rect x="8.5" y="7" width="3" height="10" rx="1"/>
+            <rect x="14" y="3" width="3" height="14" rx="1"/>
+          </svg>
+          Analytics
         </a>
 
         <a class="nav-item" href="javascript:void(0)" data-view="esportazioni">
@@ -2546,7 +2546,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v110</span>
+            <span id="buildTxt">build v111</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4238,7 +4238,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v110";
+  const BUILD = "v111";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
