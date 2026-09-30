@@ -2112,6 +2112,21 @@
     .oa-qt-name small { font-weight: 600; color: var(--muted); font-size: 11.5px; }
     .oa-qt-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .oa-qt-bad { color: var(--bad); }
+    .oa-qt-num s { color: var(--muted); font-weight: 500; margin-right: 4px; }
+    /* Confronto prima/dopo: stesso linguaggio delle card, una riga per metrica */
+    .oa-qt-cmp { margin-bottom: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--surface-2); }
+    .oa-qt-cmp-head { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .oa-qt-cmp-head span { font-weight: 600; color: var(--muted); margin-left: 6px; }
+    .oa-qt-cmp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 92px; gap: 10px; align-items: baseline; padding: 3px 0; font-size: 13.5px; }
+    .oa-qt-cmp-row span { color: var(--muted); font-size: 12.5px; }
+    .oa-qt-cmp-row strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .oa-qt-cmp-row em { font-style: normal; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .oa-qt-cmp-row em.neg { color: var(--bad); }
+    .oa-qt-cmp-row em.pos { color: var(--good); }
+    .oa-qt-cmp-check { margin-top: 8px; font-size: 12.5px; font-weight: 700; }
+    .oa-qt-cmp-check.good { color: var(--good); }
+    .oa-qt-cmp-check.warn { color: var(--warn); }
+    .oa-qt-cmp-check.bad { color: var(--bad); }
     .acb-sec { margin: 14px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
     .acb-sec:first-child { margin-top: 0; }
     .acb-pick { display: grid; gap: 8px; margin-bottom: 4px; }
@@ -2473,7 +2488,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v105</span>
+            <span id="buildTxt">build v106</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4125,7 +4140,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v105";
+  const BUILD = "v106";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8634,7 +8649,9 @@ ${tabQtaPDF ? `<div class="sec scala">
     allSavedKits().forEach(k => {
       if(k.payload?.oaQuote?.id !== id || seen.has(k.name)) return;
       seen.add(k.name);
-      out.push({ name: k.name, payload: k.name === cur ? payload() : k.payload, current: k.name === cur });
+      out.push({ name: k.name, payload: k.name === cur ? payload() : k.payload, current: k.name === cur,
+        // Versione salvata del kit aperto: base del confronto prima/dopo
+        saved: k.name === cur ? (savedCopy()?.data || k.payload) : null });
     });
     // Il kit aperto collegato ma non ancora salvato con questo nome
     if(oaQuote?.id === id && !seen.has(cur)) out.push({ name: cur, payload: payload(), current: true });
@@ -8651,13 +8668,45 @@ ${tabQtaPDF ? `<div class="sec scala">
     const pct = (a, b) => b > 0 ? (a / b * 100).toFixed(1) + "%" : "—";
     const ships = kits.filter(k => k.eco.ship > 0);
     const name = (k) => (k.payload.projectName || "").trim() || k.name;
+
+    /* Confronto prima/dopo: se il kit aperto ha modifiche non salvate (es.
+       Kit Uomo da 99 a 90 €), il totale si ricalcola anche con la versione
+       salvata. Così si legge in una riga quanto costa la modifica sull'intero
+       ordine, invece di confrontare due schermate. */
+    const cur = kits.find(k => k.current);
+    const before = cur && cur.saved ? kitEconomics(cur.saved) : null;
+    let cmpHtml = "", prevPrice = null;
+    if(cur && before) {
+      const bRev  = rev - cur.eco.revenueNet + before.revenueNet;
+      const bProf = bRev - (cost - cur.eco.totalCost + before.totalCost);
+      const bLrev = lrev - cur.eco.low.revenueNet + before.low.revenueNet;
+      const bLprof = bLrev - (lrev - lprof - cur.eco.low.totalCost + before.low.totalCost);
+      if(Math.abs(bProf - prof) >= 0.005 || Math.abs(bRev - rev) >= 0.005) {
+        if(Math.abs(before.price - cur.eco.price) >= 0.005) prevPrice = before.price;
+        const mMin = Math.min(0.95, Math.max(0, toNum(cur.payload.minMargin ?? 35) / 100));
+        const mTgt = parseFloat(cur.payload.margin ?? 0.5) || 0;
+        const mNow = rev > 0 ? prof / rev : 0;
+        const d = prof - bProf, dl = lprof - bLprof;
+        const sign = (v) => (v >= 0 ? "+" : "−") + eur(Math.abs(v));
+        const check = mNow + 1e-9 >= mTgt ? { cls: "good", txt: `sopra il target ${(mTgt * 100).toFixed(0)}%` }
+          : mNow + 1e-9 >= mMin ? { cls: "warn", txt: `sotto il target ${(mTgt * 100).toFixed(0)}%, sopra il minimo ${(mMin * 100).toFixed(0)}%` }
+          : { cls: "bad", txt: `sotto il minimo ${(mMin * 100).toFixed(0)}%` };
+        cmpHtml = `<div class="oa-qt-cmp">
+          <div class="oa-qt-cmp-head">Con le modifiche non salvate a «${esc(name(cur))}»${prevPrice !== null ? ` <span>${eur(prevPrice)} → ${eur(cur.eco.price)} a kit</span>` : ""}</div>
+          <div class="oa-qt-cmp-row"><span>Margine ordine</span><strong>${pct(bProf, bRev)} → ${pct(prof, rev)}</strong><em class="${d < 0 ? "neg" : "pos"}">${sign(d)}</em></div>
+          <div class="oa-qt-cmp-row"><span>A −20% quantità</span><strong>${pct(bLprof, bLrev)} → ${pct(lprof, lrev)}</strong><em class="${dl < 0 ? "neg" : "pos"}">${sign(dl)}</em></div>
+          <div class="oa-qt-cmp-check ${check.cls}">${check.cls === "bad" ? "✕" : check.cls === "warn" ? "!" : "✓"} Ordine ${check.txt}</div>
+        </div>`;
+      }
+    }
     return `<div class="oa-qt">
       <div class="oa-qt-title">Totale preventivo <span>solo uso interno · non va al cliente</span></div>
       <div class="oa-qt-rows">${kits.map(k => `<div class="oa-qt-row${k.current ? " is-cur" : ""}">
           <span class="oa-qt-name">${esc(name(k))}${k.payload.oaQuote?.role !== "added" ? ` <small>primo kit</small>` : ""}</span>
-          <span class="oa-qt-num">${Math.round(k.eco.qty)} × ${eur(k.eco.price)}</span>
+          <span class="oa-qt-num">${k.current && prevPrice !== null ? `<s>${eur(prevPrice)}</s> ` : ""}${Math.round(k.eco.qty)} × ${eur(k.eco.price)}</span>
           <span class="oa-qt-num">${pct(k.eco.profit, k.eco.revenueNet)}</span>
         </div>`).join("")}</div>
+      ${cmpHtml}
       <div class="oa-qc-sum oa-qt-sum">
         <div><span>Fatturato stimato</span><strong>${eur(rev)}</strong><small>netto IVA · ${kits.length} kit</small></div>
         <div><span>Margine</span><strong>${pct(prof, rev)}</strong><small>${eur(prof)}</small></div>
