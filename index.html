@@ -649,6 +649,12 @@
     .art-selects { display: flex; gap: 7px; margin-bottom: 4px; }
     .art-selects select { font-size: 12px; font-weight: 600; padding: 5px 8px; }
     .art-cost-note { font-size: 11px; color: var(--muted); }
+    .cost-src { font-weight: 700; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; }
+    .cost-src.cat { background: rgba(10, 110, 78, .12); color: var(--good); }
+    .cost-src.mod { background: rgba(232, 124, 43, .16); color: var(--text); }
+    .cost-src.manual { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+    .cost-src-ref { color: var(--muted); }
+    .cost-src-reset { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 700; }
     /* Il ricavo di riga sta accanto al costo: leggermente più marcato, perché
        è il dato che si va a cercare quando si confrontano due referenze. */
     .art-rev-note  { font-size: 11px; color: var(--text-2); font-weight: 600; }
@@ -2582,7 +2588,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v113</span>
+            <span id="buildTxt">build v114</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4279,7 +4285,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v113";
+  const BUILD = "v114";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4388,12 +4394,6 @@ if("serviceWorker" in navigator) {
   };
   fillExportLineSelect();
 
-  const REF_COST = {
-    PREMIUM: {"T-shirt":15,"T-Shirt Cot.":12,"Polo":18,"Pantaloncino":16,"Gonnellino":16,"Dress":22,"Sweatshirt":28,"Hoodie":32,"Zip Hoodie":35,"Pantalone":26},
-    BASIC:   {"T-shirt":9,"Polo":11,"Pantaloncino":10.5,"Gonnellino":11,"Dress":14,"Sweatshirt":19,"Hoodie":22,"Zip Hoodie":24,"Pantalone":18},
-    LS24:    {"T-shirt":8,"T-Shirt Cot.":3,"Polo":10,"Pantaloncino":9,"Gonnellino":10,"Dress":13,"Sweatshirt":16,"Hoodie":18,"Zip Hoodie":20,"Pantalone":15}
-  };
-
   const clientName  = document.getElementById("clientName");
   const projectName = document.getElementById("projectName");
   const qtyEst      = document.getElementById("qtyEst");
@@ -4485,10 +4485,15 @@ if("serviceWorker" in navigator) {
 
   let items = [];
 
-  const refCost = (line, article) => {
-    if(line === "ALTRO") return null;
-    const r = REF_COST[line] && REF_COST[line][article];
-    return Number.isFinite(r) ? r : null;
+  /* Provenienza del costo di una riga. Prima c'era "Auto/Manuale": "Auto"
+     riempiva il costo da una vecchia tabella generica nel codice (non dal
+     catalogo) e restava "Auto" anche dopo una correzione a mano. Ora la riga
+     dice se il costo è quello del catalogo, se è stato modificato (con il
+     costo di catalogo accanto e un clic per tornarci) o se è manuale. */
+  const catalogFor = (it) => {
+    const cat = getCatalog();
+    return (it.code && (cat.find(a => a.code === it.code && catalogLabel(a) === it.article) || cat.find(a => a.code === it.code)))
+      || cat.find(a => catalogLabel(a) === it.article) || null;
   };
 
   // Riga del kit da un articolo di catalogo. La distinta (costParts) viene
@@ -4497,15 +4502,15 @@ if("serviceWorker" in navigator) {
   const kitItemFromCatalog = (art, line, label) => {
     const it = { id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
       line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value) || 1,
-      costMode: "auto", isGift: false };
+      isGift: false };
     if(art.costParts) it.costParts = { ...art.costParts };
     return it;
   };
 
   const newItem = () => {
     const q = toNum(qtyEst.value) || 0;
-    const base = refCost("PREMIUM","T-shirt") ?? 0;
-    return { id: uid(), article:"T-shirt", line:"PREMIUM", base, extra:0, qty:q, costMode:"auto", isGift:false };
+    // Articolo generico: il costo lo inserisci tu, nessun valore inventato
+    return { id: uid(), article:"T-shirt", line:"PREMIUM", base:0, extra:0, qty:q, isGift:false };
   };
 
 
@@ -4683,8 +4688,13 @@ if("serviceWorker" in navigator) {
         `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`
       ).join("");
 
-      const costLabel  = (it.line === "ALTRO") ? "Manuale" : (it.costMode === "auto" ? "Auto" : "Manuale");
       const unitCost   = toNum(it.base) + toNum(it.extra);
+      const catArt     = catalogFor(it);
+      const catCost    = catArt ? toNum(catArt.base) + toNum(catArt.extra) : 0;
+      const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
+        : (Math.abs(toNum(it.base) - toNum(catArt.base)) < 0.005 && Math.abs(toNum(it.extra) - toNum(catArt.extra)) < 0.005)
+          ? `<span class="cost-src cat">da catalogo</span>`
+          : `<span class="cost-src mod">modificato</span> <span class="cost-src-ref">catalogo ${eur(catCost)}</span> <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`;
 
       // Il cambio tessuto vale solo per questo preventivo: la riga tiene una
       // copia della distinta, l'articolo di catalogo non viene mai toccato.
@@ -4715,7 +4725,7 @@ if("serviceWorker" in navigator) {
         <select data-act="article" data-id="${it.id}" style="flex:1;min-width:110px">${optsA}</select>
         <select data-act="line"    data-id="${it.id}" style="min-width:110px">${optsL}</select>
       </div>
-      <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costLabel}</div>
+      <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costSrc}</div>
       <div class="art-rev-note" id="rev-${it.id}"></div>
       ${tessutoRow}
     </div>
@@ -4746,7 +4756,6 @@ if("serviceWorker" in navigator) {
     <span class="art-badge${giftClass}">${subtotStr}</span>
     <div class="art-actions-secondary${it.isGift ? " open" : ""}" id="art-sec-${it.id}">
       <button class="secondary${it.isGift ? " omaggio-on" : ""}" type="button" data-act="gift"     data-id="${it.id}" style="font-size:11px;padding:4px 9px">${it.isGift ? "Omaggio ✓" : "Omaggio"}</button>
-      <button class="secondary" type="button" data-act="costMode" data-id="${it.id}" style="font-size:11px;padding:4px 9px">${it.costMode === "auto" ? "Auto" : "Manuale"}</button>
     </div>
     <button class="ghost" type="button" data-act="more" data-id="${it.id}" title="Altre opzioni" style="font-size:15px;padding:4px 9px;letter-spacing:2px">···</button>
     <button class="secondary" type="button" data-act="dup" data-id="${it.id}" style="font-size:11px;padding:4px 9px">Duplica</button>
@@ -4768,10 +4777,7 @@ if("serviceWorker" in navigator) {
           const it = find(); if(!it) return;
           it.article = el.value;
           it.code = ""; // il codice era legato all'articolo di catalogo: cambiando articolo non è più valido
-          if(it.costMode === "auto" && it.line !== "ALTRO"){
-            const r = refCost(it.line, it.article);
-            if(r !== null) it.base = r;
-          }
+          // Il costo resta quello che c'era: nessun valore da tabelle generiche
           render();
         });
         return;
@@ -4781,11 +4787,6 @@ if("serviceWorker" in navigator) {
         el.addEventListener("change", () => {
           const it = find(); if(!it) return;
           it.line = el.value;
-          if(it.line === "ALTRO") it.costMode = "manual";
-          if(it.costMode === "auto" && it.line !== "ALTRO"){
-            const r = refCost(it.line, it.article);
-            if(r !== null) it.base = r;
-          }
           render();
         });
         return;
@@ -4842,15 +4843,15 @@ if("serviceWorker" in navigator) {
         return;
       }
 
-      if(act === "costMode"){
+      if(act === "costReset"){
+        // Torna al costo (e alla distinta) dell'articolo in catalogo
         el.addEventListener("click", () => {
           const it = find(); if(!it) return;
-          it.costMode = (it.costMode === "auto") ? "manual" : "auto";
-          if(it.costMode === "auto" && it.line !== "ALTRO"){
-            const r = refCost(it.line, it.article);
-            if(r !== null) it.base = r;
-          }
+          const art = catalogFor(it); if(!art) return;
+          it.base = toNum(art.base); it.extra = toNum(art.extra);
+          if(art.costParts) it.costParts = { ...art.costParts };
           render();
+          toast("Costo di catalogo ripristinato", "ok");
         });
         return;
       }
