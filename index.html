@@ -2145,6 +2145,34 @@
     .ao-gift-nums { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
     .ao-gift-nums b { color: var(--text); }
     @media (max-width: 700px) { .ao-gifts { grid-template-columns: 1fr; } }
+    .ao-conc { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+    .ao-conc summary { cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; list-style: none; }
+    .ao-conc summary::-webkit-details-marker { display: none; }
+    .ao-conc summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+    .ao-conc[open] summary::before { transform: rotate(90deg); }
+    .ao-conc-title { font-weight: 800; font-size: 14px; }
+    .ao-conc-line { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+    .ao-conc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+    .ao-conc-dot.warn { background: var(--warn); } .ao-conc-dot.bad { background: var(--bad); }
+    .ao-conc-list { display: grid; gap: 6px; }
+    .ao-conc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 90px; gap: 8px; align-items: center; padding: 7px 10px; border: 1px solid var(--border); border-radius: 10px; }
+    .ao-conc-row.is-on { border-color: var(--input-focus); background: var(--surface-2); }
+    .ao-conc-pick { display: flex; gap: 10px; align-items: flex-start; margin: 0; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text); }
+    .ao-conc-pick input { width: auto; margin: 3px 0 0; padding: 0; }
+    .ao-conc-pick small { color: var(--muted); font-weight: 500; }
+    .ao-conc-meta { display: block; font-size: 11.5px; margin-top: 2px; }
+    .ao-conc-auto { padding: 4px 8px; font-size: 13px; }
+    .ao-conc-row .ao-in { max-width: none; }
+    .ao-conc-sum { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--surface-2); }
+    .ao-conc-bar { height: 8px; border-radius: 99px; background: var(--border); overflow: hidden; }
+    .ao-conc-bar span { display: block; height: 100%; background: var(--good); border-radius: 99px; }
+    .ao-conc-sum.warn .ao-conc-bar span { background: var(--warn); } .ao-conc-sum.bad .ao-conc-bar span { background: var(--bad); }
+    .ao-conc-msg { margin-top: 8px; font-weight: 700; font-size: 13.5px; }
+    .ao-conc-sum.good .ao-conc-msg { color: var(--good); } .ao-conc-sum.warn .ao-conc-msg { color: var(--warn); } .ao-conc-sum.bad .ao-conc-msg { color: var(--bad); }
+    .ao-conc-msg small { font-weight: 500; color: var(--muted); }
+    .ao-conc-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+    .ao-conc-nums span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .ao-conc-nums strong { font-size: 15px; font-variant-numeric: tabular-nums; }
     .ao-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
     .ao-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; cursor: pointer;
       display: flex; flex-direction: column; gap: 12px; transition: border-color .15s, box-shadow .15s; }
@@ -2554,7 +2582,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v112</span>
+            <span id="buildTxt">build v113</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4251,7 +4279,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v112";
+  const BUILD = "v113";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8931,13 +8959,13 @@ ${tabQtaPDF ? `<div class="sec scala">
   };
 
   // Tutti i numeri dell'ordine da una lista di economie per builder
-  const aoCompute = (ecos) => {
+  const aoCompute = (ecos, extraGift = 0) => {
     const sum = (f) => ecos.reduce((a, e) => a + f(e), 0);
-    const rev = sum(e => e.revenueNet), cost = sum(e => e.totalCost), prof = rev - cost;
-    const inv = sum(e => e.invoice), gift = sum(e => e.giftCost);
+    const rev = sum(e => e.revenueNet), cost = sum(e => e.totalCost) + extraGift, prof = rev - cost;
+    const inv = sum(e => e.invoice), gift = sum(e => e.giftCost) + extraGift;
     const w = (f) => rev > 0 ? ecos.reduce((a, e) => a + f(e) * e.revenueNet, 0) / rev : 0;
     const target = w(e => e.target), mMin = w(e => e.mMin), buf = w(e => e.buf), dep = w(e => e.dep);
-    const lrev = sum(e => e.low.revenueNet), lprof = lrev - sum(e => e.low.totalCost);
+    const lrev = sum(e => e.low.revenueNet), lprof = lrev - sum(e => e.low.totalCost) - extraGift;
     const vatE = ecos.find(e => e.vatOn);
     const vatOn = !!vatE, vatRate = vatE ? vatE.vatRate : 0;
     const secure = cost * (1 + buf);
@@ -9032,6 +9060,7 @@ ${tabQtaPDF ? `<div class="sec scala">
           </div>`).join("")}
         </div>
         <div id="aoRest"></div>
+        <div id="aoConc"></div>
         <div class="hint" style="margin-top:10px">La simulazione resta salvata per questo club e non modifica i builder. Il valore di partenza è quello dei builder salvati.</div>
       </div>`;
 
@@ -9050,6 +9079,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     };
     out.querySelectorAll("[data-ao-qty]").forEach(el => el.addEventListener("input", () => onEdit(+el.dataset.aoQty, "qty", el)));
     out.querySelectorAll("[data-ao-price]").forEach(el => el.addEventListener("input", () => onEdit(+el.dataset.aoPrice, "price", el)));
+    aoRenderGiftBlock();
     aoRecalc();
   };
 
@@ -9059,6 +9089,49 @@ ${tabQtaPDF ? `<div class="sec scala">
      parità di costo valgono di più per il club) e "kit staff +
      completamento" (metà in kit completi per lo staff, il resto nel capo
      con più margine). */
+  /* Omaggi concordati con il club: capi scelti a mano fra quelli
+     dell'ordine. Si spuntano gli articoli e le quantità si propongono da
+     sole con la logica dello staff: un capo di ogni tipo per persona, finché
+     c'è budget. Una quantità scritta a mano resta com'è. Il valore di un
+     singolo articolo di un kit non esiste (si vende il kit): è stimato con
+     lo stesso ricarico del kit. */
+  const aoGiftOptions = (rows) => {
+    const out = [], seen = new Set();
+    rows.forEach(r => {
+      const e = r.sim || r.base;
+      if(!e || !(e.kitCost > 0)) return;
+      const name = variantName(r.k);
+      const its = (r.k.payload.items || []).filter(it => !it.isGift && toNum(it.qty) > 0 && toNum(it.base) + toNum(it.extra) > 0);
+      const add = (o) => { if(!seen.has(o.id)) { seen.add(o.id); out.push(o); } };
+      if(its.length > 1) {
+        add({ id: `kit:${r.k.name}`, label: name, sub: "kit completo", cost: e.kitCost, value: e.price, est: false });
+        const ratio = e.price / e.kitCost;
+        its.forEach(it => {
+          const c = toNum(it.base) + toNum(it.extra);
+          add({ id: `art:${r.k.name}:${it.article}`, label: it.article, sub: `dal ${name}`, cost: c, value: c * ratio, est: true });
+        });
+      } else {
+        add({ id: `kit:${r.k.name}`, label: name, sub: "", cost: e.kitCost, value: e.price, est: false });
+      }
+    });
+    return out;
+  };
+  // Quantità dei capi concordati: quelle scritte a mano restano, le altre
+  // si propongono uguali per tutti i capi spuntati (set per persona).
+  const aoGiftQty = (opts, gifts, budgetLeft) => {
+    const chosen = opts.filter(o => gifts[o.id]?.on);
+    const manual = chosen.filter(o => gifts[o.id].manual);
+    const auto   = chosen.filter(o => !gifts[o.id].manual);
+    const left = budgetLeft - manual.reduce((a, o) => a + (gifts[o.id].qty || 0) * o.cost, 0);
+    const setCost = auto.reduce((a, o) => a + o.cost, 0);
+    const n = setCost > 0 ? Math.max(0, Math.floor(left / setCost + 1e-9)) : 0;
+    const qty = {};
+    chosen.forEach(o => { qty[o.id] = gifts[o.id].manual ? (gifts[o.id].qty || 0) : n; });
+    const cost = chosen.reduce((a, o) => a + qty[o.id] * o.cost, 0);
+    const value = chosen.reduce((a, o) => a + qty[o.id] * o.value, 0);
+    return { qty, cost, value, count: chosen.length, sets: n };
+  };
+
   const aoGiftPlan = (rows, S) => {
     const pct = giftPctSetting();
     const cap = Math.max(0, S.rev * (1 - S.mMin) - (S.cost - S.gift));
@@ -9088,11 +9161,102 @@ ${tabQtaPDF ? `<div class="sec scala">
     return { pct, budget, resto, capped: S.rev * pct > cap + 0.005, maxValue, staffMix };
   };
 
+  const aoRenderGiftBlock = () => {
+    const box = document.getElementById("aoConc");
+    if(!box || !aoCtx) return;
+    const opts = aoGiftOptions(aoCtx.rows);
+    if(!aoCur) return;
+    aoCur.gifts = aoCur.gifts || {};
+    const gifts = aoCur.gifts;
+    const any = opts.some(o => gifts[o.id]?.on);
+    box.innerHTML = `<details class="ao-conc"${any || aoCtx.concOpen ? " open" : ""}>
+      <summary><span class="ao-conc-title">Omaggi concordati con il club</span><span class="ao-conc-line" id="aoConcLine"></span></summary>
+      <div class="hint" style="margin:8px 0 10px">Spunta i capi che il club ha chiesto: la quantità si propone da sola, un capo di ogni tipo per persona finché c'è budget. Puoi correggerla a mano (↺ torna alla proposta). Prima aggiorna le quantità dell'ordine con quelle confermate: il budget si ricalcola.</div>
+      <div class="ao-conc-list">${opts.map(o => `<div class="ao-conc-row${gifts[o.id]?.on ? " is-on" : ""}" data-gc-row="${esc(o.id)}">
+          <label class="ao-conc-pick"><input type="checkbox" data-gc-on="${esc(o.id)}"${gifts[o.id]?.on ? " checked" : ""}>
+            <span><b>${esc(o.label)}</b>${o.sub ? ` <small>${esc(o.sub)}</small>` : ""}<small class="ao-conc-meta">ti costa ${eur(o.cost)} · per il club vale ${o.est ? "≈ " : ""}${eur(o.value)}${o.est ? " (stimato)" : ""}</small></span>
+          </label>
+          <button type="button" class="ghost ao-conc-auto" data-gc-auto="${esc(o.id)}" title="Torna alla quantità proposta" style="visibility:${gifts[o.id]?.manual ? "visible" : "hidden"}">↺</button>
+          <input class="ao-in" data-gc-qty="${esc(o.id)}" inputmode="numeric" autocomplete="off" placeholder="—"${gifts[o.id]?.on ? "" : " disabled"}>
+        </div>`).join("")}</div>
+      <div id="aoConcSum"></div>
+    </details>`;
+    const det = box.querySelector("details");
+    det.addEventListener("toggle", () => { aoCtx.concOpen = det.open; });
+    const touch = () => { aoCur.dirty = true; aoRecalc(); };
+    box.querySelectorAll("[data-gc-on]").forEach(cb => cb.addEventListener("change", () => {
+      const id = cb.dataset.gcOn;
+      gifts[id] = { on: cb.checked, qty: 0, manual: false };
+      const row = cb.closest(".ao-conc-row");
+      row.classList.toggle("is-on", cb.checked);
+      row.querySelector("[data-gc-qty]").disabled = !cb.checked;
+      row.querySelector("[data-gc-auto]").style.visibility = "hidden";
+      touch();
+    }));
+    box.querySelectorAll("[data-gc-qty]").forEach(inp => inp.addEventListener("input", () => {
+      const id = inp.dataset.gcQty;
+      gifts[id] = { ...(gifts[id] || { on: true }), qty: Math.max(0, Math.round(toNum(inp.value))), manual: inp.value.trim() !== "" };
+      inp.closest(".ao-conc-row").querySelector("[data-gc-auto]").style.visibility = gifts[id].manual ? "visible" : "hidden";
+      touch();
+    }));
+    box.querySelectorAll("[data-gc-auto]").forEach(b => b.addEventListener("click", () => {
+      const id = b.dataset.gcAuto;
+      if(gifts[id]) gifts[id].manual = false;
+      b.style.visibility = "hidden";
+      touch();
+    }));
+  };
+
+  const aoRenderGiftSum = () => {
+    if(!aoCtx || !aoCtx.GQ) return;
+    const { GQ, G0, S0, S, gOpts } = aoCtx;
+    const gifts = aoCur?.gifts || {};
+    const pct = (v) => (v * 100).toFixed(1) + "%";
+    // Quantità nei campi (non in quello in cui si sta scrivendo)
+    gOpts.forEach(o => {
+      const inp = document.querySelector(`[data-gc-qty="${CSS.escape(o.id)}"]`);
+      if(inp && document.activeElement !== inp) inp.value = gifts[o.id]?.on ? String(GQ.qty[o.id] ?? 0) : "";
+    });
+    const line = document.getElementById("aoConcLine");
+    const sum = document.getElementById("aoConcSum");
+    if(!GQ.count) {
+      if(line) line.textContent = "";
+      if(sum) sum.innerHTML = `<div class="hint">Nessun capo scelto: finché non ne spunti, valgono le proposte qui sopra.</div>`;
+      return;
+    }
+    const used = S0.gift + GQ.cost, budget = G0.budget;
+    const over = used - budget;
+    const need = S.cost - S.rev * (1 - S.mMin);   // > 0: quanto togliere per tornare al minimo
+    const st = over <= 0.005 ? "good" : need <= 0.005 ? "warn" : "bad";
+    const msg = st === "good" ? `Dentro il budget: ${eur(used)} di ${eur(budget)}`
+      : st === "warn" ? `Oltre il budget di ${eur(over)}, ma sopra il minimo ${(S.mMin * 100).toFixed(0)}%`
+      : `Sotto il minimo ${(S.mMin * 100).toFixed(0)}%: togli ${eur(need)} di omaggi`;
+    const w = budget > 0 ? Math.min(100, used / budget * 100) : 100;
+    if(line) line.innerHTML = `<span class="ao-conc-dot ${st}"></span>${GQ.count} capi · ${eur(GQ.cost)}`;
+    if(sum) sum.innerHTML = `<div class="ao-conc-sum ${st}">
+        <div class="ao-conc-bar"><span style="width:${w}%"></span></div>
+        <div class="ao-conc-msg">${st === "good" ? "✓" : st === "warn" ? "!" : "✕"} ${msg}${S0.gift > 0 ? ` <small>(compresi ${eur(S0.gift)} già nei builder)</small>` : ""}</div>
+        <div class="ao-conc-nums">
+          <div><span>Costo per te</span><strong>${eur(GQ.cost)}</strong></div>
+          <div><span>Valore per il club</span><strong>${eur(GQ.value)}</strong></div>
+          <div><span>Margine ordine</span><strong>${pct(S0.margin)} → ${pct(S.margin)}</strong></div>
+          ${GQ.sets > 0 ? `<div><span>Proposta</span><strong>${GQ.sets} per tipo</strong></div>` : ""}
+        </div>
+      </div>`;
+  };
+
   const aoRecalc = () => {
     if(!aoCtx) return;
     const { rows } = aoCtx;
     rows.forEach(r => { r.sim = r.ov ? kitEconomics(aoSimPayload(r.k.payload, r.ov)) || r.base : r.base; });
-    const B = aoCompute(rows.map(r => r.base)), S = aoCompute(rows.map(r => r.sim));
+    // Omaggi concordati: il budget si calcola sull'ordine senza di loro
+    const S0 = aoCompute(rows.map(r => r.sim));
+    const G0 = aoGiftPlan(rows, S0);
+    const gOpts = aoGiftOptions(rows);
+    const gifts = aoCur?.gifts || {};
+    const GQ = aoGiftQty(gOpts, gifts, G0.budget - S0.gift);
+    aoCtx.gOpts = gOpts; aoCtx.GQ = GQ; aoCtx.G0 = G0; aoCtx.S0 = S0;
+    const B = aoCompute(rows.map(r => r.base), GQ.cost), S = aoCompute(rows.map(r => r.sim), GQ.cost);
     const simulating = rows.some(r => r.ov);
     aoShow("aoReset", simulating);
     const pct = (v) => (v * 100).toFixed(1) + "%";
@@ -9131,7 +9295,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         ${kpi("Sconto massimo sull'ordine", pct(S.scontoMax), `Stesso sconto su tutti i prezzi, fino al minimo ${(S.mMin * 100).toFixed(0)}%`, S.scontoMax > 0 ? "good" : "bad")}
       </div>`;
 
-    const G = aoGiftPlan(rows, S);
+    const G = G0;
     const giftCard = (o) => o ? `<div class="ao-gift">
         <div class="ao-gift-title">${o.title}</div>
         <div class="ao-gift-items">${o.lines.map(l => `<span><b>${l.n}</b> ${esc(l.name)}</span>`).join("")}</div>
@@ -9153,12 +9317,12 @@ ${tabQtaPDF ? `<div class="sec scala">
       <div class="row2">
         ${kpi(`Budget omaggi · ${fmtPct(G.pct)} del fatturato`, eur(G.budget),
           G.budget <= 0.005 ? `Nessuno: l'ordine è già al minimo ${(S.mMin * 100).toFixed(0)}%`
-            : S.gift > 0 ? `Già messi nei builder ${eur(S.gift)} · restano ${eur(Math.max(0, G.resto))}`
+            : S0.gift > 0 ? `Già messi nei builder ${eur(S0.gift)} · restano ${eur(Math.max(0, G.resto))}`
             : `A costo · ${G.capped ? `ridotto per restare sopra il minimo ${(S.mMin * 100).toFixed(0)}%` : "mai sotto il margine minimo"}`,
           G.budget <= 0.005 ? "bad" : "")}
         ${kpi("Tetto massimo", eur(S.space), `Fino al minimo ${(S.mMin * 100).toFixed(0)}%: un limite, non un obiettivo`)}
       </div>
-      ${G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<div class="ao-gifts">${giftCard(G.maxValue)}${giftCard(G.staffMix)}</div>
+      ${!GQ.count && G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<div class="ao-gifts">${giftCard(G.maxValue)}${giftCard(G.staffMix)}</div>
         <div class="hint" style="margin-top:6px">Ordinati per margine: a parità di costo, i capi con più margine valgono di più per il club.</div>` : ""}
       <div class="rz-section">Incasso</div>
       <div class="row2">
@@ -9166,13 +9330,14 @@ ${tabQtaPDF ? `<div class="sec scala">
         ${kpi("Saldo alla consegna", eur(Math.max(0, S.inv - S.depNow)), `Totale − acconto ${(S.dep * 100).toFixed(0)}%`)}
       </div>`;
     aoCtx.B = B; aoCtx.S = S;
+    aoRenderGiftSum();
   };
 
   // Documento interno: contiene costi e margini, non va al cliente
   const aoPrint = () => {
     if(!aoCtx || !aoCtx.S) return;
     const { g, rows, B, S, excluded } = aoCtx;
-    const G = aoGiftPlan(rows, S);
+    const G = aoCtx.G0 || aoGiftPlan(rows, S);
     const simulating = rows.some(r => r.ov);
     const pct = (v) => (v * 100).toFixed(1) + "%";
     const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -9225,7 +9390,12 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
   <div class="box"><div class="l">Costo totale reale</div><div class="v">${eur(S.cost)}</div><div class="n">Omaggi ${S.gift > 0 ? eur(S.gift) : "—"}</div></div>
   <div class="box"><div class="l">Budget omaggi ${fmtPct(G.pct)}</div><div class="v">${eur(G.budget)}</div><div class="n">A costo · tetto ${eur(S.space)}</div></div>
 </div>
-${G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<h2>Omaggi staff (proposte)</h2>
+${aoCtx.GQ?.count ? `<h2>Omaggi concordati con il club</h2>
+<table><thead><tr><th>Capo</th><th>Quantità</th><th>Costo</th><th>Valore per il club</th></tr></thead><tbody>
+${aoCtx.gOpts.filter(o => aoCur?.gifts?.[o.id]?.on && aoCtx.GQ.qty[o.id] > 0).map(o => `<tr><td>${esc(o.label)}${o.sub ? ` <span style="font-weight:400;color:#49769F">${esc(o.sub)}</span>` : ""}</td><td>${aoCtx.GQ.qty[o.id]}</td><td>${eur(aoCtx.GQ.qty[o.id] * o.cost)}</td><td>${o.est ? "≈ " : ""}${eur(aoCtx.GQ.qty[o.id] * o.value)}</td></tr>`).join("")}
+<tr><td>Totale</td><td></td><td>${eur(aoCtx.GQ.cost)}</td><td>${eur(aoCtx.GQ.value)}</td></tr>
+</tbody></table>` : ""}
+${!aoCtx.GQ?.count && G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<h2>Omaggi staff (proposte)</h2>
 <table><thead><tr><th>Proposta</th><th>Capi</th><th>Costo</th><th>Valore per il club</th><th>Margine dopo</th></tr></thead><tbody>
 ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>${o.lines.map(l => `${l.n} ${esc(l.name)}`).join(" · ")}</td><td>${eur(o.cost)}</td><td>${eur(o.value)}</td><td>${pct(o.marginAfter)}</td></tr>`).join("")}
 </tbody></table>` : ""}
@@ -9308,8 +9478,10 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const d = row.data || {};
     const names = Array.isArray(d.builders) ? d.builders : [];
     const kits = g ? g.kits.filter(k => names.includes(k.name)) : [];
-    const ecos = kits.map(k => kitEconomics(aoSimPayload(k.payload, d.sim?.[k.name]))).filter(Boolean);
-    const S = ecos.length ? aoCompute(ecos) : null;
+    const rowsLike = kits.map(k => ({ k, sim: kitEconomics(aoSimPayload(k.payload, d.sim?.[k.name])) })).filter(r => r.sim);
+    const ecos = rowsLike.map(r => r.sim);
+    const gCost = aoGiftOptions(rowsLike).reduce((a, o) => a + (d.gifts?.[o.id]?.on ? (d.gifts[o.id].qty || 0) * o.cost : 0), 0);
+    const S = ecos.length ? aoCompute(ecos, gCost) : null;
     const changed = kits.filter(k => d.fp?.[k.name] && d.fp[k.name] !== aoFp(k.payload)).length;
     return { g, S, n: kits.length, missing: names.length - kits.length, changed, simulating: !!(d.sim && Object.keys(d.sim).length) };
   };
@@ -9373,11 +9545,12 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     window.scrollTo({ top: 0 });
   };
   const aoOpenSaved = (row) => aoStartEdit({ id: row.id, name: row.name, groupKey: row.club_key,
-    sel: Array.isArray(row.data?.builders) ? row.data.builders : null, sim: row.data?.sim || {}, fp: row.data?.fp || {}, dirty: false });
+    sel: Array.isArray(row.data?.builders) ? row.data.builders : null, sim: row.data?.sim || {}, fp: row.data?.fp || {},
+    gifts: row.data?.gifts || {}, dirty: false });
   const aoConfirmLeave = async () => !aoCur?.dirty || await appConfirm({ title: "Analisi non salvata",
     body: `<p>Le modifiche a questa analisi non sono salvate.</p>`, ok: "Esci senza salvare", cancel: "Resta" });
 
-  document.getElementById("aoNew")?.addEventListener("click", () => aoStartEdit({ id: null, name: "", groupKey: null, sel: null, sim: {}, fp: {}, dirty: false }));
+  document.getElementById("aoNew")?.addEventListener("click", () => aoStartEdit({ id: null, name: "", groupKey: null, sel: null, sim: {}, fp: {}, gifts: {}, dirty: false }));
   document.getElementById("aoBack")?.addEventListener("click", async () => {
     if(!await aoConfirmLeave()) return;
     aoMode = "list"; aoCur = null;
@@ -9393,7 +9566,10 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const names = aoCtx.rows.map(r => r.k.name);
     const fp = {}; aoCtx.rows.forEach(r => { fp[r.k.name] = aoFp(r.k.payload); });
     const rowData = { name: nm, club_key: aoCtx.g.key, club_label: aoCtx.g.label, updated_at: new Date().toISOString(),
+      // Omaggi concordati con le quantità attuali (anche quelle proposte)
       data: { builders: names, sim: aoCur.sim || {}, fp,
+        gifts: Object.fromEntries(Object.entries(aoCur.gifts || {}).filter(([, g]) => g.on)
+          .map(([id, g]) => [id, { ...g, qty: aoCtx.GQ?.qty?.[id] ?? g.qty ?? 0 }])),
         totals: aoCtx.S ? { margin: aoCtx.S.margin, profit: aoCtx.S.prof, invoice: aoCtx.S.inv } : null } };
     const q = aoCur.id ? supabase.from("order_analyses").update(rowData).eq("id", aoCur.id).select().single()
                        : supabase.from("order_analyses").insert(rowData).select().single();
@@ -9410,7 +9586,7 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const v = normName(input?.value || "");
     const g = aoGroups().find(x => normName(x.label) === v);
     if(!aoCur) return;
-    if(g && g.key !== aoCur.groupKey) { aoCur.groupKey = g.key; aoCur.sel = null; aoCur.sim = {}; aoCur.fp = {}; aoCur.dirty = true; renderAnalisiOrdine(); }
+    if(g && g.key !== aoCur.groupKey) { aoCur.groupKey = g.key; aoCur.sel = null; aoCur.sim = {}; aoCur.fp = {}; aoCur.gifts = {}; aoCur.dirty = true; renderAnalisiOrdine(); }
     else if(!v && aoCur.groupKey) { aoCur.groupKey = null; renderAnalisiOrdine(); }
   };
   document.getElementById("aoClub")?.addEventListener("input", aoPickClub);
@@ -9422,7 +9598,7 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const key = r ? r.key : normName(clientName.value);
     const g = aoGroups().find(x => x.key === key || normName(x.label) === normName(clientName.value));
     showView("ordine");
-    aoStartEdit({ id: null, name: "", groupKey: g ? g.key : null, sel: null, sim: {}, fp: {}, dirty: false });
+    aoStartEdit({ id: null, name: "", groupKey: g ? g.key : null, sel: null, sim: {}, fp: {}, gifts: {}, dirty: false });
   };
 
   // Nei kit aggiunti a un preventivo la spedizione non si inserisce: c'è già nel primo.
