@@ -2137,6 +2137,14 @@
     .ao-was { display: block; font-size: 11px; color: var(--muted); text-decoration: line-through; margin-top: 2px; min-height: 0; }
     .ao-was:empty { display: none; }
     .ao-tr.is-sim { background: rgba(232, 124, 43, .07); }
+    .ao-gifts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .ao-gift { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+    .ao-gift-title { font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .ao-gift-items { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .ao-gift-items span { padding: 4px 10px; border-radius: 999px; background: var(--surface-2); font-size: 13px; }
+    .ao-gift-nums { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ao-gift-nums b { color: var(--text); }
+    @media (max-width: 700px) { .ao-gifts { grid-template-columns: 1fr; } }
     .ao-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
     .ao-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; cursor: pointer;
       display: flex; flex-direction: column; gap: 12px; transition: border-color .15s, box-shadow .15s; }
@@ -2546,7 +2554,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v111</span>
+            <span id="buildTxt">build v112</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3341,10 +3349,11 @@
                   <div class="note" id="kMinPriceLiveNote">Prezzo minimo trattativa per atleta</div>
                 </div>
 
-                <!-- Stesso margine di manovra del prezzo minimo, speso in capi
-                     invece che in sconto: è un'alternativa, non un budget in più. -->
+                <!-- Budget omaggi: una quota fissa del fatturato (Impostazioni,
+                     predefinito 3%), a costo, mai oltre il margine minimo. Lo
+                     spazio fino al minimo resta come tetto, non come proposta. -->
                 <div class="kpi kpi-hero" id="kpiOmaggi" style="display:none">
-                  <div class="lbl">Oppure quanto puoi omaggiare</div>
+                  <div class="lbl">Budget omaggi staff</div>
                   <div class="val" id="kOmaggiVal">—</div>
                   <div class="note" id="kOmaggiNote">—</div>
                   <div class="note" id="kOmaggiDettaglio" style="margin-top:6px"></div>
@@ -3980,7 +3989,11 @@
                 <label>Sconto trattativa %</label>
                 <input id="setDiscount" inputmode="decimal" autocomplete="off">
               </div>
-              <div></div>
+              <div>
+                <label>Budget omaggi % del fatturato</label>
+                <input id="setGiftPct" inputmode="decimal" autocomplete="off">
+                <div class="hint">Capi omaggio per lo staff, a costo, su ogni ordine. Mai sotto il margine minimo.</div>
+              </div>
             </div>
             <div class="row3" style="margin-bottom:16px">
               <div>
@@ -4238,7 +4251,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v111";
+  const BUILD = "v112";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5324,6 +5337,17 @@ if("serviceWorker" in navigator) {
     return ` · ${val} netto`;
   };
 
+  // Budget omaggi % dalle Impostazioni, letto direttamente: calc può girare
+  // prima che il codice delle Impostazioni sia inizializzato.
+  const giftPctSetting = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem("doubleu_settings_v1") || "{}").giftPct;
+      const n = toNum(v === undefined || v === "" ? "3" : v);
+      return Math.min(50, Math.max(0, n)) / 100;
+    } catch(_) { return 0.03; }
+  };
+  const fmtPct = (f) => (Math.round(f * 1000) / 10).toString().replace(".", ",") + "%";
+
   const calc = () => {
     const q       = toNum(qtyEst.value);
     const qtyBase = q > 0 ? q : 1;
@@ -5541,6 +5565,10 @@ if("serviceWorker" in navigator) {
        invece, il ricavo è quello vero e basta usarlo. */
     const ricavoRiferimento = usingOffer ? revenueNet : paidCost / (1 - m);
     const budgetOmaggi      = Math.max(0, ricavoRiferimento * (1 - mMin) - totalCost);
+    /* Budget omaggi: quota del fatturato (Impostazioni), a costo. Comprende
+       gli omaggi già messi e non supera mai lo spazio fino al minimo. */
+    const giftPct    = giftPctSetting();
+    const giftBudget = Math.max(0, Math.min(ricavoRiferimento * giftPct, budgetOmaggi + giftCost));
     const costoKitCompleto = (variableCost - giftCost) / qtyBase;
     const omaggioPerPersona= giftMaxQty > 0 ? giftCost / giftMaxQty : 0;
 
@@ -5663,33 +5691,39 @@ if("serviceWorker" in navigator) {
         setText("kOmaggiDettaglio", sforo > 0.005 && daTogliere > 0
           ? `Togline ${daTogliere} per rientrare, oppure chiedi ${eur(targetPriceCoperto)} per atleta.`
           : `Per restare al ${(m*100).toFixed(0)}% dovresti chiedere ${eur(targetPriceCoperto)} per atleta.`);
-      } else if(budgetOmaggi <= 0.005){
-        // Nessun omaggio e nessuno spazio: il prezzo minimo lo dice già,
-        // ripeterlo a zero sarebbe solo rumore.
+      } else if(giftBudget <= 0.005 && giftCost <= 0){
+        // Nessuno spazio: l'ordine è già al minimo, il prezzo minimo lo dice già.
         boxOmaggi.style.display = "none";
-      } else if(omaggioPerPersona > 0){
+      } else if(giftCost > 0){
+        // Omaggi già messi: quanto del budget resta
         boxOmaggi.style.display = "";
-        const altre = Math.floor(budgetOmaggi / omaggioPerPersona + 1e-9);
-        setText("kOmaggiVal", altre > 0 ? plur(altre, "persona in più", "persone in più") : "sei al limite");
+        const resto = giftBudget - giftCost;
+        setText("kOmaggiVal", resto >= 0.005 ? `${eur(resto)} ancora` : resto > -0.005 ? "budget usato" : "oltre il budget");
         setText("kOmaggiNote",
-          `Stai omaggiando ${plur(giftMaxQty, "persona", "persone")} × ${eur(omaggioPerPersona)} = ${eur(giftCost)} · restano ${eur(budgetOmaggi)}`);
-        setText("kOmaggiDettaglio",
-          `Te li stai prendendo tu: per restare al ${(m*100).toFixed(0)}% dovresti chiedere ${eur(targetPriceCoperto)} per atleta invece di ${eur(pricePerAthlete)}.`);
+          `Omaggi: ${plur(giftMaxQty, "persona", "persone")} = ${eur(giftCost)} su un budget di ${eur(giftBudget)} (${fmtPct(giftPct)} del fatturato)`);
+        setText("kOmaggiDettaglio", resto < -0.005
+          ? `Sei oltre il ${fmtPct(giftPct)} di ${eur(-resto)}, ma ancora sopra il minimo del ${(mMin*100).toFixed(0)}%: il margine è al ${(realMargin*100).toFixed(1)}%.`
+          : `Te li stai prendendo tu: per restare al ${(m*100).toFixed(0)}% dovresti chiedere ${eur(targetPriceCoperto)} per atleta invece di ${eur(pricePerAthlete)}.`);
       } else {
         boxOmaggi.style.display = "";
-        setText("kOmaggiVal", costoKitCompleto > 0
-          ? plur(Math.floor(budgetOmaggi / costoKitCompleto + 1e-9), "kit completo", "kit completi")
-          : eur(budgetOmaggi));
-        setText("kOmaggiNote", `${eur(budgetOmaggi)} di margine di manovra, fino al minimo del ${(mMin*100).toFixed(0)}%`);
-        // Gli omaggi parziali (solo la t-shirt, solo la felpa) sono la prassi
-        // quanto i kit interi: senza questi numeri il conto andrebbe rifatto
-        // a mente ogni volta.
+        const kit = costoKitCompleto > 0 ? Math.floor(giftBudget / costoKitCompleto + 1e-9) : 0;
+        const dopo = revenueNet > 0 ? (revenueNet - totalCost - giftBudget) / revenueNet : 0;
+        setText("kOmaggiVal", kit > 0 ? plur(kit, "kit completo", "kit completi") : eur(giftBudget));
+        const ridotto = ricavoRiferimento * giftPct > budgetOmaggi + 0.005;
+        setText("kOmaggiNote", `${fmtPct(giftPct)} del fatturato${ridotto ? ", ridotto per restare al minimo" : ""}: ${eur(giftBudget)} di costo`
+          + (kit > 0 ? ` · per il club valgono ${eur(kit * pricePerAthlete)}` : "")
+          + ` · margine ${(realMargin*100).toFixed(1)}% → ${(dopo*100).toFixed(1)}%`);
+        // Omaggi parziali (solo la t-shirt, solo la felpa) nello stesso budget
         const perCapo = [...new Map(items
           .filter(it => !it.isGift && toNum(it.base) + toNum(it.extra) > 0)
           .map(it => [it.article, toNum(it.base) + toNum(it.extra)])).entries()]
-          .map(([nome, costo]) => `${Math.floor(budgetOmaggi / costo + 1e-9)} ${esc(nome)}`)
+          .map(([nome, costo]) => [Math.floor(giftBudget / costo + 1e-9), nome])
+          .filter(([n]) => n > 0)
+          .map(([n, nome]) => `${n} ${esc(nome)}`)
           .slice(0, 4);
-        setText("kOmaggiDettaglio", perCapo.length ? "oppure " + perCapo.join(" · ") : "");
+        const tetto = costoKitCompleto > 0 ? Math.floor(budgetOmaggi / costoKitCompleto + 1e-9) : 0;
+        setText("kOmaggiDettaglio", (perCapo.length ? "oppure " + perCapo.join(" · ") + " · " : "")
+          + `tetto massimo fino al minimo ${(mMin*100).toFixed(0)}%: ${eur(budgetOmaggi)}${tetto ? ` (${plur(tetto, "kit", "kit")})` : ""}, non un obiettivo`);
       }
     }
     // Note brevi: in griglia la card più alta detta l'altezza di tutta la
@@ -7036,7 +7070,7 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   /* ─── Impostazioni (predefiniti nuovi preventivi) ─── */
   const SETTINGS_KEY = "doubleu_settings_v1";
-  const DEFAULT_SETTINGS = { margin:"0.50", minMargin:"35", discount:"0", depositPct:"60", bufferPct:"5", applyVAT:true };
+  const DEFAULT_SETTINGS = { margin:"0.50", minMargin:"35", discount:"0", depositPct:"60", bufferPct:"5", applyVAT:true, giftPct:"3" };
 
   const getSettings = () => {
     try {
@@ -7077,6 +7111,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(el("setDeposit"))  el("setDeposit").value     = s.depositPct;
     if(el("setBuffer"))   el("setBuffer").value      = s.bufferPct;
     if(el("setApplyVAT")) el("setApplyVAT").checked  = !!s.applyVAT;
+    if(el("setGiftPct"))  el("setGiftPct").value     = s.giftPct;
     const info = el("settingsInfo");
     if(info){
       const email = document.getElementById("sbUname")?.textContent || "—";
@@ -9018,6 +9053,41 @@ ${tabQtaPDF ? `<div class="sec scala">
     aoRecalc();
   };
 
+  /* Omaggi sull'ordine: budget = % del fatturato (Impostazioni), a costo,
+     mai oltre il minimo; comprende gli omaggi già messi nei builder. Due
+     proposte con quanto resta: "massimo valore" (capi con più margine, che a
+     parità di costo valgono di più per il club) e "kit staff +
+     completamento" (metà in kit completi per lo staff, il resto nel capo
+     con più margine). */
+  const aoGiftPlan = (rows, S) => {
+    const pct = giftPctSetting();
+    const cap = Math.max(0, S.rev * (1 - S.mMin) - (S.cost - S.gift));
+    const budget = Math.max(0, Math.min(S.rev * pct, cap));
+    const resto = budget - S.gift;
+    const items = rows.map(r => ({ name: variantName(r.k), cost: r.sim.kitCost, price: r.sim.price,
+        kit: (r.k.payload.items || []).filter(it => !it.isGift && toNum(it.qty) > 0).length > 1 }))
+      .filter(x => x.cost > 0 && x.price > 0)
+      .sort((a, b) => b.price / b.cost - a.price / a.cost);
+    const fill = (b, list, pre = []) => {
+      const lines = [...pre];
+      let left = b;
+      list.forEach(x => { const n = Math.floor(left / x.cost + 1e-9); if(n > 0) { lines.push({ ...x, n }); left -= n * x.cost; } });
+      if(!lines.length) return null;
+      const cost = lines.reduce((a, l) => a + l.n * l.cost, 0);
+      return { lines, cost, value: lines.reduce((a, l) => a + l.n * l.price, 0), marginAfter: S.rev > 0 ? (S.prof - cost) / S.rev : 0 };
+    };
+    const maxValue = resto > 0.005 ? fill(resto, items) : null;
+    if(maxValue) maxValue.title = "Massimo valore";
+    let staffMix = null;
+    const kitRef = items.filter(x => x.kit).sort((a, b) => b.cost - a.cost)[0];
+    if(resto > 0.005 && kitRef && resto >= kitRef.cost) {
+      const nKit = Math.max(1, Math.floor(resto * 0.5 / kitRef.cost + 1e-9));
+      staffMix = fill(resto - nKit * kitRef.cost, items.filter(x => x !== kitRef), [{ ...kitRef, n: nKit }]);
+      if(staffMix) staffMix.title = "Kit staff + completamento";
+    }
+    return { pct, budget, resto, capped: S.rev * pct > cap + 0.005, maxValue, staffMix };
+  };
+
   const aoRecalc = () => {
     if(!aoCtx) return;
     const { rows } = aoCtx;
@@ -9061,7 +9131,12 @@ ${tabQtaPDF ? `<div class="sec scala">
         ${kpi("Sconto massimo sull'ordine", pct(S.scontoMax), `Stesso sconto su tutti i prezzi, fino al minimo ${(S.mMin * 100).toFixed(0)}%`, S.scontoMax > 0 ? "good" : "bad")}
       </div>`;
 
-    const giftKits = rows.filter(r => r.sim.kitCost > 0).map(r => `${Math.floor(S.space / r.sim.kitCost)} ${esc(variantName(r.k))}`);
+    const G = aoGiftPlan(rows, S);
+    const giftCard = (o) => o ? `<div class="ao-gift">
+        <div class="ao-gift-title">${o.title}</div>
+        <div class="ao-gift-items">${o.lines.map(l => `<span><b>${l.n}</b> ${esc(l.name)}</span>`).join("")}</div>
+        <div class="ao-gift-nums">Costo ${eur(o.cost)} · <b>valore per il club ${eur(o.value)}</b> · margine ${pct(S.margin)} → ${pct(o.marginAfter)}</div>
+      </div>` : "";
     const rest = document.getElementById("aoRest");
     if(rest) rest.innerHTML = `
       <div class="rz-section">Ordine</div>
@@ -9074,11 +9149,17 @@ ${tabQtaPDF ? `<div class="sec scala">
         ${kpi("IVA da versare", S.vatOn ? eur(S.vat) : "—", S.vatOn ? "Incassata nel prezzo, non è tua" : "Nessuna IVA applicata")}
         <div class="kpi rz-wide"><div class="lbl">Margine dell'ordine</div><div class="val">${eur(S.prof)}</div><div class="note">Guadagno totale su imponibile</div></div>
       </div>
-      <div class="rz-section">Omaggi</div>
+      <div class="rz-section">Omaggi staff</div>
       <div class="row2">
-        ${kpi("Spazio omaggi sull'ordine", eur(S.space), S.space > 0 ? `Costo in più sostenibile restando al minimo ${(S.mMin * 100).toFixed(0)}%` : "Nessuno: l'ordine è già al minimo", S.space > 0 ? "" : "bad")}
-        ${kpi("In kit completi", S.space > 0 && giftKits.length ? giftKits[0] : "—", S.space > 0 && giftKits.length > 1 ? `oppure ${giftKits.slice(1).join(" · ")}` : "")}
+        ${kpi(`Budget omaggi · ${fmtPct(G.pct)} del fatturato`, eur(G.budget),
+          G.budget <= 0.005 ? `Nessuno: l'ordine è già al minimo ${(S.mMin * 100).toFixed(0)}%`
+            : S.gift > 0 ? `Già messi nei builder ${eur(S.gift)} · restano ${eur(Math.max(0, G.resto))}`
+            : `A costo · ${G.capped ? `ridotto per restare sopra il minimo ${(S.mMin * 100).toFixed(0)}%` : "mai sotto il margine minimo"}`,
+          G.budget <= 0.005 ? "bad" : "")}
+        ${kpi("Tetto massimo", eur(S.space), `Fino al minimo ${(S.mMin * 100).toFixed(0)}%: un limite, non un obiettivo`)}
       </div>
+      ${G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<div class="ao-gifts">${giftCard(G.maxValue)}${giftCard(G.staffMix)}</div>
+        <div class="hint" style="margin-top:6px">Ordinati per margine: a parità di costo, i capi con più margine valgono di più per il club.</div>` : ""}
       <div class="rz-section">Incasso</div>
       <div class="row2">
         ${kpi("Acconto minimo sicuro", eur(S.depMinGross), `Serve almeno ${pct(S.depPctReq)} · ora ${(S.dep * 100).toFixed(0)}% = ${eur(S.depNow)}`, S.depOk ? "good" : "bad")}
@@ -9091,6 +9172,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const aoPrint = () => {
     if(!aoCtx || !aoCtx.S) return;
     const { g, rows, B, S, excluded } = aoCtx;
+    const G = aoGiftPlan(rows, S);
     const simulating = rows.some(r => r.ov);
     const pct = (v) => (v * 100).toFixed(1) + "%";
     const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -9141,8 +9223,12 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
   <div class="box"><div class="l">Totale fatturato</div><div class="v">${eur(S.inv)}</div><div class="n">${S.vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
   <div class="box"><div class="l">Imponibile</div><div class="v">${eur(S.rev)}</div><div class="n">IVA ${S.vatOn ? eur(S.vat) : "—"}</div></div>
   <div class="box"><div class="l">Costo totale reale</div><div class="v">${eur(S.cost)}</div><div class="n">Omaggi ${S.gift > 0 ? eur(S.gift) : "—"}</div></div>
-  <div class="box"><div class="l">Spazio omaggi</div><div class="v">${eur(S.space)}</div><div class="n">Fino al minimo</div></div>
+  <div class="box"><div class="l">Budget omaggi ${fmtPct(G.pct)}</div><div class="v">${eur(G.budget)}</div><div class="n">A costo · tetto ${eur(S.space)}</div></div>
 </div>
+${G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<h2>Omaggi staff (proposte)</h2>
+<table><thead><tr><th>Proposta</th><th>Capi</th><th>Costo</th><th>Valore per il club</th><th>Margine dopo</th></tr></thead><tbody>
+${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>${o.lines.map(l => `${l.n} ${esc(l.name)}`).join(" · ")}</td><td>${eur(o.cost)}</td><td>${eur(o.value)}</td><td>${pct(o.marginAfter)}</td></tr>`).join("")}
+</tbody></table>` : ""}
 <h2>Incasso</h2>
 <div class="grid" style="grid-template-columns:repeat(2,1fr)">
   <div class="box"><div class="l">Acconto minimo sicuro</div><div class="v ${S.depOk ? "good" : "bad"}">${eur(S.depMinGross)}</div><div class="n">Serve almeno ${pct(S.depPctReq)} · impostato ${(S.dep * 100).toFixed(0)}% = ${eur(S.depNow)}</div></div>
@@ -10750,6 +10836,7 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
       depositPct: document.getElementById("setDeposit").value  || "60",
       bufferPct:  document.getElementById("setBuffer").value   || "5",
       applyVAT:   !!document.getElementById("setApplyVAT").checked,
+      giftPct:    document.getElementById("setGiftPct").value || "3",
     });
     toast("Predefiniti salvati ✓ — verranno usati per i nuovi preventivi", "ok");
   });
