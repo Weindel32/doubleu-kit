@@ -2546,7 +2546,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v109</span>
+            <span id="buildTxt">build v110</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4238,7 +4238,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v109";
+  const BUILD = "v110";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8919,13 +8919,14 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   let aoCtx = null;   // { g, kits, rows: [{ k, base, sim, ov }] } della pagina aperta
 
+  // Si mostra/nasconde con style.display: l'attributo hidden perde contro
+  // lo stile dei pulsanti e delle card (display impostato), e restava tutto visibile.
+  const aoShow = (id, v) => { const el = document.getElementById(id); if(el) { el.hidden = false; el.style.display = v ? "" : "none"; } };
   const aoButtons = () => {
     const edit = aoMode === "edit";
-    const show = (id, v) => { const el = document.getElementById(id); if(el) el.hidden = !v; };
-    show("aoNew", !edit); show("aoBack", edit); show("aoSave", edit);
-    show("aoEditCard", edit);
-    const list = document.getElementById("aoList");
-    if(list) list.hidden = edit;
+    aoShow("aoNew", !edit); aoShow("aoBack", edit); aoShow("aoSave", edit);
+    aoShow("aoEditCard", edit); aoShow("aoResult", edit); aoShow("aoList", !edit);
+    if(!edit) { aoShow("aoReset", false); aoShow("aoPrint", false); }
   };
 
   const renderAnalisiOrdine = () => {
@@ -8935,15 +8936,13 @@ ${tabQtaPDF ? `<div class="sec scala">
     const dl    = document.getElementById("aoClubList");
     const box   = document.getElementById("aoBuilders");
     const out   = document.getElementById("aoResult");
-    const bReset = document.getElementById("aoReset"), bPrint = document.getElementById("aoPrint");
     if(!input || !box || !out) return;
     const groups = aoGroups();
     if(dl) dl.innerHTML = groups.map(g => `<option value="${esc(g.label)}"></option>`).join("");
     aoGroupKey = aoCur?.groupKey || null;
     const g = groups.find(x => x.key === aoGroupKey);
     aoCtx = null;
-    if(bReset) bReset.hidden = true;
-    if(bPrint) bPrint.hidden = true;
+    aoShow("aoReset", false); aoShow("aoPrint", false);
     if(!g) {
       box.innerHTML = groups.length ? `<div class="hint">Scegli un club per vedere i suoi builder.</div>`
         : `<div class="hint">Nessun builder salvato con un cliente.</div>`;
@@ -8975,7 +8974,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     const excluded = kits.length - kits.filter(k => sel.has(k.name)).length;
     if(!rows.length) { out.innerHTML = `<div class="card"><div class="hint">Seleziona almeno un builder con articoli e quantità.</div></div>`; return; }
     aoCtx = { g, kits, rows, excluded };
-    if(bPrint) bPrint.hidden = false;
+    aoShow("aoPrint", true);
 
     // Tabella con prezzo e quantità modificabili: si disegna una volta, poi
     // aoRecalc aggiorna solo i numeri, così il campo in cui si scrive non perde il fuoco.
@@ -9025,8 +9024,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     rows.forEach(r => { r.sim = r.ov ? kitEconomics(aoSimPayload(r.k.payload, r.ov)) || r.base : r.base; });
     const B = aoCompute(rows.map(r => r.base)), S = aoCompute(rows.map(r => r.sim));
     const simulating = rows.some(r => r.ov);
-    const bReset = document.getElementById("aoReset");
-    if(bReset) bReset.hidden = !simulating;
+    aoShow("aoReset", simulating);
     const pct = (v) => (v * 100).toFixed(1) + "%";
     const state = (m) => m + 5e-4 >= S.target ? "good" : m + 5e-4 >= S.mMin ? "warn" : "bad";
     const flag = (st) => `<div class="kpi-flag ${st}"><span class="kpi-flag-ico">${STATE_FLAG[st].icon}</span>${STATE_FLAG[st].txt}</div>`;
@@ -9189,6 +9187,25 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
     return `<div class="oa-qc-warn" style="margin:0 0 12px">⚠ ${changed.length ? `${changed.length} builder modificat${changed.length === 1 ? "o" : "i"} dopo il salvataggio: ${changed.map(esc).join(", ")}. I numeri sono ricalcolati con i valori attuali.` : ""}${missing.length ? ` ${missing.length} builder non più trovat${missing.length === 1 ? "o" : "i"}.` : ""}</div>`;
   };
 
+  // Nome dell'analisi nella finestra dell'app (non il prompt del browser)
+  const aoAskName = async (dflt) => {
+    const ask = appConfirm({
+      title: aoCur?.id ? "Salva analisi" : "Salva nuova analisi",
+      body: `<label for="aoNameIn" style="display:block;margin-bottom:6px">Nome dell'analisi</label>
+        <input id="aoNameIn" value="${esc(dflt)}" autocomplete="off" maxlength="120">
+        <p class="acb-note">Es. "Sporting – Proposta 90 €". La trovi poi nell'elenco delle analisi salvate.</p>`,
+      ok: "Salva",
+    });
+    setTimeout(() => {
+      const inp = document.getElementById("aoNameIn");
+      if(!inp) return;
+      inp.focus(); inp.select();
+      inp.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); document.getElementById("appConfirmOk")?.click(); } });
+    }, 30);
+    const ok = await ask;
+    return ok ? (document.getElementById("aoNameIn")?.value || "") : null;
+  };
+
   const aoLoadSaved = async () => {
     if(!supabase) { aoSaved = []; aoSavedLoaded = true; return; }
     try {
@@ -9284,7 +9301,7 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
     if(!aoCtx || !aoCur) { toast("Scegli un club e almeno un builder", "warn"); return; }
     if(!supabase) { toast("Serve la connessione per salvare l'analisi", "warn"); return; }
     const dflt = aoCur.name || `${aoCtx.g.label} – ${new Date().toLocaleDateString("it-IT")}`;
-    const name = prompt("Nome dell'analisi", dflt);
+    const name = await aoAskName(dflt);
     if(name === null) return;
     const nm = name.trim() || dflt;
     const names = aoCtx.rows.map(r => r.k.name);
