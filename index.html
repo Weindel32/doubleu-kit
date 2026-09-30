@@ -2131,11 +2131,19 @@
     .ao-td-name small { font-weight: 500; color: var(--muted); }
     .ao-m { font-weight: 700; }
     .ao-m.good { color: var(--good); } .ao-m.warn { color: var(--warn); } .ao-m.bad, .ao-bad { color: var(--bad); }
+    .ao-sec-hint { font-family: inherit; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); margin-left: 8px; }
+    .ao-table-sim .ao-tr { align-items: center; }
+    .ao-in { width: 100%; max-width: 110px; text-align: right; padding: 6px 8px; font-size: 13.5px; font-variant-numeric: tabular-nums; margin-left: auto; display: block; }
+    .ao-was { display: block; font-size: 11px; color: var(--muted); text-decoration: line-through; margin-top: 2px; min-height: 0; }
+    .ao-was:empty { display: none; }
+    .ao-tr.is-sim { background: rgba(232, 124, 43, .07); }
     @media (max-width: 700px) {
       .ao-row { grid-template-columns: auto minmax(0, 1fr) auto; }
       .ao-row-st { display: none; }
-      .ao-tr { grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
-      .ao-tr > span:nth-child(2), .ao-tr > span:nth-child(4) { display: none; }
+      /* Su telefono: builder, quantità, prezzo, margine */
+      .ao-tr { grid-template-columns: minmax(0, 1.3fr) minmax(0, .8fr) minmax(0, 1fr) minmax(0, .8fr); gap: 8px; padding: 8px 10px; }
+      .ao-tr > span:nth-child(4), .ao-tr > span:nth-child(6) { display: none; }
+      .ao-in { max-width: none; padding: 6px; }
     }
     .oa-qt-num s { color: var(--muted); font-weight: 500; margin-right: 4px; }
     /* Confronto prima/dopo: stesso linguaggio delle card, una riga per metrica */
@@ -2427,7 +2435,15 @@
             <rect x="8.5" y="7" width="3" height="10" rx="1"/>
             <rect x="14" y="3" width="3" height="14" rx="1"/>
           </svg>
-          Analisi
+          Analytics
+        </a>
+
+        <a class="nav-item" href="javascript:void(0)" data-view="ordine">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="4" y="3" width="12" height="15" rx="2"/>
+            <path d="M7 7h6M7 10.5h6M7 14h3"/>
+          </svg>
+          Analisi ordine
         </a>
 
         <a class="nav-item" href="javascript:void(0)" data-view="articoli">
@@ -2513,7 +2529,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v107</span>
+            <span id="buildTxt">build v108</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3338,10 +3354,39 @@
         </div><!-- /builderView -->
 
         <!-- ── Analisi View (Questo kit + Confronto kit) ── -->
+        <!-- Analisi ordine: il Riepilogo del builder sommato su più builder
+             dello stesso club, con simulazione di prezzi e quantità (salvata
+             per club, non tocca i builder) e stampa ad uso interno. -->
+        <div id="ordineView" style="display:none">
+          <div class="dash-header">
+            <div>
+              <div class="dash-welcome">Analisi ordine</div>
+              <div class="dash-sub">Più builder dello stesso club come un ordine unico. Prezzi e quantità si possono simulare senza toccare i builder.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="secondary" id="aoReset" type="button" hidden>Ripristina prezzi e quantità</button>
+              <button class="primary" id="aoPrint" type="button" hidden>Stampa / PDF</button>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-title">Club e builder dell'ordine</div>
+            <div class="row2" style="align-items:end">
+              <div>
+                <label for="aoClub">Club</label>
+                <input id="aoClub" list="aoClubList" placeholder="Scrivi il nome del club…" autocomplete="off">
+                <datalist id="aoClubList"></datalist>
+                <div class="hint">Compaiono i builder salvati di quel club: spunta quelli che fanno parte di questo ordine.</div>
+              </div>
+            </div>
+            <div id="aoBuilders" style="margin-top:12px"></div>
+          </div>
+          <div id="aoResult"></div>
+        </div>
+
         <div id="analisiView" style="display:none">
           <div class="dash-header">
             <div>
-              <div class="dash-welcome">Analisi</div>
+              <div class="dash-welcome">Analytics</div>
               <div class="dash-sub">Il kit attivo in dettaglio e il confronto tra tutti i tuoi preventivi.</div>
             </div>
             <button class="secondary" id="btnAnalisiGoBuilder">Apri Kit Builder →</button>
@@ -3351,7 +3396,6 @@
           <div class="tab-bar">
             <button class="tab-btn active" data-analisi-tab="kit">Articoli &amp; linee</button>
             <button class="tab-btn"        data-analisi-tab="confronto">Confronto kit</button>
-            <button class="tab-btn"        data-analisi-tab="ordine">Analisi ordine</button>
           </div>
 
           <!-- Filtro stato: condiviso da entrambe le tab, perché sommare
@@ -3404,26 +3448,6 @@
           </div>
 
           <!-- Confronto kit -->
-          <!-- Analisi ordine: lo stesso Riepilogo del builder, ma sommato su
-               più builder dello stesso club (kit uomo + kit donna + tuta…).
-               I builder si scelgono a mano: sei tu a dire cosa fa parte
-               dell'ordine. Usa le versioni salvate dei builder. -->
-          <div class="tab-content" data-analisi-tab="ordine">
-            <div class="card" style="margin-bottom:14px">
-              <div class="card-title">Club e builder dell'ordine</div>
-              <div class="row2" style="align-items:end">
-                <div>
-                  <label for="aoClub">Club</label>
-                  <input id="aoClub" list="aoClubList" placeholder="Scrivi il nome del club…" autocomplete="off">
-                  <datalist id="aoClubList"></datalist>
-                  <div class="hint">Compaiono i builder salvati di quel club: spunta quelli che fanno parte di questo ordine.</div>
-                </div>
-              </div>
-              <div id="aoBuilders" style="margin-top:12px"></div>
-            </div>
-            <div id="aoResult"></div>
-          </div>
-
           <div class="tab-content" data-analisi-tab="confronto">
             <div class="dash-kpis" id="cmpSummary" style="margin-bottom:12px">
               <div class="kpi dk-navy"><div class="lbl">Kit salvati</div><div class="val" id="cmpCount">—</div><div class="note">Totale preventivi</div></div>
@@ -4015,7 +4039,14 @@
           <rect x="8.5" y="7" width="3" height="10" rx="1"/>
           <rect x="14" y="3" width="3" height="14" rx="1"/>
         </svg>
-        Analisi
+        Analytics
+      </a>
+      <a class="mobile-nav-item" href="javascript:void(0)" data-view="ordine">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="4" y="3" width="12" height="15" rx="2"/>
+          <path d="M7 7h6M7 10.5h6M7 14h3"/>
+        </svg>
+        Ordine
       </a>
       <a class="mobile-nav-item" href="javascript:void(0)" data-view="articoli">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -4186,7 +4217,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v107";
+  const BUILD = "v108";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7388,7 +7419,7 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   const VIEW_TITLES = {
     dashboard:"Dashboard", builder:"Kit builder",
-    analisi:"Analisi", articoli:"Articoli", costo:"Costo articolo", materiali:"Materiali",
+    analisi:"Analytics", ordine:"Analisi ordine", articoli:"Articoli", costo:"Costo articolo", materiali:"Materiali",
     esportazioni:"Esportazioni", impostazioni:"Impostazioni"
   };
   const ALL_VIEWS = Object.keys(VIEW_TITLES);
@@ -7418,6 +7449,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     const renderFns = {
       dashboard:    renderDashboard,
       analisi:      renderAnalisi,
+      ordine:       renderAnalisiOrdine,
       articoli:     () => renderArticoli(true),
       costo:        renderCostoView,
       materiali:    renderMateriali,
@@ -7436,11 +7468,7 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(el.classList.contains("tab-btn"))     el.classList.toggle("active", t === tab);
       if(el.classList.contains("tab-content")) el.classList.toggle("active", t === tab);
     });
-    // Il filtro stato serve al portafoglio, non a un singolo ordine
-    const sf = document.getElementById("portfolioStatoFilter");
-    if(sf) sf.style.display = tab === "ordine" ? "none" : "";
     if(tab === "confronto") renderConfronto();
-    else if(tab === "ordine") renderAnalisiOrdine();
     else renderKitAttivo();
   };
 
@@ -8811,22 +8839,72 @@ ${tabQtaPDF ? `<div class="sec scala">
     return new Set(g.kits.map(k => k.name));
   };
 
+  /* Simulazione per club: { groupKey: { nomeBuilder: { price, qty } } }.
+     Non tocca i builder: vive solo qui, finché non si ripristina. */
+  const AO_SIM_KEY = "doubleu_analisi_ordine_sim_v1";
+  const aoLoadSim = () => { try { return JSON.parse(localStorage.getItem(AO_SIM_KEY) || "{}"); } catch(_) { return {}; } };
+  const aoSaveSim = (key, sim) => { try { const all = aoLoadSim(); if(sim && Object.keys(sim).length) all[key] = sim; else delete all[key]; localStorage.setItem(AO_SIM_KEY, JSON.stringify(all)); } catch(_) {} };
+
+  // Payload con prezzo e/o quantità simulati. La quantità scala tutte le
+  // righe in proporzione (i kit staff restano quelli); il prezzo diventa un
+  // prezzo proposto fisso, IVA inclusa se il kit applica l'IVA.
+  const aoSimPayload = (p, ov) => {
+    if(!ov) return p;
+    const out = { ...p };
+    if(ov.qty > 0) {
+      const oldQ = toNum(p.qtyEst) > 0 ? toNum(p.qtyEst) : 1;
+      const f = ov.qty / oldQ;
+      out.qtyEst = String(ov.qty);
+      out.items = (p.items || []).map(it => ({ ...it, qty: Math.round(toNum(it.qty) * f) }));
+    }
+    if(ov.price > 0) { out.useOffer = true; out.offerPrice = String(ov.price); out.priceIncludesVAT = true; }
+    return out;
+  };
+
+  // Tutti i numeri dell'ordine da una lista di economie per builder
+  const aoCompute = (ecos) => {
+    const sum = (f) => ecos.reduce((a, e) => a + f(e), 0);
+    const rev = sum(e => e.revenueNet), cost = sum(e => e.totalCost), prof = rev - cost;
+    const inv = sum(e => e.invoice), gift = sum(e => e.giftCost);
+    const w = (f) => rev > 0 ? ecos.reduce((a, e) => a + f(e) * e.revenueNet, 0) / rev : 0;
+    const target = w(e => e.target), mMin = w(e => e.mMin), buf = w(e => e.buf), dep = w(e => e.dep);
+    const lrev = sum(e => e.low.revenueNet), lprof = lrev - sum(e => e.low.totalCost);
+    const vatE = ecos.find(e => e.vatOn);
+    const vatOn = !!vatE, vatRate = vatE ? vatE.vatRate : 0;
+    const secure = cost * (1 + buf);
+    const depMinGross = vatOn ? secure * (1 + vatRate) : secure;
+    return {
+      rev, cost, prof, inv, gift, vat: inv - rev, target, mMin, buf, dep, lrev, lprof, vatOn, vatRate,
+      margin: rev > 0 ? prof / rev : 0, lmargin: lrev > 0 ? lprof / lrev : 0,
+      scontoMax: rev > 0 ? Math.max(0, 1 - (cost / (1 - mMin)) / rev) : 0,
+      space: Math.max(0, rev * (1 - mMin) - cost),
+      depMinGross, depPctReq: inv > 0 ? depMinGross / inv : 0, depNow: inv * dep,
+      depOk: inv * dep / (vatOn ? 1 + vatRate : 1) + 1e-6 >= secure,
+    };
+  };
+
+  let aoCtx = null;   // { g, kits, rows: [{ k, base, sim, ov }] } della pagina aperta
+
   const renderAnalisiOrdine = () => {
     const input = document.getElementById("aoClub");
     const dl    = document.getElementById("aoClubList");
     const box   = document.getElementById("aoBuilders");
     const out   = document.getElementById("aoResult");
+    const bReset = document.getElementById("aoReset"), bPrint = document.getElementById("aoPrint");
     if(!input || !box || !out) return;
     const groups = aoGroups();
     if(dl) dl.innerHTML = groups.map(g => `<option value="${esc(g.label)}"></option>`).join("");
     const g = groups.find(x => x.key === aoGroupKey);
+    aoCtx = null;
+    if(bReset) bReset.hidden = true;
+    if(bPrint) bPrint.hidden = true;
     if(!g) {
       box.innerHTML = groups.length ? `<div class="hint">Scegli un club per vedere i suoi builder.</div>`
         : `<div class="hint">Nessun builder salvato con un cliente.</div>`;
       out.innerHTML = "";
       return;
     }
-    if(input.value.trim() === "" ) input.value = g.label;
+    if(input.value.trim() === "") input.value = g.label;
     const sel = aoDefaultSel(g);
     const kits = [...g.kits].sort((a, b) => b.savedAt - a.savedAt);
     box.innerHTML = `<div class="ao-list">${kits.map((k, i) => {
@@ -8846,87 +8924,214 @@ ${tabQtaPDF ? `<div class="sec scala">
       renderAnalisiOrdine();
     }));
 
-    const chosen = kits.filter(k => sel.has(k.name)).map(k => ({ ...k, eco: kitEconomics(k.payload) })).filter(k => k.eco);
+    const sim = aoLoadSim()[g.key] || {};
+    const rows = kits.filter(k => sel.has(k.name)).map(k => ({ k, base: kitEconomics(k.payload), ov: sim[k.name] || null })).filter(r => r.base);
     const excluded = kits.length - kits.filter(k => sel.has(k.name)).length;
-    if(!chosen.length) { out.innerHTML = `<div class="card"><div class="hint">Seleziona almeno un builder con articoli e quantità.</div></div>`; return; }
+    if(!rows.length) { out.innerHTML = `<div class="card"><div class="hint">Seleziona almeno un builder con articoli e quantità.</div></div>`; return; }
+    aoCtx = { g, kits, rows, excluded };
+    if(bPrint) bPrint.hidden = false;
 
-    const sum = (f) => chosen.reduce((a, k) => a + f(k.eco), 0);
-    const rev = sum(e => e.revenueNet), cost = sum(e => e.totalCost), prof = rev - cost;
-    const inv = sum(e => e.invoice), gift = sum(e => e.giftCost), vat = inv - rev;
-    const w = (f) => rev > 0 ? chosen.reduce((a, k) => a + f(k.eco) * k.eco.revenueNet, 0) / rev : 0;
-    const target = w(e => e.target), mMin = w(e => e.mMin), buf = w(e => e.buf), dep = w(e => e.dep);
-    const margin = rev > 0 ? prof / rev : 0;
-    const lrev = sum(e => e.low.revenueNet), lprof = lrev - sum(e => e.low.totalCost);
-    const vatOn = chosen.some(k => k.eco.vatOn);
-    const vatRate = vatOn ? (chosen.find(k => k.eco.vatOn).eco.vatRate) : 0;
-    // Sconto uniforme massimo su tutti i prezzi restando al minimo
-    const scontoMax = rev > 0 ? Math.max(0, 1 - (cost / (1 - mMin)) / rev) : 0;
-    // Spazio omaggi sull'ordine: costo in più sostenibile restando al minimo
-    const space = Math.max(0, rev * (1 - mMin) - cost);
-    // Acconto: al netto IVA deve coprire produzione + buffer
-    const secure = cost * (1 + buf);
-    const depMinGross = vatOn ? secure * (1 + vatRate) : secure;
-    const depPctReq = inv > 0 ? depMinGross / inv : 0;
-    const depNow = inv * dep;
+    // Tabella con prezzo e quantità modificabili: si disegna una volta, poi
+    // aoRecalc aggiorna solo i numeri, così il campo in cui si scrive non perde il fuoco.
+    out.innerHTML = `
+      <div class="card bottom-zone">
+        <div class="card-title">Riepilogo ordine · ${esc(g.label)} <span class="hint" style="font-weight:400">${rows.length} builder${excluded ? ` · <b>${excluded} non inclus${excluded === 1 ? "o" : "i"}</b>` : ""}</span></div>
+        <div id="aoCmp"></div>
+        <div id="aoTop"></div>
+        <div class="rz-section">Per builder <span class="ao-sec-hint">prezzo e quantità si possono simulare</span></div>
+        <div class="ao-table ao-table-sim">
+          <div class="ao-tr ao-th"><span>Builder</span><span>Quantità</span><span>Prezzo ${rows.some(r => r.base.vatOn) ? "(IVA incl.)" : ""}</span><span>Minimo trattativa</span><span>Margine</span><span>Margine €</span></div>
+          ${rows.map((r, i) => `<div class="ao-tr" data-ao-row="${i}">
+            <span class="ao-td-name">${esc(variantName(r.k))}${r.base.staff ? ` <small>+ ${r.base.staff} staff omaggio</small>` : ""}</span>
+            <span><input class="ao-in" data-ao-qty="${i}" inputmode="numeric" autocomplete="off" value="${r.ov?.qty || Math.round(r.base.qty)}"><small class="ao-was" data-ao-wasq="${i}"></small></span>
+            <span><input class="ao-in" data-ao-price="${i}" inputmode="decimal" autocomplete="off" value="${(r.ov?.price || Math.round(r.base.price * 100) / 100).toFixed(2).replace(".", ",")}"><small class="ao-was" data-ao-wasp="${i}"></small></span>
+            <span data-ao-min="${i}"></span>
+            <span data-ao-m="${i}"></span>
+            <span data-ao-p="${i}"></span>
+          </div>`).join("")}
+        </div>
+        <div id="aoRest"></div>
+        <div class="hint" style="margin-top:10px">La simulazione resta salvata per questo club e non modifica i builder. Il valore di partenza è quello dei builder salvati.</div>
+      </div>`;
+
+    const onEdit = (i, field, el) => {
+      const r = aoCtx.rows[i];
+      const v = toNum(el.value);
+      const orig = field === "qty" ? Math.round(r.base.qty) : Math.round(r.base.price * 100) / 100;
+      const ov = { ...(r.ov || {}) };
+      if(v > 0 && Math.abs(v - orig) >= (field === "qty" ? 0.5 : 0.005)) ov[field] = field === "qty" ? Math.round(v) : Math.round(v * 100) / 100;
+      else delete ov[field];
+      r.ov = Object.keys(ov).length ? ov : null;
+      const all = {};
+      aoCtx.rows.forEach(x => { if(x.ov) all[x.k.name] = x.ov; });
+      aoSaveSim(aoCtx.g.key, all);
+      aoRecalc();
+    };
+    out.querySelectorAll("[data-ao-qty]").forEach(el => el.addEventListener("input", () => onEdit(+el.dataset.aoQty, "qty", el)));
+    out.querySelectorAll("[data-ao-price]").forEach(el => el.addEventListener("input", () => onEdit(+el.dataset.aoPrice, "price", el)));
+    aoRecalc();
+  };
+
+  const aoRecalc = () => {
+    if(!aoCtx) return;
+    const { rows } = aoCtx;
+    rows.forEach(r => { r.sim = r.ov ? kitEconomics(aoSimPayload(r.k.payload, r.ov)) || r.base : r.base; });
+    const B = aoCompute(rows.map(r => r.base)), S = aoCompute(rows.map(r => r.sim));
+    const simulating = rows.some(r => r.ov);
+    const bReset = document.getElementById("aoReset");
+    if(bReset) bReset.hidden = !simulating;
     const pct = (v) => (v * 100).toFixed(1) + "%";
-    // Tolleranza di mezzo decimo di punto: un kit "al 40,0%" è a target, non sotto
-    const state = (m) => m + 5e-4 >= target ? "good" : m + 5e-4 >= mMin ? "warn" : "bad";
+    const state = (m) => m + 5e-4 >= S.target ? "good" : m + 5e-4 >= S.mMin ? "warn" : "bad";
     const flag = (st) => `<div class="kpi-flag ${st}"><span class="kpi-flag-ico">${STATE_FLAG[st].icon}</span>${STATE_FLAG[st].txt}</div>`;
     const kpi = (lbl, val, note, st, extra = "") => `<div class="kpi${st ? " " + st : ""}"><div class="lbl">${lbl}</div><div class="val">${val}</div>${note ? `<div class="note">${note}</div>` : ""}${extra}${st ? flag(st) : ""}</div>`;
     const mini = (l, v) => `<div class="kpi-mini-list"><div class="kpi-mini"><span class="kpi-mini-lbl">${l}</span><span class="kpi-mini-val">${v}</span></div></div>`;
-    const sameT = chosen.every(k => Math.abs(k.eco.target - chosen[0].eco.target) < 1e-9);
-    const sameM = chosen.every(k => Math.abs(k.eco.mMin - chosen[0].eco.mMin) < 1e-9);
-    const giftKits = chosen.filter(k => k.eco.kitCost > 0)
-      .map(k => `${Math.floor(space / k.eco.kitCost)} ${esc(variantName(k))}`).join(" · ");
-    const depOk = depNow / (vatOn ? 1 + vatRate : 1) + 1e-6 >= secure;
+    const sign = (v) => (v >= 0 ? "+" : "−") + eur(Math.abs(v));
 
-    out.innerHTML = `
-      <div class="card bottom-zone">
-        <div class="card-title">Riepilogo ordine · ${esc(g.label)} <span class="hint" style="font-weight:400">${chosen.length} builder${excluded ? ` · <b>${excluded} non inclus${excluded === 1 ? "o" : "i"}</b>` : ""}</span></div>
-        <div class="row3" style="margin-bottom:10px">
-          ${kpi("Margine reale", pct(margin), `${sameT ? "Target" : "Target medio"}: ${(target * 100).toFixed(0)}% · ${sameM ? "minimo" : "minimo medio"} ${(mMin * 100).toFixed(0)}%`, state(margin), mini("Calcolato su imponibile", eur(rev)))}
-          ${kpi("A −20% quantità", pct(lrev > 0 ? lprof / lrev : 0), `Se il club ordina il 20% in meno · ${eur(lprof)}`, state(lrev > 0 ? lprof / lrev : 0))}
-          ${kpi("Sconto massimo sull'ordine", pct(scontoMax), `Stesso sconto su tutti i prezzi, fino al minimo ${(mMin * 100).toFixed(0)}%`, scontoMax > 0 ? "good" : "bad")}
-        </div>
+    // Righe della tabella
+    rows.forEach((r, i) => {
+      const e = r.sim, st = state(e.margin);
+      const set = (sel, html) => { const el = document.querySelector(sel); if(el) el.innerHTML = html; };
+      set(`[data-ao-min="${i}"]`, `<span class="${e.price + 0.005 < e.minPrice ? "ao-bad" : ""}">${eur(e.minPrice)}</span>`);
+      set(`[data-ao-m="${i}"]`, `<span class="ao-m ${st}">${pct(e.margin)}</span>`);
+      set(`[data-ao-p="${i}"]`, eur(e.profit));
+      set(`[data-ao-wasq="${i}"]`, r.ov?.qty ? `era ${Math.round(r.base.qty)}` : "");
+      set(`[data-ao-wasp="${i}"]`, r.ov?.price ? `era ${eur(r.base.price)}` : "");
+      document.querySelector(`[data-ao-row="${i}"]`)?.classList.toggle("is-sim", !!r.ov);
+    });
 
-        <div class="rz-section">Per builder</div>
-        <div class="ao-table">
-          <div class="ao-tr ao-th"><span>Builder</span><span>Quantità</span><span>Prezzo</span><span>Minimo trattativa</span><span>Margine</span><span>Margine €</span></div>
-          ${chosen.map(k => { const st = state(k.eco.margin); return `<div class="ao-tr">
-            <span class="ao-td-name">${esc(variantName(k))}${k.eco.staff ? ` <small>+ ${k.eco.staff} staff omaggio</small>` : ""}</span>
-            <span>${Math.round(k.eco.qty)}</span>
-            <span>${eur(k.eco.price)}</span>
-            <span class="${k.eco.price + 0.005 < k.eco.minPrice ? "ao-bad" : ""}">${eur(k.eco.minPrice)}</span>
-            <span class="ao-m ${st}">${pct(k.eco.margin)}</span>
-            <span>${eur(k.eco.profit)}</span>
-          </div>`; }).join("")}
-        </div>
+    // Confronto salvato → simulato
+    const cmp = document.getElementById("aoCmp");
+    if(cmp) cmp.innerHTML = simulating ? `<div class="oa-qt-cmp">
+        <div class="oa-qt-cmp-head">Simulazione <span>builder salvati → valori simulati</span></div>
+        <div class="oa-qt-cmp-row"><span>Margine ordine</span><strong>${pct(B.margin)} → ${pct(S.margin)}</strong><em class="${S.prof < B.prof ? "neg" : "pos"}">${sign(S.prof - B.prof)}</em></div>
+        <div class="oa-qt-cmp-row"><span>A −20% quantità</span><strong>${pct(B.lmargin)} → ${pct(S.lmargin)}</strong><em class="${S.lprof < B.lprof ? "neg" : "pos"}">${sign(S.lprof - B.lprof)}</em></div>
+        <div class="oa-qt-cmp-row"><span>Fatturato (IVA incl.)</span><strong>${eur(B.inv)} → ${eur(S.inv)}</strong><em class="${S.inv < B.inv ? "neg" : "pos"}">${sign(S.inv - B.inv)}</em></div>
+        <div class="oa-qt-cmp-check ${state(S.margin)}">${state(S.margin) === "bad" ? "✕" : state(S.margin) === "warn" ? "!" : "✓"} Ordine ${state(S.margin) === "good" ? `sopra il target ${(S.target * 100).toFixed(0)}%` : state(S.margin) === "warn" ? `sotto il target ${(S.target * 100).toFixed(0)}%, sopra il minimo ${(S.mMin * 100).toFixed(0)}%` : `sotto il minimo ${(S.mMin * 100).toFixed(0)}%`}</div>
+      </div>` : "";
 
-        <div class="rz-section">Ordine</div>
-        <div class="row4 rz-order">
-          ${kpi("Costo totale reale", eur(cost), "Produzione completa (incl. omaggi, costi fissi, spedizioni)")}
-          ${kpi("Costo fatturato", eur(cost - gift), "Senza omaggi")}
-          ${kpi("Costo omaggi (assorbiti)", gift > 0 ? eur(gift) : "—", "Nel costo totale, non fatturati")}
-          <div class="kpi kpi-total"><div class="lbl">Totale fatturato</div><div class="val">${eur(inv)}</div><div class="note">${vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
-          ${kpi("Imponibile stimato", eur(rev), "Totale netto (senza IVA)")}
-          ${kpi("IVA da versare", vatOn ? eur(vat) : "—", vatOn ? "Incassata nel prezzo, non è tua" : "Nessuna IVA applicata")}
-          <div class="kpi rz-wide"><div class="lbl">Margine dell'ordine</div><div class="val">${eur(prof)}</div><div class="note">Guadagno totale su imponibile</div></div>
-        </div>
-
-        <div class="rz-section">Omaggi</div>
-        <div class="row2">
-          ${kpi("Spazio omaggi sull'ordine", eur(space), space > 0 ? `Costo in più sostenibile restando al minimo ${(mMin * 100).toFixed(0)}%` : "Nessuno: l'ordine è già al minimo", space > 0 ? "" : "bad")}
-          ${kpi("In kit completi", space > 0 && giftKits ? giftKits.split(" · ")[0] : "—", space > 0 && giftKits ? `oppure ${giftKits.split(" · ").slice(1).join(" · ") || "—"}` : "", "")}
-        </div>
-
-        <div class="rz-section">Incasso</div>
-        <div class="row2">
-          ${kpi("Acconto minimo sicuro", eur(depMinGross), `Serve almeno ${pct(depPctReq)} · ora ${(dep * 100).toFixed(0)}% = ${eur(depNow)}`, depOk ? "good" : "bad")}
-          ${kpi("Saldo alla consegna", eur(Math.max(0, inv - depNow)), `Totale − acconto ${(dep * 100).toFixed(0)}%`)}
-        </div>
-        <div class="hint" style="margin-top:10px">Valori delle versioni salvate dei builder. Per simulare una modifica apri il builder: il confronto prima/dopo è nel riquadro del preventivo.</div>
+    const top = document.getElementById("aoTop");
+    if(top) top.innerHTML = `<div class="row3" style="margin-bottom:10px">
+        ${kpi("Margine reale", pct(S.margin), `Target: ${(S.target * 100).toFixed(0)}% · minimo ${(S.mMin * 100).toFixed(0)}%`, state(S.margin), mini("Calcolato su imponibile", eur(S.rev)))}
+        ${kpi("A −20% quantità", pct(S.lmargin), `Se il club ordina il 20% in meno · ${eur(S.lprof)}`, state(S.lmargin))}
+        ${kpi("Sconto massimo sull'ordine", pct(S.scontoMax), `Stesso sconto su tutti i prezzi, fino al minimo ${(S.mMin * 100).toFixed(0)}%`, S.scontoMax > 0 ? "good" : "bad")}
       </div>`;
+
+    const giftKits = rows.filter(r => r.sim.kitCost > 0).map(r => `${Math.floor(S.space / r.sim.kitCost)} ${esc(variantName(r.k))}`);
+    const rest = document.getElementById("aoRest");
+    if(rest) rest.innerHTML = `
+      <div class="rz-section">Ordine</div>
+      <div class="row4 rz-order">
+        ${kpi("Costo totale reale", eur(S.cost), "Produzione completa (incl. omaggi, costi fissi, spedizioni)")}
+        ${kpi("Costo fatturato", eur(S.cost - S.gift), "Senza omaggi")}
+        ${kpi("Costo omaggi (assorbiti)", S.gift > 0 ? eur(S.gift) : "—", "Nel costo totale, non fatturati")}
+        <div class="kpi kpi-total"><div class="lbl">Totale fatturato</div><div class="val">${eur(S.inv)}</div><div class="note">${S.vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
+        ${kpi("Imponibile stimato", eur(S.rev), "Totale netto (senza IVA)")}
+        ${kpi("IVA da versare", S.vatOn ? eur(S.vat) : "—", S.vatOn ? "Incassata nel prezzo, non è tua" : "Nessuna IVA applicata")}
+        <div class="kpi rz-wide"><div class="lbl">Margine dell'ordine</div><div class="val">${eur(S.prof)}</div><div class="note">Guadagno totale su imponibile</div></div>
+      </div>
+      <div class="rz-section">Omaggi</div>
+      <div class="row2">
+        ${kpi("Spazio omaggi sull'ordine", eur(S.space), S.space > 0 ? `Costo in più sostenibile restando al minimo ${(S.mMin * 100).toFixed(0)}%` : "Nessuno: l'ordine è già al minimo", S.space > 0 ? "" : "bad")}
+        ${kpi("In kit completi", S.space > 0 && giftKits.length ? giftKits[0] : "—", S.space > 0 && giftKits.length > 1 ? `oppure ${giftKits.slice(1).join(" · ")}` : "")}
+      </div>
+      <div class="rz-section">Incasso</div>
+      <div class="row2">
+        ${kpi("Acconto minimo sicuro", eur(S.depMinGross), `Serve almeno ${pct(S.depPctReq)} · ora ${(S.dep * 100).toFixed(0)}% = ${eur(S.depNow)}`, S.depOk ? "good" : "bad")}
+        ${kpi("Saldo alla consegna", eur(Math.max(0, S.inv - S.depNow)), `Totale − acconto ${(S.dep * 100).toFixed(0)}%`)}
+      </div>`;
+    aoCtx.B = B; aoCtx.S = S;
   };
+
+  // Documento interno: contiene costi e margini, non va al cliente
+  const aoPrint = () => {
+    if(!aoCtx || !aoCtx.S) return;
+    const { g, rows, B, S, excluded } = aoCtx;
+    const simulating = rows.some(r => r.ov);
+    const pct = (v) => (v * 100).toFixed(1) + "%";
+    const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const cell = (was, now, fmt) => was !== null && was !== undefined ? `<s>${fmt(was)}</s> ${fmt(now)}` : fmt(now);
+    const html = `<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Analisi ordine — ${esc(g.label)}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 11.5px; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #001D39; padding-bottom: 8px; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; } .sub { color: #49769F; font-size: 11px; margin-top: 3px; }
+  .tag { font-size: 10px; font-weight: 700; color: #BC431B; border: 1px solid #BC431B; border-radius: 4px; padding: 2px 6px; }
+  h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 16px 0 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; }
+  th { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: #49769F; background: #F1F5F9; }
+  th:first-child, td:first-child { text-align: left; }
+  td:first-child { font-weight: 700; }
+  s { color: #8a9ab5; margin-right: 4px; font-weight: 400; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .box { border: 1px solid #D7E3EE; border-radius: 8px; padding: 8px 10px; }
+  .box .l { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: #49769F; }
+  .box .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .box .n { font-size: 9.5px; color: #49769F; margin-top: 2px; }
+  .good { color: #0A6E4E; } .warn { color: #9A6600; } .bad { color: #BC431B; }
+  .cmp { border: 1px solid #A8C8E0; background: #F1F5F9; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
+  .footer { margin-top: 18px; display: flex; justify-content: space-between; color: #8a9ab5; font-size: 9.5px; border-top: 1px solid #D7E3EE; padding-top: 6px; }
+</style></head><body>
+<div class="head"><div><h1>Analisi ordine · ${esc(g.label)}</h1>
+  <div class="sub">${rows.length} builder${excluded ? ` · ${excluded} non inclus${excluded === 1 ? "o" : "i"}` : ""}${simulating ? " · con simulazione (i builder non sono modificati)" : ""}</div></div>
+  <span class="tag">USO INTERNO</span></div>
+${simulating ? `<div class="cmp"><b>Simulazione</b> — margine ordine ${pct(B.margin)} → <b>${pct(S.margin)}</b> (${S.prof - B.prof >= 0 ? "+" : "−"}${eur(Math.abs(S.prof - B.prof))}) · a −20% ${pct(B.lmargin)} → <b>${pct(S.lmargin)}</b> · fatturato ${eur(B.inv)} → <b>${eur(S.inv)}</b></div>` : ""}
+<h2>Per builder</h2>
+<table><thead><tr><th>Builder</th><th>Quantità</th><th>Prezzo${S.vatOn ? " IVA incl." : ""}</th><th>Minimo trattativa</th><th>Margine</th><th>Margine €</th></tr></thead><tbody>
+${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="font-weight:400;color:#49769F">+ ${r.sim.staff} staff omaggio</span>` : ""}</td>
+  <td>${cell(r.ov?.qty ? Math.round(r.base.qty) : null, Math.round(r.sim.qty), String)}</td>
+  <td>${cell(r.ov?.price ? r.base.price : null, r.sim.price, eur)}</td>
+  <td class="${r.sim.price + 0.005 < r.sim.minPrice ? "bad" : ""}">${eur(r.sim.minPrice)}</td>
+  <td class="${r.sim.margin + 5e-4 >= S.target ? "good" : r.sim.margin + 5e-4 >= S.mMin ? "warn" : "bad"}"><b>${pct(r.sim.margin)}</b></td>
+  <td>${eur(r.sim.profit)}</td></tr>`).join("")}
+</tbody></table>
+<h2>Ordine</h2>
+<div class="grid">
+  <div class="box"><div class="l">Margine reale</div><div class="v ${S.margin + 5e-4 >= S.target ? "good" : S.margin + 5e-4 >= S.mMin ? "warn" : "bad"}">${pct(S.margin)}</div><div class="n">Target ${(S.target * 100).toFixed(0)}% · minimo ${(S.mMin * 100).toFixed(0)}%</div></div>
+  <div class="box"><div class="l">Margine dell'ordine</div><div class="v">${eur(S.prof)}</div><div class="n">Su imponibile</div></div>
+  <div class="box"><div class="l">A −20% quantità</div><div class="v">${pct(S.lmargin)}</div><div class="n">${eur(S.lprof)}</div></div>
+  <div class="box"><div class="l">Sconto massimo</div><div class="v">${pct(S.scontoMax)}</div><div class="n">Uniforme, fino al minimo</div></div>
+  <div class="box"><div class="l">Totale fatturato</div><div class="v">${eur(S.inv)}</div><div class="n">${S.vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
+  <div class="box"><div class="l">Imponibile</div><div class="v">${eur(S.rev)}</div><div class="n">IVA ${S.vatOn ? eur(S.vat) : "—"}</div></div>
+  <div class="box"><div class="l">Costo totale reale</div><div class="v">${eur(S.cost)}</div><div class="n">Omaggi ${S.gift > 0 ? eur(S.gift) : "—"}</div></div>
+  <div class="box"><div class="l">Spazio omaggi</div><div class="v">${eur(S.space)}</div><div class="n">Fino al minimo</div></div>
+</div>
+<h2>Incasso</h2>
+<div class="grid" style="grid-template-columns:repeat(2,1fr)">
+  <div class="box"><div class="l">Acconto minimo sicuro</div><div class="v ${S.depOk ? "good" : "bad"}">${eur(S.depMinGross)}</div><div class="n">Serve almeno ${pct(S.depPctReq)} · impostato ${(S.dep * 100).toFixed(0)}% = ${eur(S.depNow)}</div></div>
+  <div class="box"><div class="l">Saldo alla consegna</div><div class="v">${eur(Math.max(0, S.inv - S.depNow))}</div><div class="n">Totale − acconto ${(S.dep * 100).toFixed(0)}%</div></div>
+</div>
+<div class="footer"><span>doubleu kit — analisi ordine · uso interno, non inviare al cliente</span><span>${date}</span></div>
+</body></html>`;
+    // Stessa stampa in iframe del builder: su iPhone una nuova scheda ricaricava l'app
+    document.getElementById("aoPrintFrame")?.remove();
+    const frame = document.createElement("iframe");
+    frame.id = "aoPrintFrame";
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none";
+    document.body.appendChild(frame);
+    let printed = false;
+    const fire = () => {
+      if(printed) return;
+      const w = frame.contentWindow;
+      if(!w) return;
+      printed = true;
+      try { w.focus(); w.print(); } catch(err) { console.error("Print error:", err); toast("Stampa non riuscita su questo browser", "warn", 5000); }
+    };
+    const doc = frame.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    frame.onload = () => setTimeout(fire, 300);
+    setTimeout(fire, 1200);
+  };
+  document.getElementById("aoPrint")?.addEventListener("click", aoPrint);
+  document.getElementById("aoReset")?.addEventListener("click", () => {
+    if(!aoCtx) return;
+    aoSaveSim(aoCtx.g.key, null);
+    renderAnalisiOrdine();
+    toast("Prezzi e quantità dei builder ripristinati", "ok");
+  });
 
   const aoPickClub = () => {
     const input = document.getElementById("aoClub");
@@ -8946,8 +9151,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     aoGroupKey = g ? g.key : null;
     const input = document.getElementById("aoClub");
     if(input) input.value = g ? g.label : "";
-    showView("analisi");
-    switchAnalisiTab("ordine");
+    showView("ordine");
   };
 
   // Nei kit aggiunti a un preventivo la spedizione non si inserisce: c'è già nel primo.
