@@ -2137,6 +2137,23 @@
     .ao-was { display: block; font-size: 11px; color: var(--muted); text-decoration: line-through; margin-top: 2px; min-height: 0; }
     .ao-was:empty { display: none; }
     .ao-tr.is-sim { background: rgba(232, 124, 43, .07); }
+    .ao-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .ao-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; cursor: pointer;
+      display: flex; flex-direction: column; gap: 12px; transition: border-color .15s, box-shadow .15s; }
+    .ao-card:hover, .ao-card:focus-visible { border-color: var(--input-focus); box-shadow: 0 4px 16px rgba(0, 29, 57, .08); outline: none; }
+    .ao-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .ao-card-name { font-weight: 800; font-size: 16px; overflow-wrap: anywhere; }
+    .ao-card-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+    .ao-tag { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(232, 124, 43, .14); color: var(--text); }
+    .ao-card-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .ao-card-nums > div { border-top: 1px solid var(--border); padding-top: 8px; min-width: 0; }
+    .ao-card-nums span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .ao-card-nums strong { display: block; font-size: 17px; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ao-card-nums strong.good { color: var(--good); } .ao-card-nums strong.warn { color: var(--warn); } .ao-card-nums strong.bad { color: var(--bad); }
+    .ao-card-nums small { display: block; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ao-card-warn { font-size: 12.5px; font-weight: 600; padding: 7px 10px; border-radius: 8px; background: rgba(232, 124, 43, .12); }
+    .ao-card-act { display: flex; justify-content: flex-end; }
+    .ao-card-act .ghost { font-size: 12px; padding: 4px 10px; color: var(--bad); }
     @media (max-width: 700px) {
       .ao-row { grid-template-columns: auto minmax(0, 1fr) auto; }
       .ao-row-st { display: none; }
@@ -2529,7 +2546,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v108</span>
+            <span id="buildTxt">build v109</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3364,11 +3381,15 @@
               <div class="dash-sub">Più builder dello stesso club come un ordine unico. Prezzi e quantità si possono simulare senza toccare i builder.</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="primary" id="aoNew" type="button">+ Nuova analisi</button>
+              <button class="ghost" id="aoBack" type="button" hidden>← Analisi salvate</button>
               <button class="secondary" id="aoReset" type="button" hidden>Ripristina prezzi e quantità</button>
-              <button class="primary" id="aoPrint" type="button" hidden>Stampa / PDF</button>
+              <button class="secondary" id="aoPrint" type="button" hidden>Stampa / PDF</button>
+              <button class="primary" id="aoSave" type="button" hidden>Salva analisi</button>
             </div>
           </div>
-          <div class="card" style="margin-bottom:14px">
+          <div id="aoList"></div>
+          <div class="card" id="aoEditCard" style="margin-bottom:14px" hidden>
             <div class="card-title">Club e builder dell'ordine</div>
             <div class="row2" style="align-items:end">
               <div>
@@ -4217,7 +4238,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v108";
+  const BUILD = "v109";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8809,10 +8830,24 @@ ${tabQtaPDF ? `<div class="sec scala">
      voci "per atleta" non esistono per l'ordine intero (ogni kit ha il suo
      prezzo): diventano la tabella per builder. Target e minimo dell'ordine
      sono la media dei builder pesata sul fatturato. */
-  const AO_SEL_KEY = "doubleu_analisi_ordine_v1";
+  /* Analisi salvate nel cloud (tabella order_analyses): elenco di card, e
+     un'analisi alla volta in modifica. Selezione dei builder e simulazione
+     vivono nell'analisi aperta (aoCur) finché non si salva; i numeri si
+     ricalcolano sempre dai builder, con avviso se sono cambiati dopo. */
+  let aoMode = "list";          // "list" | "edit"
+  let aoCur  = null;            // { id, name, groupKey, sel: [nomi]|null, sim: {}, fp: {}, dirty }
+  let aoSaved = [];             // righe di order_analyses
+  let aoSavedLoaded = false;
   let aoGroupKey = null;
-  const aoLoadSel = () => { try { return JSON.parse(localStorage.getItem(AO_SEL_KEY) || "{}"); } catch(_) { return {}; } };
-  const aoSaveSel = (key, names) => { try { const all = aoLoadSel(); all[key] = names; localStorage.setItem(AO_SEL_KEY, JSON.stringify(all)); } catch(_) {} };
+  const aoLoadSel = () => (aoCur && aoCur.groupKey && aoCur.sel) ? { [aoCur.groupKey]: aoCur.sel } : {};
+  const aoSaveSel = (key, names) => { if(aoCur) { aoCur.groupKey = key; aoCur.sel = names; aoCur.dirty = true; } };
+  // Impronta economica di un builder: cambia solo se cambiano prezzo, quantità o costi
+  const aoFp = (p) => {
+    const e = kitEconomics(p);
+    const str = e ? stableJson([Math.round(e.price * 100), Math.round(e.qty), Math.round(e.totalCost * 100), e.staff]) : "x";
+    let h = 5381; for(let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  };
 
   // Kit salvati (versione salvata, locale prima del cloud) raggruppati per club
   const aoGroups = () => {
@@ -8841,9 +8876,8 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   /* Simulazione per club: { groupKey: { nomeBuilder: { price, qty } } }.
      Non tocca i builder: vive solo qui, finché non si ripristina. */
-  const AO_SIM_KEY = "doubleu_analisi_ordine_sim_v1";
-  const aoLoadSim = () => { try { return JSON.parse(localStorage.getItem(AO_SIM_KEY) || "{}"); } catch(_) { return {}; } };
-  const aoSaveSim = (key, sim) => { try { const all = aoLoadSim(); if(sim && Object.keys(sim).length) all[key] = sim; else delete all[key]; localStorage.setItem(AO_SIM_KEY, JSON.stringify(all)); } catch(_) {} };
+  const aoLoadSim = () => (aoCur && aoCur.groupKey) ? { [aoCur.groupKey]: aoCur.sim || {} } : {};
+  const aoSaveSim = (key, sim) => { if(aoCur) { aoCur.sim = sim || {}; aoCur.dirty = true; } };
 
   // Payload con prezzo e/o quantità simulati. La quantità scala tutte le
   // righe in proporzione (i kit staff restano quelli); il prezzo diventa un
@@ -8885,7 +8919,18 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   let aoCtx = null;   // { g, kits, rows: [{ k, base, sim, ov }] } della pagina aperta
 
+  const aoButtons = () => {
+    const edit = aoMode === "edit";
+    const show = (id, v) => { const el = document.getElementById(id); if(el) el.hidden = !v; };
+    show("aoNew", !edit); show("aoBack", edit); show("aoSave", edit);
+    show("aoEditCard", edit);
+    const list = document.getElementById("aoList");
+    if(list) list.hidden = edit;
+  };
+
   const renderAnalisiOrdine = () => {
+    aoButtons();
+    if(aoMode === "list") { renderAoList(); return; }
     const input = document.getElementById("aoClub");
     const dl    = document.getElementById("aoClubList");
     const box   = document.getElementById("aoBuilders");
@@ -8894,6 +8939,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!input || !box || !out) return;
     const groups = aoGroups();
     if(dl) dl.innerHTML = groups.map(g => `<option value="${esc(g.label)}"></option>`).join("");
+    aoGroupKey = aoCur?.groupKey || null;
     const g = groups.find(x => x.key === aoGroupKey);
     aoCtx = null;
     if(bReset) bReset.hidden = true;
@@ -8935,7 +8981,8 @@ ${tabQtaPDF ? `<div class="sec scala">
     // aoRecalc aggiorna solo i numeri, così il campo in cui si scrive non perde il fuoco.
     out.innerHTML = `
       <div class="card bottom-zone">
-        <div class="card-title">Riepilogo ordine · ${esc(g.label)} <span class="hint" style="font-weight:400">${rows.length} builder${excluded ? ` · <b>${excluded} non inclus${excluded === 1 ? "o" : "i"}</b>` : ""}</span></div>
+        <div class="card-title">${aoCur?.name ? esc(aoCur.name) : `Riepilogo ordine · ${esc(g.label)}`} <span class="hint" style="font-weight:400">${rows.length} builder${excluded ? ` · <b>${excluded} non inclus${excluded === 1 ? "o" : "i"}</b>` : ""}</span></div>
+        ${aoChangedHtml(rows.map(r => r.k), aoCur?.fp, aoCur?.sel)}
         <div id="aoCmp"></div>
         <div id="aoTop"></div>
         <div class="rz-section">Per builder <span class="ao-sec-hint">prezzo e quantità si possono simulare</span></div>
@@ -9074,7 +9121,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   .cmp { border: 1px solid #A8C8E0; background: #F1F5F9; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
   .footer { margin-top: 18px; display: flex; justify-content: space-between; color: #8a9ab5; font-size: 9.5px; border-top: 1px solid #D7E3EE; padding-top: 6px; }
 </style></head><body>
-<div class="head"><div><h1>Analisi ordine · ${esc(g.label)}</h1>
+<div class="head"><div><h1>${aoCur?.name ? esc(aoCur.name) : `Analisi ordine · ${esc(g.label)}`}</h1>
   <div class="sub">${rows.length} builder${excluded ? ` · ${excluded} non inclus${excluded === 1 ? "o" : "i"}` : ""}${simulating ? " · con simulazione (i builder non sono modificati)" : ""}</div></div>
   <span class="tag">USO INTERNO</span></div>
 ${simulating ? `<div class="cmp"><b>Simulazione</b> — margine ordine ${pct(B.margin)} → <b>${pct(S.margin)}</b> (${S.prof - B.prof >= 0 ? "+" : "−"}${eur(Math.abs(S.prof - B.prof))}) · a −20% ${pct(B.lmargin)} → <b>${pct(S.lmargin)}</b> · fatturato ${eur(B.inv)} → <b>${eur(S.inv)}</b></div>` : ""}
@@ -9133,12 +9180,135 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
     toast("Prezzi e quantità dei builder ripristinati", "ok");
   });
 
+  // Builder cambiati (o spariti) rispetto a quando l'analisi è stata salvata
+  const aoChangedHtml = (kits, fp, sel) => {
+    if(!fp || !Object.keys(fp).length) return "";
+    const changed = kits.filter(k => fp[k.name] && fp[k.name] !== aoFp(k.payload)).map(k => variantName(k));
+    const missing = (sel || Object.keys(fp)).filter(n => fp[n] && !kits.some(k => k.name === n));
+    if(!changed.length && !missing.length) return "";
+    return `<div class="oa-qc-warn" style="margin:0 0 12px">⚠ ${changed.length ? `${changed.length} builder modificat${changed.length === 1 ? "o" : "i"} dopo il salvataggio: ${changed.map(esc).join(", ")}. I numeri sono ricalcolati con i valori attuali.` : ""}${missing.length ? ` ${missing.length} builder non più trovat${missing.length === 1 ? "o" : "i"}.` : ""}</div>`;
+  };
+
+  const aoLoadSaved = async () => {
+    if(!supabase) { aoSaved = []; aoSavedLoaded = true; return; }
+    try {
+      const { data, error } = await supabase.from("order_analyses").select("*").order("updated_at", { ascending: false });
+      if(error) throw error;
+      aoSaved = data || [];
+    } catch(e) { console.error("Analisi ordine:", e); toast("Analisi salvate non caricate: riprova", "warn"); }
+    aoSavedLoaded = true;
+  };
+
+  // Numeri attuali di un'analisi salvata, per la card
+  const aoLiveSummary = (row) => {
+    const g = aoGroups().find(x => x.key === row.club_key);
+    const d = row.data || {};
+    const names = Array.isArray(d.builders) ? d.builders : [];
+    const kits = g ? g.kits.filter(k => names.includes(k.name)) : [];
+    const ecos = kits.map(k => kitEconomics(aoSimPayload(k.payload, d.sim?.[k.name]))).filter(Boolean);
+    const S = ecos.length ? aoCompute(ecos) : null;
+    const changed = kits.filter(k => d.fp?.[k.name] && d.fp[k.name] !== aoFp(k.payload)).length;
+    return { g, S, n: kits.length, missing: names.length - kits.length, changed, simulating: !!(d.sim && Object.keys(d.sim).length) };
+  };
+
+  const renderAoList = () => {
+    const box = document.getElementById("aoList");
+    if(!box) return;
+    if(!aoSavedLoaded) {
+      box.innerHTML = `<div class="card"><div class="hint">Caricamento analisi salvate…</div></div>`;
+      aoLoadSaved().then(() => { if(aoMode === "list") renderAoList(); });
+      return;
+    }
+    if(!aoSaved.length) {
+      box.innerHTML = `<div class="card ao-empty"><div class="card-title">Nessuna analisi salvata</div>
+        <div class="hint">Con "+ Nuova analisi" scegli un club, spunti i builder che formano l'ordine, simuli prezzi e quantità e salvi.</div></div>`;
+      return;
+    }
+    const pct = (v) => (v * 100).toFixed(1) + "%";
+    box.innerHTML = `<div class="ao-cards">${aoSaved.map((row, i) => {
+      const L = aoLiveSummary(row);
+      const st = L.S ? (L.S.margin + 5e-4 >= L.S.target ? "good" : L.S.margin + 5e-4 >= L.S.mMin ? "warn" : "bad") : "";
+      return `<div class="ao-card" data-ao-open="${i}" role="button" tabindex="0">
+        <div class="ao-card-top">
+          <div><div class="ao-card-name">${esc(row.name)}</div>
+            <div class="ao-card-sub">${esc(row.club_label || "")} · ${new Date(row.updated_at || row.created_at).toLocaleDateString("it-IT")} · ${L.n} builder</div></div>
+          ${L.simulating ? `<span class="ao-tag">Simulazione</span>` : ""}
+        </div>
+        ${L.S ? `<div class="ao-card-nums">
+            <div><span>Margine</span><strong class="${st}">${pct(L.S.margin)}</strong><small>${eur(L.S.prof)}</small></div>
+            <div><span>Fatturato</span><strong>${eur(L.S.inv)}</strong><small>${L.S.vatOn ? "IVA incl." : "senza IVA"}</small></div>
+            <div><span>A −20%</span><strong>${pct(L.S.lmargin)}</strong><small>${eur(L.S.lprof)}</small></div>
+          </div>` : `<div class="hint">${L.g ? "Nessun builder dell'analisi è ancora disponibile." : "Club non trovato fra i builder salvati."}</div>`}
+        ${L.changed || L.missing ? `<div class="ao-card-warn">⚠ ${L.changed ? `${L.changed} builder modificat${L.changed === 1 ? "o" : "i"} dopo il salvataggio` : ""}${L.changed && L.missing ? " · " : ""}${L.missing ? `${L.missing} non più trovat${L.missing === 1 ? "o" : "i"}` : ""}</div>` : ""}
+        <div class="ao-card-act"><button type="button" class="ghost" data-ao-del="${i}">Elimina</button></div>
+      </div>`;
+    }).join("")}</div>`;
+    box.querySelectorAll("[data-ao-open]").forEach(el => {
+      const open = (e) => { if(e.target.closest("[data-ao-del]")) return; aoOpenSaved(aoSaved[+el.dataset.aoOpen]); };
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", (e) => { if(e.key === "Enter") open(e); });
+    });
+    box.querySelectorAll("[data-ao-del]").forEach(b => b.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const row = aoSaved[+b.dataset.aoDel];
+      if(!row || !await appConfirm({ title: "Elimina analisi", body: `<p>Eliminare <strong>${esc(row.name)}</strong>?</p><p class="acb-note">I builder non vengono toccati.</p>`, ok: "Elimina" })) return;
+      const { error } = await supabase.from("order_analyses").delete().eq("id", row.id);
+      if(error) { toast("Analisi non eliminata: riprova", "err"); return; }
+      aoSaved = aoSaved.filter(x => x.id !== row.id);
+      toast("Analisi eliminata", "ok");
+      renderAoList();
+    }));
+  };
+
+  const aoStartEdit = (cur) => {
+    aoCur = cur;
+    aoMode = "edit";
+    const input = document.getElementById("aoClub");
+    const g = aoGroups().find(x => x.key === cur.groupKey);
+    if(input) input.value = g ? g.label : "";
+    renderAnalisiOrdine();
+    window.scrollTo({ top: 0 });
+  };
+  const aoOpenSaved = (row) => aoStartEdit({ id: row.id, name: row.name, groupKey: row.club_key,
+    sel: Array.isArray(row.data?.builders) ? row.data.builders : null, sim: row.data?.sim || {}, fp: row.data?.fp || {}, dirty: false });
+  const aoConfirmLeave = async () => !aoCur?.dirty || await appConfirm({ title: "Analisi non salvata",
+    body: `<p>Le modifiche a questa analisi non sono salvate.</p>`, ok: "Esci senza salvare", cancel: "Resta" });
+
+  document.getElementById("aoNew")?.addEventListener("click", () => aoStartEdit({ id: null, name: "", groupKey: null, sel: null, sim: {}, fp: {}, dirty: false }));
+  document.getElementById("aoBack")?.addEventListener("click", async () => {
+    if(!await aoConfirmLeave()) return;
+    aoMode = "list"; aoCur = null;
+    renderAnalisiOrdine();
+  });
+  document.getElementById("aoSave")?.addEventListener("click", async () => {
+    if(!aoCtx || !aoCur) { toast("Scegli un club e almeno un builder", "warn"); return; }
+    if(!supabase) { toast("Serve la connessione per salvare l'analisi", "warn"); return; }
+    const dflt = aoCur.name || `${aoCtx.g.label} – ${new Date().toLocaleDateString("it-IT")}`;
+    const name = prompt("Nome dell'analisi", dflt);
+    if(name === null) return;
+    const nm = name.trim() || dflt;
+    const names = aoCtx.rows.map(r => r.k.name);
+    const fp = {}; aoCtx.rows.forEach(r => { fp[r.k.name] = aoFp(r.k.payload); });
+    const rowData = { name: nm, club_key: aoCtx.g.key, club_label: aoCtx.g.label, updated_at: new Date().toISOString(),
+      data: { builders: names, sim: aoCur.sim || {}, fp,
+        totals: aoCtx.S ? { margin: aoCtx.S.margin, profit: aoCtx.S.prof, invoice: aoCtx.S.inv } : null } };
+    const q = aoCur.id ? supabase.from("order_analyses").update(rowData).eq("id", aoCur.id).select().single()
+                       : supabase.from("order_analyses").insert(rowData).select().single();
+    const { data, error } = await q;
+    if(error) { console.error("Salvataggio analisi:", error); toast("Analisi non salvata: riprova", "err"); return; }
+    aoSaved = [data, ...aoSaved.filter(x => x.id !== data.id)];
+    aoCur = null; aoMode = "list";
+    toast(`Analisi "${nm}" salvata ✓`, "ok");
+    renderAnalisiOrdine();
+  });
+
   const aoPickClub = () => {
     const input = document.getElementById("aoClub");
     const v = normName(input?.value || "");
     const g = aoGroups().find(x => normName(x.label) === v);
-    if(g && g.key !== aoGroupKey) { aoGroupKey = g.key; renderAnalisiOrdine(); }
-    else if(!v && aoGroupKey) { aoGroupKey = null; renderAnalisiOrdine(); }
+    if(!aoCur) return;
+    if(g && g.key !== aoCur.groupKey) { aoCur.groupKey = g.key; aoCur.sel = null; aoCur.sim = {}; aoCur.fp = {}; aoCur.dirty = true; renderAnalisiOrdine(); }
+    else if(!v && aoCur.groupKey) { aoCur.groupKey = null; renderAnalisiOrdine(); }
   };
   document.getElementById("aoClub")?.addEventListener("input", aoPickClub);
   document.getElementById("aoClub")?.addEventListener("change", aoPickClub);
@@ -9148,10 +9318,8 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
     const r = resolveRef(clientRef);
     const key = r ? r.key : normName(clientName.value);
     const g = aoGroups().find(x => x.key === key || normName(x.label) === normName(clientName.value));
-    aoGroupKey = g ? g.key : null;
-    const input = document.getElementById("aoClub");
-    if(input) input.value = g ? g.label : "";
     showView("ordine");
+    aoStartEdit({ id: null, name: "", groupKey: g ? g.key : null, sel: null, sim: {}, fp: {}, dirty: false });
   };
 
   // Nei kit aggiunti a un preventivo la spedizione non si inserisce: c'è già nel primo.
