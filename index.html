@@ -2588,7 +2588,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v114</span>
+            <span id="buildTxt">build v115</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4285,7 +4285,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v114";
+  const BUILD = "v115";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4489,11 +4489,15 @@ if("serviceWorker" in navigator) {
      riempiva il costo da una vecchia tabella generica nel codice (non dal
      catalogo) e restava "Auto" anche dopo una correzione a mano. Ora la riga
      dice se il costo è quello del catalogo, se è stato modificato (con il
-     costo di catalogo accanto e un clic per tornarci) o se è manuale. */
+     costo di catalogo accanto e un clic per tornarci) o se è manuale.
+     Una riga senza codice si aggancia solo ad articoli di catalogo senza
+     codice: i kit vecchi con nomi generici ("Pantalone") finivano su un
+     articolo LS24 qualsiasi con lo stesso nome. */
   const catalogFor = (it) => {
     const cat = getCatalog();
-    return (it.code && (cat.find(a => a.code === it.code && catalogLabel(a) === it.article) || cat.find(a => a.code === it.code)))
-      || cat.find(a => catalogLabel(a) === it.article) || null;
+    if(it.code) return cat.find(a => a.code === it.code && catalogLabel(a) === it.article)
+      || cat.find(a => a.code === it.code) || null;
+    return cat.find(a => !a.code && catalogLabel(a) === it.article) || null;
   };
 
   // Riga del kit da un articolo di catalogo. La distinta (costParts) viene
@@ -4690,11 +4694,15 @@ if("serviceWorker" in navigator) {
 
       const unitCost   = toNum(it.base) + toNum(it.extra);
       const catArt     = catalogFor(it);
-      const catCost    = catArt ? toNum(catArt.base) + toNum(catArt.extra) : 0;
+      /* Il confronto col catalogo riguarda solo il costo del capo. La
+         stampa/ricamo cambia kit per kit (interna o del fornitore): è una
+         scelta, non uno scostamento, quindi resta solo un riferimento. */
+      const stampaRef  = catArt && Math.abs(toNum(it.extra) - toNum(catArt.extra)) >= 0.005
+        ? ` <span class="cost-src-ref">· stampa catalogo ${eur(toNum(catArt.extra))}</span>` : "";
       const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
-        : (Math.abs(toNum(it.base) - toNum(catArt.base)) < 0.005 && Math.abs(toNum(it.extra) - toNum(catArt.extra)) < 0.005)
-          ? `<span class="cost-src cat">da catalogo</span>`
-          : `<span class="cost-src mod">modificato</span> <span class="cost-src-ref">catalogo ${eur(catCost)}</span> <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`;
+        : Math.abs(toNum(it.base) - toNum(catArt.base)) < 0.005
+          ? `<span class="cost-src cat">capo da catalogo</span>${stampaRef}`
+          : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">catalogo ${eur(toNum(catArt.base))}</span> <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>${stampaRef}`;
 
       // Il cambio tessuto vale solo per questo preventivo: la riga tiene una
       // copia della distinta, l'articolo di catalogo non viene mai toccato.
@@ -4737,7 +4745,7 @@ if("serviceWorker" in navigator) {
           <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off">
         </div>
         <div class="art-field">
-          <label>Extra €</label>
+          <label>Stampa/Ric. €</label>
           <input data-act="extra" data-id="${it.id}" value="${it.extra}" inputmode="decimal" autocomplete="off">
         </div>
       </div>
@@ -4844,14 +4852,15 @@ if("serviceWorker" in navigator) {
       }
 
       if(act === "costReset"){
-        // Torna al costo (e alla distinta) dell'articolo in catalogo
+        // Torna al costo del capo (e alla distinta) dell'articolo in catalogo.
+        // La stampa/ricamo del kit resta com'è: è una scelta di questo kit.
         el.addEventListener("click", () => {
           const it = find(); if(!it) return;
           const art = catalogFor(it); if(!art) return;
-          it.base = toNum(art.base); it.extra = toNum(art.extra);
-          if(art.costParts) it.costParts = { ...art.costParts };
+          it.base = toNum(art.base);
+          if(art.costParts) it.costParts = { ...art.costParts, stampa: toNum(it.extra) };
           render();
-          toast("Costo di catalogo ripristinato", "ok");
+          toast("Costo del capo di catalogo ripristinato", "ok");
         });
         return;
       }
@@ -4922,7 +4931,7 @@ if("serviceWorker" in navigator) {
     const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
 
     const rowHtml = (art) => {
-      const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+      const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Stampa/ricamo: ${eur(toNum(art.extra))}` : "");
       const label = catalogLabel(art);
       const meta  = catalogMeta(art);
       const inKit = items.filter(it => it.article === label).length;
@@ -7089,9 +7098,14 @@ ${tabQtaPDF ? `<div class="sec scala">
       renderArticoli();
       return; // niente merge e niente risincronizzazione: il cloud è la verità
     }
+    /* Il cloud vince sugli articoli presenti in entrambi: prima vinceva la
+       copia locale, così una correzione fatta da un altro dispositivo (o
+       direttamente nel database) veniva sovrascritta al primo salvataggio
+       del catalogo. Dal locale si aggiungono solo gli articoli che il cloud
+       non ha ancora. */
     const byName = new Map();
-    cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
     local.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
+    cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
     const merged = [...byName.values()];
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(merged)); } catch(e) {}
     if(merged.length !== cloudItems.length) syncCatalogToCloud();
@@ -10425,7 +10439,7 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
         const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
 
         const rowHtml = (art) => {
-          const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+          const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Stampa/ricamo: ${eur(toNum(art.extra))}` : "");
           const label = catalogLabel(art);
           const meta  = catalogMeta(art);
           const inKit = items.filter(it => it.article === label).length;
