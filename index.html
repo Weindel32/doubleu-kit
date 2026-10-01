@@ -1527,6 +1527,8 @@
     .catalog-item-prices { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .catalog-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
     .cat-badge { display:inline-block; font-size:10px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--accent); color:#fff; margin-left:6px; vertical-align:middle; letter-spacing:.3px; }
+    .cat-badge.ps { background: var(--good); }
+    .cat-badge.hist { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
 
     /* ─── Kit attivo article rows (articoli view) ─── */
     .kit-art-cards { display: flex; flex-direction: column; gap: 0; }
@@ -2588,7 +2590,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v114</span>
+            <span id="buildTxt">build v115</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4285,7 +4287,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v114";
+  const BUILD = "v115";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4489,11 +4491,15 @@ if("serviceWorker" in navigator) {
      riempiva il costo da una vecchia tabella generica nel codice (non dal
      catalogo) e restava "Auto" anche dopo una correzione a mano. Ora la riga
      dice se il costo è quello del catalogo, se è stato modificato (con il
-     costo di catalogo accanto e un clic per tornarci) o se è manuale. */
+     costo di catalogo accanto e un clic per tornarci) o se è manuale.
+     Una riga senza codice si aggancia solo ad articoli di catalogo senza
+     codice: i kit vecchi con nomi generici ("Pantalone") finivano su un
+     articolo LS24 qualsiasi con lo stesso nome. */
   const catalogFor = (it) => {
     const cat = getCatalog();
-    return (it.code && (cat.find(a => a.code === it.code && catalogLabel(a) === it.article) || cat.find(a => a.code === it.code)))
-      || cat.find(a => catalogLabel(a) === it.article) || null;
+    if(it.code) return cat.find(a => a.code === it.code && catalogLabel(a) === it.article)
+      || cat.find(a => a.code === it.code) || null;
+    return cat.find(a => !a.code && catalogLabel(a) === it.article) || null;
   };
 
   // Riga del kit da un articolo di catalogo. La distinta (costParts) viene
@@ -4501,9 +4507,12 @@ if("serviceWorker" in navigator) {
   // senza toccare l'articolo: cambiarlo qui non deve riscrivere il catalogo.
   const kitItemFromCatalog = (art, line, label) => {
     const it = { id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
-      line, base: toNum(art.base), extra: toNum(art.extra), qty: toNum(qtyEst.value) || 1,
+      line, base: catBase(art), extra: catExtra(art), qty: toNum(qtyEst.value) || 1,
       isGift: false };
-    if(art.costParts) it.costParts = { ...art.costParts };
+    // Con il costo di Production Sheet la distinta è quella della scheda
+    const ps = psCostFor(art);
+    if(ps) { if(ps.costParts) it.costParts = ps.costParts; }
+    else if(art.costParts) it.costParts = { ...art.costParts };
     return it;
   };
 
@@ -4690,11 +4699,16 @@ if("serviceWorker" in navigator) {
 
       const unitCost   = toNum(it.base) + toNum(it.extra);
       const catArt     = catalogFor(it);
-      const catCost    = catArt ? toNum(catArt.base) + toNum(catArt.extra) : 0;
+      /* Il confronto col catalogo riguarda solo il costo del capo. La
+         stampa/ricamo cambia kit per kit (interna o del fornitore): è una
+         scelta, non uno scostamento, quindi resta solo un riferimento. */
+      const stampaRef  = catArt && catExtra(catArt) > 0 && Math.abs(toNum(it.extra) - catExtra(catArt)) >= 0.005
+        ? ` <span class="cost-src-ref">· stampa catalogo ${eur(catExtra(catArt))}</span>` : "";
+      const catSrc     = catArt && psCostFor(catArt) ? "Production Sheet" : "file storico";
       const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
-        : (Math.abs(toNum(it.base) - toNum(catArt.base)) < 0.005 && Math.abs(toNum(it.extra) - toNum(catArt.extra)) < 0.005)
-          ? `<span class="cost-src cat">da catalogo</span>`
-          : `<span class="cost-src mod">modificato</span> <span class="cost-src-ref">catalogo ${eur(catCost)}</span> <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`;
+        : Math.abs(toNum(it.base) - catBase(catArt)) < 0.005
+          ? `<span class="cost-src cat">capo da ${catSrc}</span>${stampaRef}`
+          : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">${catSrc} ${eur(catBase(catArt))}</span> <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>${stampaRef}`;
 
       // Il cambio tessuto vale solo per questo preventivo: la riga tiene una
       // copia della distinta, l'articolo di catalogo non viene mai toccato.
@@ -4737,7 +4751,7 @@ if("serviceWorker" in navigator) {
           <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off">
         </div>
         <div class="art-field">
-          <label>Extra €</label>
+          <label>Stampa/Ric. €</label>
           <input data-act="extra" data-id="${it.id}" value="${it.extra}" inputmode="decimal" autocomplete="off">
         </div>
       </div>
@@ -4844,14 +4858,17 @@ if("serviceWorker" in navigator) {
       }
 
       if(act === "costReset"){
-        // Torna al costo (e alla distinta) dell'articolo in catalogo
+        // Torna al costo del capo (e alla distinta) dell'articolo in catalogo.
+        // La stampa/ricamo del kit resta com'è: è una scelta di questo kit.
         el.addEventListener("click", () => {
           const it = find(); if(!it) return;
           const art = catalogFor(it); if(!art) return;
-          it.base = toNum(art.base); it.extra = toNum(art.extra);
-          if(art.costParts) it.costParts = { ...art.costParts };
+          it.base = catBase(art);
+          const ps = psCostFor(art);
+          if(ps) { if(ps.costParts) it.costParts = ps.costParts; else delete it.costParts; }
+          else if(art.costParts) it.costParts = { ...art.costParts, stampa: toNum(it.extra) };
           render();
-          toast("Costo di catalogo ripristinato", "ok");
+          toast("Costo del capo di catalogo ripristinato", "ok");
         });
         return;
       }
@@ -4922,7 +4939,7 @@ if("serviceWorker" in navigator) {
     const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
 
     const rowHtml = (art) => {
-      const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+      const priceStr = `Costo: ${eur(catBase(art))}` + (catExtra(art) > 0 ? ` · Stampa/ricamo: ${eur(catExtra(art))}` : "");
       const label = catalogLabel(art);
       const meta  = catalogMeta(art);
       const inKit = items.filter(it => it.article === label).length;
@@ -6813,6 +6830,84 @@ ${tabQtaPDF ? `<div class="sec scala">
     }
   };
 
+  /* ─── Costi da Production Sheet ───
+     Production Sheet (stesso database) è la fonte del costo del prodotto:
+     gli "articoli di costo" (Scheda.tipo = costo) con lo stesso codice
+     modello di un articolo di catalogo (DUSP 25…) ne sostituiscono il costo.
+     Il costo comprende il logo W; la stampa del club resta nel kit. Gli
+     articoli non ancora rifatti lì tengono il valore del catalogo ("file
+     storico"). Solo lettura: qui i costi di Production Sheet non si toccano.
+     Il calcolo è lo stesso di Production Sheet (calcolaRiepilogoCosti):
+     consumi × prezzo attuale del tessuto + accessori + lavorazioni. */
+  let psSchede = [];
+  const loadCostiProduzione = async () => {
+    if(!supabase) return;
+    try {
+      const { data, error } = await supabase.from("Scheda")
+        .select("id,codice,codiceModello,tipo,consumoMateriale,accessori,costoTaglio,costoCucitura,costoStampa,costoRicamo,costoLavorazione,updatedAt")
+        .in("tipo", ["costo", "preventivo"])
+        .order("updatedAt", { ascending: false });
+      if(error){ console.error("Production Sheet load error:", error); return; }
+      psSchede = Array.isArray(data) ? data : [];
+    } catch(e){ console.error("Production Sheet load exception:", e); }
+  };
+  const psCostoUnitario = (m) => {
+    if(m.unitaMisura === "pz") return toNum(m.costoMetro);
+    if(toNum(m.costoMetro)) return toNum(m.costoMetro);
+    if(m.unitaMisura !== "kg" || !toNum(m.prezzoKg) || !toNum(m.peso)) return 0;
+    const kgPerM = m.unitaPeso === "g/m" ? toNum(m.peso) / 1000
+      : toNum(m.larghezza) ? toNum(m.peso) * toNum(m.larghezza) / 100000 : 0;
+    return Math.round(kgPerM * toNum(m.prezzoKg) * 100) / 100;
+  };
+  const psTotale = (sc) => {
+    const list = (j) => { try { const v = typeof j === "string" ? JSON.parse(j) : j; return Array.isArray(v) ? v : []; } catch(e){ return []; } };
+    const mat = list(sc.consumoMateriale).reduce((a, c) => {
+      const m = materiali.find(x => x.id === c.materialeId);
+      return a + toNum(c.consumoPerCapo) * (m ? psCostoUnitario(m) : toNum(c.costoUnitario));
+    }, 0);
+    const acc = list(sc.accessori).reduce((a, x) => a + toNum(x.quantita) * toNum(x.prezzoUnitario), 0);
+    // Schede vecchie: solo il totale lavorazione, senza il dettaglio per voce
+    const split = [sc.costoTaglio, sc.costoCucitura, sc.costoStampa, sc.costoRicamo];
+    const lav = (split.some(v => v !== null && v !== undefined) ? split : [sc.costoLavorazione])
+      .reduce((a, v) => a + toNum(v), 0);
+    return Math.round((mat + acc + lav) * 100) / 100;
+  };
+  const normCode = (c) => String(c || "").trim().toUpperCase();
+  // Scheda più recente con lo stesso codice modello (sono già ordinate per data)
+  const psCostFor = (art) => {
+    const code = normCode(art?.code);
+    if(!code) return null;
+    const sc = psSchede.find(x => normCode(x.codiceModello) === code);
+    return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc) } : null;
+  };
+  /* Distinta per la riga del kit: il materiale principale (quello che costa
+     di più, con un codice in anagrafica) resta cambiabile per il singolo
+     preventivo; tutto il resto della scheda (secondari, accessori,
+     lavorazioni, logo W, packaging) è un blocco fisso in "altro". Cambiando
+     tessuto: costo = scheda − tessuto principale + nuovo tessuto × consumo. */
+  const psCostParts = (sc) => {
+    let cons = [];
+    try { const v = typeof sc.consumoMateriale === "string" ? JSON.parse(sc.consumoMateriale) : sc.consumoMateriale; cons = Array.isArray(v) ? v : []; } catch(e) {}
+    let main = null;
+    cons.forEach(c => {
+      const m = materiali.find(x => x.id === c.materialeId);
+      if(!m || !(m.codice || "").trim()) return;
+      const costo = toNum(c.consumoPerCapo) * psCostoUnitario(m);
+      if(!main || costo > main.costo) main = { m, consumo: toNum(c.consumoPerCapo), costo };
+    });
+    if(!main) return null;
+    const cent = (n) => Math.round(n * 100) / 100;
+    const tessuto = cent(main.costo);
+    return { tessuto_default: main.m.codice, consumo_default: main.consumo, tessuto,
+      altro: cent(psTotale(sc) - tessuto), altroNome: "Production Sheet", fonte: "ps" };
+  };
+  // Costo del capo e stampa di un articolo di catalogo, con Production Sheet se c'è
+  const catBase  = (art) => { const ps = psCostFor(art); return ps ? ps.totale : toNum(art.base); };
+  const catExtra = (art) => psCostFor(art) ? 0 : toNum(art.extra);
+  const catSrcBadge = (art) => psCostFor(art)
+    ? ' <span class="cat-badge ps">Production Sheet</span>'
+    : ' <span class="cat-badge hist">file storico</span>';
+
   const resetMaterialeForm = () => {
     materialeEditId = null;
     ["matNome","matCodice","matComposizione","matLarghezza","matFornitore","matPeso","matPrezzoKg","matNote"].forEach(id => {
@@ -7089,9 +7184,14 @@ ${tabQtaPDF ? `<div class="sec scala">
       renderArticoli();
       return; // niente merge e niente risincronizzazione: il cloud è la verità
     }
+    /* Il cloud vince sugli articoli presenti in entrambi: prima vinceva la
+       copia locale, così una correzione fatta da un altro dispositivo (o
+       direttamente nel database) veniva sovrascritta al primo salvataggio
+       del catalogo. Dal locale si aggiungono solo gli articoli che il cloud
+       non ha ancora. */
     const byName = new Map();
-    cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
     local.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
+    cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
     const merged = [...byName.values()];
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(merged)); } catch(e) {}
     if(merged.length !== cloudItems.length) syncCatalogToCloud();
@@ -10420,17 +10520,21 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
         if(emptyEl) emptyEl.style.display = "";
       } else {
         if(emptyEl) emptyEl.style.display = "none";
+        // Avanzamento della migrazione dei costi verso Production Sheet
+        const nPs = catalog.filter(a => psCostFor(a)).length;
+        listEl.insertAdjacentHTML("afterbegin", `<div class="catalog-group hint" style="margin:0 0 10px">
+          Costo da <b>Production Sheet</b>: ${nPs} di ${catalog.length} articoli · gli altri usano il <b>file storico</b>.</div>`);
 
         const LINE_ORDER = LINES.map(l => l.value);
         const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
 
         const rowHtml = (art) => {
-          const priceStr = `Base: ${eur(toNum(art.base))}` + (toNum(art.extra) > 0 ? ` · Extra: ${eur(toNum(art.extra))}` : "");
+          const priceStr = `Costo: ${eur(catBase(art))}` + (catExtra(art) > 0 ? ` · Stampa/ricamo: ${eur(catExtra(art))}` : "");
           const label = catalogLabel(art);
           const meta  = catalogMeta(art);
           const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
-          const distintaBadge = art.costParts ? ' <span class="cat-badge">distinta</span>' : "";
+          const distintaBadge = catSrcBadge(art);
           return `<div class="catalog-item">
             <div class="catalog-item-info">
               <div class="catalog-item-name">${esc(label)}${inKitBadge}${distintaBadge}</div>
@@ -11220,9 +11324,9 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const header  = "Codice,Nome,Tipo,Genere,Linea,Costo base €,Extra €,Totale €";
     const csvCell = (v) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const csvRows = rows.map(a => {
-      const tot = toNum(a.base) + toNum(a.extra);
+      const tot = catBase(a) + catExtra(a);
       return [csvCell(a.code || ""), csvCell(a.name || ""), csvCell(a.tipo || ""), csvCell(a.genere || ""),
-        csvCell(LINE_LABEL[a.categoria] || a.categoria || ""), toNum(a.base).toFixed(2), toNum(a.extra).toFixed(2), tot.toFixed(2)].join(",");
+        csvCell(LINE_LABEL[a.categoria] || a.categoria || ""), catBase(a).toFixed(2), catExtra(a).toFixed(2), tot.toFixed(2)].join(",");
     });
     const csv  = [header, ...csvRows].join("\n");
     const blob = new Blob([csv], { type:"text/csv" });
@@ -11241,15 +11345,15 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const date      = new Date().toLocaleDateString("it-IT", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
     const lineLabel = line === "ALL" ? "Tutte le linee" : (LINE_LABEL[line] || line);
     const bodyRows  = rows.map(a => {
-      const tot = toNum(a.base) + toNum(a.extra);
+      const tot = catBase(a) + catExtra(a);
       return `<tr>
         <td style="font-family:monospace">${esc(a.code || "—")}</td>
         <td>${esc(a.name || "")}</td>
         <td>${esc(a.tipo || "")}</td>
         <td>${esc(a.genere || "")}</td>
         <td>${esc(LINE_LABEL[a.categoria] || a.categoria || "")}</td>
-        <td>${eur(toNum(a.base))}</td>
-        <td>${eur(toNum(a.extra))}</td>
+        <td>${eur(catBase(a))}</td>
+        <td>${eur(catExtra(a))}</td>
         <td style="font-weight:800">${eur(tot)}</td>
       </tr>`;
     }).join("");
@@ -11578,6 +11682,8 @@ tr:last-child td{border-bottom:none}
       setJS(true, "JS OK");
       await loadProjectsFromCloud();
       await loadMateriali();
+      await loadCostiProduzione();
+      renderArticoli(); // la lista era già stata disegnata col solo catalogo
       renderDashboard();
     } catch(err) {
       console.error(err);
