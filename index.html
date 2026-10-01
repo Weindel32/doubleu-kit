@@ -4509,8 +4509,10 @@ if("serviceWorker" in navigator) {
     const it = { id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
       line, base: catBase(art), extra: catExtra(art), qty: toNum(qtyEst.value) || 1,
       isGift: false };
-    // Con il costo di Production Sheet la distinta del catalogo non vale più
-    if(art.costParts && !psCostFor(art)) it.costParts = { ...art.costParts };
+    // Con il costo di Production Sheet la distinta è quella della scheda
+    const ps = psCostFor(art);
+    if(ps) { if(ps.costParts) it.costParts = ps.costParts; }
+    else if(art.costParts) it.costParts = { ...art.costParts };
     return it;
   };
 
@@ -4862,7 +4864,8 @@ if("serviceWorker" in navigator) {
           const it = find(); if(!it) return;
           const art = catalogFor(it); if(!art) return;
           it.base = catBase(art);
-          if(psCostFor(art)) delete it.costParts;
+          const ps = psCostFor(art);
+          if(ps) { if(ps.costParts) it.costParts = ps.costParts; else delete it.costParts; }
           else if(art.costParts) it.costParts = { ...art.costParts, stampa: toNum(it.extra) };
           render();
           toast("Costo del capo di catalogo ripristinato", "ok");
@@ -6875,7 +6878,28 @@ ${tabQtaPDF ? `<div class="sec scala">
     const code = normCode(art?.code);
     if(!code) return null;
     const sc = psSchede.find(x => normCode(x.codiceModello) === code);
-    return sc ? { totale: psTotale(sc), codice: sc.codice } : null;
+    return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc) } : null;
+  };
+  /* Distinta per la riga del kit: il materiale principale (quello che costa
+     di più, con un codice in anagrafica) resta cambiabile per il singolo
+     preventivo; tutto il resto della scheda (secondari, accessori,
+     lavorazioni, logo W, packaging) è un blocco fisso in "altro". Cambiando
+     tessuto: costo = scheda − tessuto principale + nuovo tessuto × consumo. */
+  const psCostParts = (sc) => {
+    let cons = [];
+    try { const v = typeof sc.consumoMateriale === "string" ? JSON.parse(sc.consumoMateriale) : sc.consumoMateriale; cons = Array.isArray(v) ? v : []; } catch(e) {}
+    let main = null;
+    cons.forEach(c => {
+      const m = materiali.find(x => x.id === c.materialeId);
+      if(!m || !(m.codice || "").trim()) return;
+      const costo = toNum(c.consumoPerCapo) * psCostoUnitario(m);
+      if(!main || costo > main.costo) main = { m, consumo: toNum(c.consumoPerCapo), costo };
+    });
+    if(!main) return null;
+    const cent = (n) => Math.round(n * 100) / 100;
+    const tessuto = cent(main.costo);
+    return { tessuto_default: main.m.codice, consumo_default: main.consumo, tessuto,
+      altro: cent(psTotale(sc) - tessuto), altroNome: "Production Sheet", fonte: "ps" };
   };
   // Costo del capo e stampa di un articolo di catalogo, con Production Sheet se c'è
   const catBase  = (art) => { const ps = psCostFor(art); return ps ? ps.totale : toNum(art.base); };
