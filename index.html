@@ -2181,6 +2181,30 @@
     .ao-conc-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
     .ao-conc-nums span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
     .ao-conc-nums strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+    /* Incasso dell'ordine: acconto simulato e rate del saldo */
+    .ao-pay { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+    .ao-pay-head { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-end; margin-bottom: 10px; }
+    .ao-pay-field { display: flex; flex-direction: column; gap: 4px; }
+    .ao-pay-field label { margin: 0; }
+    .ao-pay-field .ao-in { margin-left: 0; max-width: 110px; }
+    .ao-pay-rate { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+    .ao-pay-rate .ao-in { width: 80px; max-width: 80px; margin: 0; flex-shrink: 0; }
+    .ao-pay-rate b { min-width: 52px; }
+    .ao-pay-rate .ghost { padding: 4px 9px; color: var(--bad); margin-left: auto; width: auto; }
+    .ao-pay-add { margin-top: 6px; font-size: 13px; padding: 6px 12px; }
+    .ao-pay-sum { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--surface-2); }
+    .ao-pay-msg { font-weight: 700; font-size: 13.5px; margin-bottom: 10px; }
+    .ao-pay-msg.good { color: var(--good); } .ao-pay-msg.warn { color: var(--warn); } .ao-pay-msg.bad { color: var(--bad); }
+    .ao-pay-msg small { font-weight: 500; color: var(--muted); }
+    .ao-pay-tbl { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; margin-top: 10px; }
+    .ao-pay-tbl th, .ao-pay-tbl td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+    .ao-pay-tbl th { font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .ao-pay-tbl th:first-child, .ao-pay-tbl td:first-child { text-align: left; }
+    @media (max-width: 700px) {
+      .ao-pay-rate .ao-in { width: 64px; max-width: 64px; }
+      .ao-pay-rate > span:nth-child(5) { display: none; }
+      .ao-pay-tbl th:nth-child(3), .ao-pay-tbl td:nth-child(3) { display: none; }
+    }
     .ao-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
     .ao-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; cursor: pointer;
       display: flex; flex-direction: column; gap: 12px; transition: border-color .15s, box-shadow .15s; }
@@ -2590,7 +2614,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v115</span>
+            <span id="buildTxt">build v116</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4287,7 +4311,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v115";
+  const BUILD = "v116";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9162,6 +9186,7 @@ ${tabQtaPDF ? `<div class="sec scala">
         </div>
         <div id="aoRest"></div>
         <div id="aoConc"></div>
+        <div id="aoPay"></div>
         <div class="hint" style="margin-top:10px">La simulazione resta salvata per questo club e non modifica i builder. Il valore di partenza è quello dei builder salvati.</div>
       </div>`;
 
@@ -9181,6 +9206,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     out.querySelectorAll("[data-ao-qty]").forEach(el => el.addEventListener("input", () => onEdit(+el.dataset.aoQty, "qty", el)));
     out.querySelectorAll("[data-ao-price]").forEach(el => el.addEventListener("input", () => onEdit(+el.dataset.aoPrice, "price", el)));
     aoRenderGiftBlock();
+    aoRenderPayBlock();
     aoRecalc();
   };
 
@@ -9346,6 +9372,105 @@ ${tabQtaPDF ? `<div class="sec scala">
       </div>`;
   };
 
+  /* Incasso dell'ordine: acconto e rate del saldo simulati sull'ordine
+     intero, senza toccare i builder. Acconto alla conferma, rate a N giorni
+     dalla consegna, il resto alla consegna. Si guarda la cassa: alla
+     consegna l'incassato (al netto IVA, l'IVA va versata) copre i costi?
+     Quanto resta da incassare dopo, e fino a quando, è il margine esposto. */
+  const aoPayCalc = (S) => {
+    const pay = aoCur?.pay || {};
+    const dep = pay.dep !== null && pay.dep !== undefined ? Math.max(0, Math.min(100, pay.dep)) / 100 : S.dep;
+    const rate = (pay.rate || []).filter(r => r.pct > 0)
+      .map(r => ({ pct: r.pct / 100, days: Math.max(0, Math.round(r.days || 0)) }))
+      .sort((a, b) => a.days - b.days);
+    const rateSum = rate.reduce((a, r) => a + r.pct, 0);
+    const atDel = Math.max(0, 1 - dep - rateSum);
+    const over = dep + rateSum - 1;                     // > 0: le rate superano il totale
+    const net = (v) => S.vatOn ? v / (1 + S.vatRate) : v;
+    const steps = [{ when: "Alla conferma (acconto)", pct: dep }];
+    if(atDel > 1e-6 || !rate.length) steps.push({ when: "Alla consegna", pct: atDel });
+    rate.forEach(r => steps.push({ when: r.days ? `A ${r.days} giorni dalla consegna` : "Alla consegna", pct: r.pct }));
+    let cum = 0;
+    steps.forEach(st => { st.amount = S.inv * st.pct; cum += st.amount; st.cum = cum; });
+    const cashDel = S.inv * (dep + atDel + rate.filter(r => !r.days).reduce((a, r) => a + r.pct, 0));
+    const credit = Math.max(0, S.inv - cashDel);
+    const lastDays = rate.length ? Math.max(...rate.map(r => r.days)) : 0;
+    const cost = S.cost, secure = cost * (1 + S.buf);
+    const gap = Math.max(0, cost - net(cashDel));
+    const st = net(cashDel) + 1e-6 >= secure ? "good" : net(cashDel) + 1e-6 >= cost ? "warn" : "bad";
+    return { dep, depFromBuilders: pay.dep === null || pay.dep === undefined, rate, atDel, over, steps,
+      depAmt: S.inv * dep, cashDel, cashDelNet: net(cashDel), credit, creditNet: net(credit), lastDays, cost, secure, gap, st };
+  };
+
+  const aoRenderPayBlock = () => {
+    const box = document.getElementById("aoPay");
+    if(!box || !aoCur || !aoCtx) return;
+    aoCur.pay = aoCur.pay || { dep: null, rate: [] };
+    const pay = aoCur.pay;
+    const fmt = (v) => String(v).replace(".", ",");
+    const depB = Math.round((aoCtx.rows.length ? aoCompute(aoCtx.rows.map(r => r.base)).dep : 0.6) * 100);
+    box.innerHTML = `<div class="ao-pay">
+      <div class="rz-section" style="margin-top:0">Incasso <span class="ao-sec-hint">acconto e rate si possono simulare</span></div>
+      <div class="ao-pay-head">
+        <div class="ao-pay-field"><label for="aoPayDep">Acconto %</label>
+          <input class="ao-in" id="aoPayDep" inputmode="decimal" autocomplete="off" placeholder="${depB}" value="${pay.dep !== null && pay.dep !== undefined ? fmt(pay.dep) : ""}"></div>
+        <div class="hint" style="margin:0 0 8px">Vuoto = ${depB}% dei builder. Il resto si incassa alla consegna, tranne le rate qui sotto.</div>
+      </div>
+      <div>${pay.rate.map((r, i) => `<div class="ao-pay-rate">
+          <b>Rata ${i + 1}</b>
+          <input class="ao-in" data-pay-pct="${i}" inputmode="decimal" autocomplete="off" placeholder="%" value="${r.pct ? fmt(r.pct) : ""}">
+          <span>% a</span>
+          <input class="ao-in" data-pay-days="${i}" inputmode="numeric" autocomplete="off" placeholder="gg" value="${r.days ? r.days : ""}">
+          <span>giorni dalla consegna</span>
+          <button type="button" class="ghost" data-pay-del="${i}" aria-label="Togli la rata ${i + 1}">✕</button>
+        </div>`).join("")}</div>
+      <button type="button" class="secondary ao-pay-add" id="aoPayAdd">+ Rata del saldo</button>
+      <div id="aoPaySum"></div>
+    </div>`;
+    const touch = () => { aoCur.dirty = true; aoRecalc(); };
+    box.querySelector("#aoPayDep").addEventListener("input", (e) => {
+      const v = e.target.value.trim();
+      pay.dep = v === "" ? null : Math.max(0, Math.min(100, toNum(v)));
+      touch();
+    });
+    box.querySelectorAll("[data-pay-pct]").forEach(el => el.addEventListener("input", () => { pay.rate[+el.dataset.payPct].pct = Math.max(0, toNum(el.value)); touch(); }));
+    box.querySelectorAll("[data-pay-days]").forEach(el => el.addEventListener("input", () => { pay.rate[+el.dataset.payDays].days = Math.max(0, Math.round(toNum(el.value))); touch(); }));
+    box.querySelectorAll("[data-pay-del]").forEach(b => b.addEventListener("click", () => { pay.rate.splice(+b.dataset.payDel, 1); aoRenderPayBlock(); touch(); }));
+    box.querySelector("#aoPayAdd").addEventListener("click", () => {
+      const last = pay.rate[pay.rate.length - 1];
+      pay.rate.push({ pct: 0, days: last ? (last.days || 0) + 30 : 30 });
+      aoRenderPayBlock(); touch();
+      box.querySelector(`[data-pay-pct="${pay.rate.length - 1}"]`)?.focus();
+    });
+  };
+
+  const aoRenderPaySum = () => {
+    const out = document.getElementById("aoPaySum");
+    if(!out || !aoCtx || !aoCtx.S) return;
+    const S = aoCtx.S, P = aoPayCalc(S);
+    aoCtx.P = P;
+    const pc = (v) => { const x = Math.round(v * 1000) / 10; return (x % 1 ? x.toFixed(1).replace(".", ",") : x.toFixed(0)) + "%"; };
+    const msg = P.over > 1e-6 ? { st: "bad", t: `✕ Acconto e rate superano il totale di ${pc(P.over)}: riduci le rate` }
+      : P.st === "good" ? { st: "good", t: `✓ Alla consegna i costi sono coperti, buffer ${(S.buf * 100).toFixed(0)}% compreso` }
+      : P.st === "warn" ? { st: "warn", t: `! Alla consegna i costi sono coperti, ma senza buffer` }
+      : { st: "bad", t: `✕ Alla consegna restano scoperti ${eur(P.gap)} di costi` };
+    out.innerHTML = `<div class="ao-pay-sum">
+      <div class="ao-pay-msg ${msg.st}">${msg.t}${S.vatOn ? " <small>(incassi al netto IVA)</small>" : ""}</div>
+      <div class="ao-conc-nums">
+        <div><span>Acconto ${pc(P.dep)}${P.depFromBuilders ? " (builder)" : ""}</span><strong>${eur(P.depAmt)}</strong></div>
+        <div><span>Incassato alla consegna</span><strong>${eur(P.cashDel)}</strong></div>
+        <div><span>Costi dell'ordine</span><strong>${eur(P.cost)}</strong></div>
+        <div><span>Credito dopo la consegna</span><strong>${P.credit > 0.005 ? eur(P.credit) : "—"}</strong></div>
+        ${P.credit > 0.005 ? `<div><span>Ultima rata</span><strong>${P.lastDays} giorni</strong></div>` : ""}
+        <div><span>Acconto minimo sicuro</span><strong class="${S.depOk || P.depAmt + 0.005 >= S.depMinGross ? "" : "bad"}">${eur(S.depMinGross)}</strong></div>
+      </div>
+      ${P.credit > 0.005 ? `<div class="hint" style="margin-top:8px">Dopo la consegna il club ti deve ancora ${eur(P.credit)} (${eur(P.creditNet)} netti): è margine non ancora incassato, per ${P.lastDays} giorni.</div>` : ""}
+      <table class="ao-pay-tbl"><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
+        ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pc(st.pct)}</td><td>${eur(st.amount)}</td><td>${eur(st.cum)}</td></tr>`).join("")}
+      </tbody></table>
+    </div>`;
+  };
+
   const aoRecalc = () => {
     if(!aoCtx) return;
     const { rows } = aoCtx;
@@ -9425,13 +9550,10 @@ ${tabQtaPDF ? `<div class="sec scala">
       </div>
       ${!GQ.count && G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<div class="ao-gifts">${giftCard(G.maxValue)}${giftCard(G.staffMix)}</div>
         <div class="hint" style="margin-top:6px">Ordinati per margine: a parità di costo, i capi con più margine valgono di più per il club.</div>` : ""}
-      <div class="rz-section">Incasso</div>
-      <div class="row2">
-        ${kpi("Acconto minimo sicuro", eur(S.depMinGross), `Serve almeno ${pct(S.depPctReq)} · ora ${(S.dep * 100).toFixed(0)}% = ${eur(S.depNow)}`, S.depOk ? "good" : "bad")}
-        ${kpi("Saldo alla consegna", eur(Math.max(0, S.inv - S.depNow)), `Totale − acconto ${(S.dep * 100).toFixed(0)}%`)}
-      </div>`;
+`;
     aoCtx.B = B; aoCtx.S = S;
     aoRenderGiftSum();
+    aoRenderPaySum();
   };
 
   // Documento interno: contiene costi e margini, non va al cliente
@@ -9439,6 +9561,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!aoCtx || !aoCtx.S) return;
     const { g, rows, B, S, excluded } = aoCtx;
     const G = aoCtx.G0 || aoGiftPlan(rows, S);
+    const P = aoCtx.P || aoPayCalc(S);
     const simulating = rows.some(r => r.ov);
     const pct = (v) => (v * 100).toFixed(1) + "%";
     const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -9501,10 +9624,15 @@ ${!aoCtx.GQ?.count && G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<h2>Omagg
 ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>${o.lines.map(l => `${l.n} ${esc(l.name)}`).join(" · ")}</td><td>${eur(o.cost)}</td><td>${eur(o.value)}</td><td>${pct(o.marginAfter)}</td></tr>`).join("")}
 </tbody></table>` : ""}
 <h2>Incasso</h2>
-<div class="grid" style="grid-template-columns:repeat(2,1fr)">
-  <div class="box"><div class="l">Acconto minimo sicuro</div><div class="v ${S.depOk ? "good" : "bad"}">${eur(S.depMinGross)}</div><div class="n">Serve almeno ${pct(S.depPctReq)} · impostato ${(S.dep * 100).toFixed(0)}% = ${eur(S.depNow)}</div></div>
-  <div class="box"><div class="l">Saldo alla consegna</div><div class="v">${eur(Math.max(0, S.inv - S.depNow))}</div><div class="n">Totale − acconto ${(S.dep * 100).toFixed(0)}%</div></div>
+<div class="grid">
+  <div class="box"><div class="l">Acconto ${pct(P.dep)}</div><div class="v">${eur(P.depAmt)}</div><div class="n">Minimo sicuro ${eur(S.depMinGross)}</div></div>
+  <div class="box"><div class="l">Incassato alla consegna</div><div class="v ${P.st}">${eur(P.cashDel)}</div><div class="n">${P.gap > 0.005 ? `Costi scoperti ${eur(P.gap)}` : "Costi coperti"}</div></div>
+  <div class="box"><div class="l">Costi dell'ordine</div><div class="v">${eur(P.cost)}</div><div class="n">Con buffer ${eur(P.secure)}</div></div>
+  <div class="box"><div class="l">Credito dopo la consegna</div><div class="v">${P.credit > 0.005 ? eur(P.credit) : "—"}</div><div class="n">${P.credit > 0.005 ? `Ultima rata a ${P.lastDays} giorni` : "Saldo alla consegna"}</div></div>
 </div>
+<table style="margin-top:8px"><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
+${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.amount)}</td><td>${eur(st.cum)}</td></tr>`).join("")}
+</tbody></table>
 <div class="footer"><span>doubleu kit — analisi ordine · uso interno, non inviare al cliente</span><span>${date}</span></div>
 </body></html>`;
     // Stessa stampa in iframe del builder: su iPhone una nuova scheda ricaricava l'app
@@ -9647,7 +9775,7 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
   };
   const aoOpenSaved = (row) => aoStartEdit({ id: row.id, name: row.name, groupKey: row.club_key,
     sel: Array.isArray(row.data?.builders) ? row.data.builders : null, sim: row.data?.sim || {}, fp: row.data?.fp || {},
-    gifts: row.data?.gifts || {}, dirty: false });
+    gifts: row.data?.gifts || {}, pay: row.data?.pay || null, dirty: false });
   const aoConfirmLeave = async () => !aoCur?.dirty || await appConfirm({ title: "Analisi non salvata",
     body: `<p>Le modifiche a questa analisi non sono salvate.</p>`, ok: "Esci senza salvare", cancel: "Resta" });
 
@@ -9671,6 +9799,7 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
       data: { builders: names, sim: aoCur.sim || {}, fp,
         gifts: Object.fromEntries(Object.entries(aoCur.gifts || {}).filter(([, g]) => g.on)
           .map(([id, g]) => [id, { ...g, qty: aoCtx.GQ?.qty?.[id] ?? g.qty ?? 0 }])),
+        pay: { dep: aoCur.pay?.dep ?? null, rate: (aoCur.pay?.rate || []).filter(r => r.pct > 0) },
         totals: aoCtx.S ? { margin: aoCtx.S.margin, profit: aoCtx.S.prof, invoice: aoCtx.S.inv } : null } };
     const q = aoCur.id ? supabase.from("order_analyses").update(rowData).eq("id", aoCur.id).select().single()
                        : supabase.from("order_analyses").insert(rowData).select().single();
@@ -9687,7 +9816,7 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
     const v = normName(input?.value || "");
     const g = aoGroups().find(x => normName(x.label) === v);
     if(!aoCur) return;
-    if(g && g.key !== aoCur.groupKey) { aoCur.groupKey = g.key; aoCur.sel = null; aoCur.sim = {}; aoCur.fp = {}; aoCur.gifts = {}; aoCur.dirty = true; renderAnalisiOrdine(); }
+    if(g && g.key !== aoCur.groupKey) { aoCur.groupKey = g.key; aoCur.sel = null; aoCur.sim = {}; aoCur.fp = {}; aoCur.gifts = {}; aoCur.pay = null; aoCur.dirty = true; renderAnalisiOrdine(); }
     else if(!v && aoCur.groupKey) { aoCur.groupKey = null; renderAnalisiOrdine(); }
   };
   document.getElementById("aoClub")?.addEventListener("input", aoPickClub);
