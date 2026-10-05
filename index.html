@@ -2614,7 +2614,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v116</span>
+            <span id="buildTxt">build v117</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3454,6 +3454,7 @@
               <button class="ghost" id="aoBack" type="button" hidden>← Analisi salvate</button>
               <button class="secondary" id="aoReset" type="button" hidden>Ripristina prezzi e quantità</button>
               <button class="secondary" id="aoPrint" type="button" hidden>Stampa / PDF</button>
+              <button class="secondary" id="aoSendOa" type="button" hidden>Invia condizioni a Order App</button>
               <button class="primary" id="aoSave" type="button" hidden>Salva analisi</button>
             </div>
           </div>
@@ -4311,7 +4312,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v116";
+  const BUILD = "v117";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9114,7 +9115,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     const edit = aoMode === "edit";
     aoShow("aoNew", !edit); aoShow("aoBack", edit); aoShow("aoSave", edit);
     aoShow("aoEditCard", edit); aoShow("aoResult", edit); aoShow("aoList", !edit);
-    if(!edit) { aoShow("aoReset", false); aoShow("aoPrint", false); }
+    if(!edit) { aoShow("aoReset", false); aoShow("aoPrint", false); aoShow("aoSendOa", false); }
   };
 
   const renderAnalisiOrdine = () => {
@@ -9163,6 +9164,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!rows.length) { out.innerHTML = `<div class="card"><div class="hint">Seleziona almeno un builder con articoli e quantità.</div></div>`; return; }
     aoCtx = { g, kits, rows, excluded };
     aoShow("aoPrint", true);
+    aoShow("aoSendOa", !!oa);
 
     // Tabella con prezzo e quantità modificabili: si disegna una volta, poi
     // aoRecalc aggiorna solo i numeri, così il campo in cui si scrive non perde il fuoco.
@@ -9656,6 +9658,51 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     setTimeout(fire, 1200);
   };
   document.getElementById("aoPrint")?.addEventListener("click", aoPrint);
+
+  /* Condizioni concordate verso Order App: omaggi, acconto e rate di questa
+     analisi finiscono nella trattativa del preventivo collegato. In Order App
+     restano modificabili; se lì sono state cambiate a mano si chiede prima di
+     sovrascriverle. Stato e note della trattativa non si toccano. */
+  const aoSendToOa = async () => {
+    if(!aoCtx || !aoCtx.S) return;
+    if(!oa || !oaEmail) { toast("Collega Order App da Impostazioni per inviare le condizioni", "warn", 5000); return; }
+    const count = {};
+    aoCtx.rows.forEach(r => { const id = r.k.payload?.oaQuote?.id; if(id) count[id] = (count[id] || 0) + 1; });
+    const id = Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+    if(!id) { toast("Questi builder non sono in un preventivo di Order App", "warn", 5000); return; }
+    const P = aoCtx.P || aoPayCalc(aoCtx.S);
+    const gifts = [
+      ...aoCtx.rows.filter(r => r.sim.staff > 0).map(r => ({ label: variantName(r.k), qty: r.sim.staff, note: "omaggio staff nel builder" })),
+      ...(aoCtx.gOpts || []).filter(o => aoCur?.gifts?.[o.id]?.on && (aoCtx.GQ?.qty?.[o.id] || 0) > 0)
+        .map(o => ({ label: o.sub ? `${o.label} (${o.sub})` : o.label, qty: aoCtx.GQ.qty[o.id], note: "" })),
+    ];
+    const installments = (aoCur?.pay?.rate || []).filter(r => r.pct > 0).map(r => ({ pct: r.pct, days: Math.max(0, Math.round(r.days || 0)) }));
+    try {
+      const { data, error } = await oaTimeout(oa.from("orders").select("id,status,negotiation").eq("id", id).limit(1), 12000);
+      if(error) throw error;
+      const row = data?.[0];
+      if(!row) { toast(`Preventivo ${id} non trovato in Order App`, "err", 5000); return; }
+      const prev = row.negotiation || null;
+      const manual = prev && (!prev.source || (prev.editedAt && prev.source?.at && prev.editedAt > prev.source.at));
+      if(manual && (prev.gifts?.length || prev.depositPct != null || prev.installments?.length)) {
+        const ok = await appConfirm({ title: "Condizioni modificate in Order App",
+          body: `<p>Le condizioni di ${esc(id)} sono state cambiate a mano in Order App. Sostituire omaggi, acconto e rate con quelli di questa analisi?</p><p class="hint">Stato e note della trattativa restano come sono.</p>`,
+          ok: "Sostituisci", cancel: "Annulla" });
+        if(!ok) return;
+      }
+      const at = new Date().toISOString();
+      const negotiation = { stage: prev?.stage || "trattativa", note: prev?.note || "",
+        gifts, depositPct: Math.round(P.dep * 1000) / 10, installments,
+        source: { from: "kit-builder", analysis: aoCur?.name || aoCtx.g.label, at }, editedAt: at };
+      const { error: e2 } = await oaTimeout(oa.from("orders").update({ negotiation }).eq("id", id), 12000);
+      if(e2) throw e2;
+      toast(`Condizioni inviate a ${id} ✓`, "ok");
+    } catch(e) {
+      console.error("Invio condizioni:", e);
+      toast("Condizioni non inviate: riprova", "err");
+    }
+  };
+  document.getElementById("aoSendOa")?.addEventListener("click", aoSendToOa);
   document.getElementById("aoReset")?.addEventListener("click", () => {
     if(!aoCtx) return;
     aoSaveSim(aoCtx.g.key, null);
