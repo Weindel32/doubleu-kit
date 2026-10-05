@@ -2096,6 +2096,8 @@
     .oa-q-quote { background: rgba(10, 65, 116, .12); color: #0A4174; }
     .oa-q-order { background: rgba(30, 122, 70, .14); color: #1E7A46; }
     .oa-q-lost  { background: rgba(180, 40, 40, .10); color: #A33; }
+    .dash-stato { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; max-width: 190px; }
+    .dash-stato .oa-q { margin-left: 0; }
     .oa-qc-head { display: flex; align-items: center; gap: 12px; }
     .oa-qc-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
     .oa-qc-sum > div { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
@@ -2614,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v118</span>
+            <span id="buildTxt">build v119</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4312,7 +4314,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v118";
+  const BUILD = "v119";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7490,9 +7492,13 @@ ${tabQtaPDF ? `<div class="sec scala">
     }
   };
 
-  const setQuickFlow = (flow) => {
+  // keepOffer: uscendo dal percorso guidato il kit resta com'è. Prima
+  // tornare alla dashboard (barra in basso su tablet/telefono) reimpostava
+  // "prezzo proposto" sul kit aperto: risultava modificato e, salvando,
+  // il prezzo cambiava davvero.
+  const setQuickFlow = (flow, keepOffer = false) => {
     currentQuickFlow = ["pricing", "result", "discounts"].includes(flow) ? flow : "full";
-    useOffer.checked = unifiedPriceMode === "budget";
+    if(!keepOffer) useOffer.checked = unifiedPriceMode === "budget";
     calc();
     renderQuickWorkspace();
   };
@@ -7528,7 +7534,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(reset) { resetAll(); discount.value = "0"; }
     quickCalcMode = false;
     iphoneUnifiedActive = true;
-    unifiedPriceMode = reset ? "budget" : (toNum(offerPrice.value) > 0 ? "budget" : "target");
+    unifiedPriceMode = reset ? "budget" : (useOffer.checked && toNum(offerPrice.value) > 0 ? "budget" : "target");
     setQuickFlow("full");
     showView("builder");
     goToStep(1);
@@ -7538,7 +7544,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const exitUnifiedFlow = () => {
     iphoneUnifiedActive = false;
     quickCalcMode = false;
-    setQuickFlow("full");
+    setQuickFlow("full", true);
     showView("dashboard");
   };
 
@@ -8519,7 +8525,7 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   const QUOTE_STATUS = (info) => {
     if(!info) return { label: "Order App", cls: "" };
-    if(info.missing) return { label: "Preventivo eliminato in Order App", cls: "lost" };
+    if(info.missing) return { label: "Eliminato in Order App", cls: "lost" };
     if(info.status === "PREVENTIVO") {
       if(info.lost)    return { label: "Preventivo perso", cls: "lost" };
       if(info.standby) return { label: "Preventivo in standby", cls: "" };
@@ -9791,7 +9797,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     oaBusy = true;
     try {
       const full = await oaLoadOrder(id);
-      if(!full?.order) { toast(`Preventivo ${id} non trovato in Order App`, "err", 5000); throw null; }
+      if(!full?.order) { oaBusy = false; await aoRecreateQuote(id, plan, moves, outside); return; }
       const { order, kits, arts, pays } = full;
       if(order.status !== "PREVENTIVO") { toast(`${id} è già un ordine: le modifiche si fanno in Order App`, "warn", 6000); throw null; }
       plan.forEach(x => {
@@ -9850,6 +9856,65 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       toast(`${id} allineato ai builder${sent ? " con le condizioni" : ""} ✓`, "ok", 5000);
     } catch(e) {
       if(e) { console.error("Allinea Order App:", e); toast("Allineamento non riuscito: riprova", "err", 5000); }
+    }
+    oaBusy = false;
+  };
+  /* Il preventivo è stato eliminato in Order App: se ne crea uno nuovo con
+     tutti i builder dell'analisi (il primo resta il kit principale) e i
+     builder si ricollegano al nuovo numero. */
+  const aoRecreateQuote = async (oldId, plan, moves, outside) => {
+    const ref = plan.map(x => x.r.k.payload.clientRef).find(Boolean);
+    if(!ref) { toast("I builder non hanno il club dall'anagrafica Order App: sceglilo nel kit", "warn", 6000); return; }
+    const ordered = [...plan].sort((a, b) => (a.r.k.payload.oaQuote?.role === "main" ? 0 : 1) - (b.r.k.payload.oaQuote?.role === "main" ? 0 : 1)
+      || (a.r.k.payload.oaQuote?.createdAt || 0) - (b.r.k.payload.oaQuote?.createdAt || 0));
+    const g = (ex) => ex.price * (ex.ivaEnabled ? 1 + ex.ivaRate / 100 : 1);
+    const tot = ordered.reduce((a, x) => a + (x.ex.quantity - x.ex.omaggio) * g(x.ex), 0);
+    const ok = await appConfirm({ title: `${oldId} non esiste più`,
+      body: `<p>Il preventivo è stato eliminato in Order App. Ne creo uno nuovo con tutti i builder dell'analisi?</p>`
+        + `<table class="ao-pay-tbl" style="margin:0"><thead><tr><th>Kit</th><th>Paganti</th><th>Omaggi</th><th>Prezzo</th></tr></thead><tbody>
+          ${ordered.map(x => `<tr><td>${esc(x.ex.kitName)}</td><td>${x.ex.quantity - x.ex.omaggio}</td><td>${x.ex.omaggio}</td><td>${eur(g(x.ex))}</td></tr>`).join("")}</tbody></table>`
+        + confirmRows([["Totale preventivo", eur(tot)]])
+        + (moves.length ? `<p class="acb-note">Omaggi concordati scritti nei builder (Omaggi allo staff): ${moves.map(m => `${m.qty} ${esc(variantName(m.row.k))}`).join(", ")}.</p>` : "")
+        + (outside.length ? `<p class="acb-note">Restano fuori: ${outside.map(r => esc(variantName(r.k))).join(", ")}.</p>` : "")
+        + `<p class="acb-note">Poi acconto, rate e omaggi vanno nella trattativa del nuovo preventivo.</p>`,
+      ok: "Crea preventivo", cancel: "Annulla" });
+    if(!ok) return;
+    oaBusy = true;
+    try {
+      let clientId = null, city = null;
+      if(ref.src === "client") { clientId = ref.id; city = oaClients.find(c => c.id === ref.id)?.city || null; }
+      else if(ref.src === "prospect") { const pr = oaProspects.find(x => x.id === ref.id); clientId = pr?.client_id || null; city = pr?.city || null; }
+      const r0 = resolveRef(ref);
+      const id = await oaNextQuoteId();
+      const ex0 = ordered[0].ex;
+      const p_order = {
+        id, client: r0?.name || ref.name || aoCtx.g.label, client_id: clientId, client_city: city, client_country: "Italia",
+        date: new Date().toLocaleDateString("it-IT"), alert_days: 7, status: "PREVENTIVO", pieces: 0,
+        pricing_mode: "kit", iva_enabled: ex0.ivaEnabled, iva_rate: ex0.ivaRate,
+        kit_quantity: ordered.length === 1 ? ex0.quantity : null,
+        discount_mode: "nessuno", discount_type: "percentuale", discount_value: 0,
+        notes: "", production_notes: "", show_total_in_client_pdf: false, order_type: "istituzionale",
+      };
+      const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits: ordered.map(x => oaNewKitRow(x.ex)), p_payments: [] }), 15000);
+      if(error) throw error;
+      const now = Date.now(), cur = currentKitName();
+      for(const [i, x] of ordered.entries()) {
+        const np = { ...x.p, oaQuote: { id, kitName: x.ex.kitName, role: i === 0 ? "main" : "added", hash: oaExportHash(x.ex),
+          lines: x.ex.articles.map(a => ({ kbId: a.kbId, description: a.description })), createdAt: now + i, updatedAt: now + i } };
+        await aoSaveKitPayload(x.r.k, np);
+        if(x.r.k.name === cur) { applyPayload(np); markSaveBase(x.r.k.source === "cloud" ? "cloud" : "local", now); }
+      }
+      moves.forEach(m => { if(aoCur.gifts[m.o.id]) aoCur.gifts[m.o.id].on = false; });
+      oaQuoteInfo[id] = { id, status: "PREVENTIVO", lost: false, standby: false, date: p_order.date };
+      oaBusy = false;
+      renderAnalisiOrdine();
+      const sent = await aoSendToOa({ id, silent: true });
+      if(aoCur?.id) await aoPersist(aoCur.name);
+      else aoCur.dirty = true;
+      toast(`Preventivo ${id} creato con ${ordered.length} kit${sent ? " e le condizioni" : ""} ✓`, "ok", 6000);
+    } catch(e) {
+      console.error("Ricrea preventivo:", e);
+      toast("Preventivo non creato: riprova", "err", 5000);
     }
     oaBusy = false;
   };
@@ -10288,7 +10353,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         <td>${kit.itemCount}</td>
         <td class="dash-amt-td">${dashAmountHtml(kit)}</td>
         <td>${date}</td>
-        <td>${statoBadgeHtml(getKitStato(kit.payload))}${oaQuoteBadge(kit.payload)}</td>
+        <td><div class="dash-stato">${statoBadgeHtml(getKitStato(kit.payload))}${oaQuoteBadge(kit.payload)}</div></td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud"
           ? `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 10.5A4 4 0 0011.5 7H11a5 5 0 00-4.9 4A3 3 0 107 17h8a3 3 0 000-6z"/></svg> Cloud`
           : `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="16" height="11" rx="1.5"/><line x1="6" y1="17" x2="14" y2="17"/><line x1="10" y1="15" x2="10" y2="17"/></svg> Locale`
@@ -11997,7 +12062,7 @@ tr:last-child td{border-bottom:none}
               else startUnifiedFlow(false);
             }
             else {
-              if(el.dataset.view === "dashboard") { iphoneUnifiedActive = false; setQuickFlow("full"); }
+              if(el.dataset.view === "dashboard") { iphoneUnifiedActive = false; setQuickFlow("full", true); }
               showView(el.dataset.view);
             }
           } catch(err) { console.error(err); }
