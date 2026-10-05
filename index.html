@@ -2616,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v119</span>
+            <span id="buildTxt">build v120</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2773,6 +2773,7 @@
             <span class="save-bar-kit" id="saveBarKit">Nuovo kit</span>
             <span class="save-chip" id="saveChip" data-state="empty">—</span>
           </div>
+          <button type="button" class="secondary save-bar-btn" id="btnCloseKit" title="Chiudi il kit e torna all'elenco dei kit salvati">← Kit salvati</button>
           <button type="button" class="primary save-bar-btn" id="btnSaveBar" title="Salva (Ctrl+S / ⌘S)">Salva</button>
         </div>
 
@@ -4314,7 +4315,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v119";
+  const BUILD = "v120";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5937,7 +5938,7 @@ if("serviceWorker" in navigator) {
   const resetAll = (opts) => {
     // Si chiede conferma solo se ci sono modifiche non salvate: un kit già
     // salvato si può chiudere senza perdere nulla.
-    if(hasUnsavedChanges() && !confirm("Ci sono modifiche non salvate a questo kit.\nCreare un nuovo kit senza salvarle?")) return false;
+    if(!opts?.force && hasUnsavedChanges() && !confirm("Ci sono modifiche non salvate a questo kit.\nCreare un nuovo kit senza salvarle?")) return false;
     activeCloudId = null;
     const defs = getSettings();
     clientName.value  = ""; projectName.value = ""; qtyEst.value = "";
@@ -6721,6 +6722,20 @@ ${tabQtaPDF ? `<div class="sec scala">
     document.getElementById("unsavedSave")?.focus();
   };
   const closeUnsaved = () => { const m = document.getElementById("unsavedModal"); if(m) m.hidden = true; };
+
+  // Chiude il kit aperto e torna all'elenco dei kit salvati. Il "Dashboard"
+  // della barra laterale lascia il kit aperto come kit attivo: questo lo
+  // chiude davvero (chiedendo prima, se ci sono modifiche non salvate).
+  const closeKit = () => {
+    const go = () => {
+      resetAll({ silent: true, force: true });
+      iphoneUnifiedActive = false;
+      showView("dashboard", true);
+      renderDashboard();
+    };
+    if(hasUnsavedChanges()) askUnsaved(go); else go();
+  };
+  document.getElementById("btnCloseKit")?.addEventListener("click", closeKit);
 
   const saveProject = async () => {
     if(offerNeedsQty()){
