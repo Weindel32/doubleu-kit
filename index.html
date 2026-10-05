@@ -2616,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v120</span>
+            <span id="buildTxt">build v121</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4315,7 +4315,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v120";
+  const BUILD = "v121";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9790,34 +9790,54 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       toast("Ci sono prezzi o quantità simulati: riportali nei builder (o ripristina) prima di allineare Order App", "warn", 7000);
       return;
     }
-    const id = aoQuoteId();
-    if(!id) { toast("Questi builder non sono in un preventivo di Order App", "warn", 5000); return; }
     const cur = currentKitName();
     if(aoCtx.rows.some(r => r.k.name === cur) && hasUnsavedChanges()) {
       toast("Il kit aperto nel builder ha modifiche non salvate: salvalo prima", "warn", 6000);
       return;
     }
-    const inQuote = aoCtx.rows.filter(r => r.k.payload?.oaQuote?.id === id);
-    const outside = aoCtx.rows.filter(r => r.k.payload?.oaQuote?.id !== id);
-    // Omaggi concordati "kit completo" di un builder del preventivo → nel builder
+    const rows = aoCtx.rows;
+    // Omaggi concordati "kit completo" di un builder dell'ordine → nel builder
     const moves = (aoCtx.gOpts || []).filter(o => o.id.startsWith("kit:") && aoCur?.gifts?.[o.id]?.on && (aoCtx.GQ?.qty?.[o.id] || 0) > 0)
-      .map(o => ({ o, qty: aoCtx.GQ.qty[o.id], row: inQuote.find(r => `kit:${r.k.name}` === o.id) })).filter(m => m.row);
-    const plan = inQuote.map(r => {
+      .map(o => ({ o, qty: aoCtx.GQ.qty[o.id], row: rows.find(r => `kit:${r.k.name}` === o.id) })).filter(m => m.row);
+    const plan = rows.map(r => {
       const add = moves.filter(m => m.row === r).reduce((a, m) => a + m.qty, 0);
       const p = add ? { ...r.k.payload, staffOmaggio: String(Math.max(0, Math.floor(toNum(r.k.payload.staffOmaggio))) + add) } : r.k.payload;
-      return { r, add, p, ex: oaExportFromPayload(p) };
+      return { r, add, p, ex: oaExportFromPayload(p), sid: r.k.payload?.oaQuote?.id || null };
     });
     const broken = plan.filter(x => !x.ex);
     if(broken.length) { toast(`Builder senza prezzo o quantità: ${broken.map(x => variantName(x.r.k)).join(", ")}`, "warn", 6000); return; }
+    const ids = [...new Set(plan.map(x => x.sid).filter(Boolean))];
+    if(!ids.length) { toast("Questi builder non sono in un preventivo di Order App: crealo dal primo builder", "warn", 6000); return; }
     oaBusy = true;
     try {
-      const full = await oaLoadOrder(id);
-      if(!full?.order) { oaBusy = false; await aoRecreateQuote(id, plan, moves, outside); return; }
-      const { order, kits, arts, pays } = full;
+      const fulls = {};
+      for(const id of ids) fulls[id] = await oaLoadOrder(id);
+      const live = ids.filter(id => fulls[id]?.order);
+      if(!live.length) { oaBusy = false; await aoRecreateQuote(ids[0], plan, moves, []); return; }
+      // Preventivo che resta: quello del kit principale, altrimenti il primo numero
+      const mainSid = plan.find(x => x.r.k.payload.oaQuote?.role === "main" && live.includes(x.sid))?.sid;
+      const id = mainSid || [...live].sort()[0];
+      const { order, kits, arts, pays } = fulls[id];
       if(order.status !== "PREVENTIVO") { toast(`${id} è già un ordine: le modifiche si fanno in Order App`, "warn", 6000); throw null; }
+      // Gli altri preventivi si riuniscono qui e poi si eliminano, ma solo se
+      // contengono esclusivamente kit di questi builder, senza pagamenti né
+      // trattativa: altrimenti ci si ferma e si decide in Order App.
+      const others = live.filter(x => x !== id);
+      const blocked = others.filter(oid => {
+        const f = fulls[oid];
+        const names = plan.filter(x => x.sid === oid).map(x => x.r.k.payload.oaQuote?.kitName);
+        return f.order.status !== "PREVENTIVO" || f.pays.length || f.order.negotiation || f.kits.some(k => !names.includes(k.name));
+      });
+      if(blocked.length) {
+        toast(`Questi builder sono anche in ${blocked.join(", ")}, che contiene altro (kit, pagamenti o trattativa): riunisci a mano in Order App`, "warn", 9000);
+        throw null;
+      }
       plan.forEach(x => {
+        const f = x.sid ? fulls[x.sid] : null;
         const q = x.r.k.payload.oaQuote;
-        x.target = kits.find(k => k.name === q.kitName) || kits.find(k => normName(k.name) === normName(x.ex.kitName)) || null;
+        x.src = f?.kits.find(k => k.name === q?.kitName) || f?.kits.find(k => normName(k.name) === normName(x.ex.kitName)) || null;
+        x.srcArts = x.src ? f.arts.filter(a => a.kit_id === x.src.id) : [];
+        x.target = x.sid === id ? x.src : null;
       });
       const vatF = (iva, rate) => iva ? 1 + (toNum(rate) || 22) / 100 : 1;
       const kitTot = (k, iva, rate) => Math.max(0, (toNum(k.quantity) - toNum(k.omaggio))) * toNum(k.price) * vatF(iva, rate);
@@ -9829,35 +9849,52 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       const g = (k, iva, rate) => toNum(k.price) * vatF(iva, rate);
       const cell = (was, now) => Math.abs(was - now) < 0.005 ? eur(now) : `<s>${eur(was)}</s> <b>${eur(now)}</b>`;
       const num = (was, now) => was === now ? String(now) : `<s>${was}</s> <b>${now}</b>`;
+      const ordered = [...plan].sort((a, b) => (a.target ? 0 : 1) - (b.target ? 0 : 1)
+        || (a.r.k.payload.oaQuote?.createdAt || 0) - (b.r.k.payload.oaQuote?.createdAt || 0));
       const tbl = `<table class="ao-pay-tbl" style="margin:0"><thead><tr><th>Kit</th><th>Paganti</th><th>Omaggi</th><th>Prezzo</th></tr></thead><tbody>
-        ${plan.map(x => { const t = x.target; const was = t ? { pay: toNum(t.quantity) - toNum(t.omaggio), om: toNum(t.omaggio), pr: g(t, order.iva_enabled, order.iva_rate) } : null;
+        ${ordered.map(x => { const t = x.target || x.src; const fo = x.target ? order : (x.sid && fulls[x.sid]?.order);
+          const was = t ? { pay: toNum(t.quantity) - toNum(t.omaggio), om: toNum(t.omaggio), pr: g(t, fo?.iva_enabled, fo?.iva_rate) } : null;
           const now = { pay: x.ex.quantity - x.ex.omaggio, om: x.ex.omaggio, pr: g(x.ex, x.ex.ivaEnabled, x.ex.ivaRate) };
-          return `<tr><td>${esc(x.ex.kitName)}${t ? "" : " <small>(nuovo)</small>"}</td><td>${was ? num(was.pay, now.pay) : now.pay}</td><td>${was ? num(was.om, now.om) : now.om}</td><td>${was ? cell(was.pr, now.pr) : eur(now.pr)}</td></tr>`; }).join("")}
+          const tag = x.target ? "" : x.sid && x.sid !== id && fulls[x.sid] ? ` <small>(da ${esc(x.sid)})</small>` : " <small>(nuovo)</small>";
+          return `<tr><td>${esc(x.ex.kitName)}${tag}</td><td>${was ? num(was.pay, now.pay) : now.pay}</td><td>${was ? num(was.om, now.om) : now.om}</td><td>${was ? cell(was.pr, now.pr) : eur(now.pr)}</td></tr>`; }).join("")}
         ${kept.map(k => `<tr><td>${esc(k.name || "Kit")} <small>(solo in Order App, resta)</small></td><td>${toNum(k.quantity) - toNum(k.omaggio)}</td><td>${toNum(k.omaggio)}</td><td>${eur(g(k, order.iva_enabled, order.iva_rate))}</td></tr>`).join("")}
       </tbody></table>`;
-      const ok = await appConfirm({ title: `Allinea ${id} ai builder`,
+      const ok = await appConfirm({ title: others.length ? `Riunisci in ${id}` : `Allinea ${id} ai builder`,
         body: tbl + confirmRows([["Totale preventivo", Math.abs(oldTot - newTot) < 0.005 ? eur(newTot) : `<s>${eur(oldTot)}</s> → ${eur(newTot)}`]])
+          + (others.length ? `<p class="acb-note"><b>I kit di ${others.join(", ")} passano in ${id}</b> (con SP, colori e taglie già inseriti) e quei preventivi vengono eliminati da Order App: contengono solo questi kit.</p>` : "")
           + (moves.length ? `<p class="acb-note">Omaggi concordati scritti nei builder (Omaggi allo staff): ${moves.map(m => `${m.qty} ${esc(variantName(m.row.k))}`).join(", ")}.</p>` : "")
-          + (outside.length ? `<p class="acb-note">Non sono in questo preventivo e restano fuori: ${outside.map(r => esc(variantName(r.k))).join(", ")}.</p>` : "")
           + `<p class="acb-note">Poi acconto, rate e omaggi vanno nella trattativa. In Order App restano codici SP, colori, taglie, note e articoli aggiunti a mano.</p>`,
-        ok: "Allinea", cancel: "Annulla" });
+        ok: others.length ? "Riunisci" : "Allinea", cancel: "Annulla" });
       if(!ok) throw null;
       const p_kits = kits.map(k => {
         const x = plan.find(y => y.target === k);
         if(!x) return oaKitRow(k, arts.filter(a => a.kit_id === k.id));
-        const newArts = oaMergedArticles(arts.filter(a => a.kit_id === k.id), x.ex, x.r.k.payload.oaQuote?.lines || []);
+        const newArts = oaMergedArticles(x.srcArts, x.ex, x.r.k.payload.oaQuote?.lines || []);
         return { ...oaKitRow(k, []), name: k.name || x.ex.kitName, price: x.ex.price, quantity: x.ex.quantity, omaggio: x.ex.omaggio, articles: oaKitRow(k, newArts).articles };
       });
-      plan.filter(x => !x.target).forEach(x => p_kits.push(oaNewKitRow(x.ex)));
+      ordered.filter(x => !x.target).forEach(x => {
+        const row = oaNewKitRow(x.ex);
+        if(x.src) { row.discount_type = x.src.discount_type || "percentuale"; row.discount_value = x.src.discount_value || 0;
+          row.articles = oaKitRow(x.src, oaMergedArticles(x.srcArts, x.ex, x.r.k.payload.oaQuote?.lines || [])).articles; }
+        p_kits.push(row);
+      });
       const p_order = { ...order, iva_enabled: ivaEx.ivaEnabled, iva_rate: ivaEx.ivaRate,
-        kit_quantity: p_kits.length <= 1 ? plan[0].ex.quantity : order.kit_quantity };
+        kit_quantity: p_kits.length <= 1 ? plan[0].ex.quantity : null };
       const { error } = await oaTimeout(oa.rpc("save_order_atomic", { p_order, p_kits, p_payments: oaPayRows(pays) }), 15000);
       if(error) throw error;
+      for(const oid of others) {
+        const { error: de } = await oaTimeout(oa.from("orders").delete().eq("id", oid), 12000);
+        if(de) console.error("Elimina preventivo riunito:", oid, de);
+        else oaQuoteInfo[oid] = { id: oid, missing: true };
+      }
       // I builder ricordano cosa hanno mandato: niente "da aggiornare" dopo
       const now = Date.now();
-      for(const x of plan) {
-        const np = { ...x.p, oaQuote: { ...x.p.oaQuote, kitName: x.target?.name || x.ex.kitName, hash: oaExportHash(x.ex),
-          lines: x.ex.articles.map(a => ({ kbId: a.kbId, description: a.description })), updatedAt: now } };
+      for(const [i, x] of ordered.entries()) {
+        const old = x.p.oaQuote || {};
+        const np = { ...x.p, oaQuote: { ...old, id, kitName: x.target?.name || x.ex.kitName,
+          role: x.sid === id ? (old.role || "added") : "added", hash: oaExportHash(x.ex),
+          lines: x.ex.articles.map(a => ({ kbId: a.kbId, description: a.description })),
+          createdAt: x.sid === id ? (old.createdAt || now) : now + i, updatedAt: now } };
         await aoSaveKitPayload(x.r.k, np);
         if(x.r.k.name === cur) { applyPayload(np); markSaveBase(x.r.k.source === "cloud" ? "cloud" : "local", now); }
       }
@@ -9868,7 +9905,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       const sent = await aoSendToOa({ id, silent: true });
       if(aoCur?.id) await aoPersist(aoCur.name);
       else aoCur.dirty = true;
-      toast(`${id} allineato ai builder${sent ? " con le condizioni" : ""} ✓`, "ok", 5000);
+      toast(`${id} allineato ai builder${others.length ? ` (riuniti ${others.length + 1} preventivi)` : ""}${sent ? " con le condizioni" : ""} ✓`, "ok", 6000);
     } catch(e) {
       if(e) { console.error("Allinea Order App:", e); toast("Allineamento non riuscito: riprova", "err", 5000); }
     }
