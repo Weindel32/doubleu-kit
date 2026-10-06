@@ -2616,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v121</span>
+            <span id="buildTxt">build v122</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4315,7 +4315,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v121";
+  const BUILD = "v122";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5422,6 +5422,21 @@ if("serviceWorker" in navigator) {
   };
   const fmtPct = (f) => (Math.round(f * 1000) / 10).toString().replace(".", ",") + "%";
 
+  /* Prezzo da comunicare al club: tondo all'euro. Il prezzo calcolato dal
+     margine (33,43 €) non si scrive in un preventivo: si arrotonda per
+     difetto se il margine sui capi fatturati resta entro 1 punto dal target,
+     altrimenti per eccesso. Il prezzo calcolato sta esattamente sul target,
+     quindi senza tolleranza si arrotonderebbe sempre per eccesso. Vale solo
+     per il prezzo calcolato: il prezzo proposto resta quello scritto. */
+  const PRICE_ROUND_TOL = 0.01;
+  const roundSalePrice = (unit, unitNetOf, paidCostUnit, target) => {
+    if(!(unit > 0)) return unit;
+    const lo = Math.floor(unit + 1e-9), hi = Math.ceil(unit - 1e-9);
+    if(lo === hi) return lo;
+    const mAt = (pr) => { const n = unitNetOf(pr); return n > 0 ? (n - paidCostUnit) / n : -1; };
+    return lo > 0 && mAt(lo) + 1e-9 >= target - PRICE_ROUND_TOL ? lo : hi;
+  };
+
   const calc = () => {
     const q       = toNum(qtyEst.value);
     const qtyBase = q > 0 ? q : 1;
@@ -5566,7 +5581,9 @@ if("serviceWorker" in navigator) {
       ? minSustainableNetPerAthlete * (1 + vatRate)
       : minSustainableNetPerAthlete;
 
-    let invoiceTotal = invoiceAfterDiscount;
+    // Prezzo calcolato → tondo all'euro (vedi roundSalePrice)
+    const unitNetOf = (pr) => vatOn ? pr / (1 + vatRate) : pr;
+    let invoiceTotal = roundSalePrice(invoiceAfterDiscount / qtyBase, unitNetOf, paidCost / qtyBase, m) * qtyBase;
     let usingOffer   = false;
 
     if(useOffer.checked){
@@ -8976,6 +8993,8 @@ ${tabQtaPDF ? `<div class="sec scala">
     } else {
       const net = paidCost / (1 - m);
       invoice = (vatOn ? net * (1 + vatRate) : net) * (1 - toNum(p?.discount) / 100);
+      // Stesso arrotondamento del builder: il prezzo da comunicare è tondo
+      invoice = roundSalePrice(invoice / q, (pr) => vatOn ? pr / (1 + vatRate) : pr, paidCost / q, m) * q;
     }
     const revenueNet = vatOn ? invoice / (1 + vatRate) : invoice;
     const scen = (f) => {
