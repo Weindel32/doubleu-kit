@@ -2616,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v122</span>
+            <span id="buildTxt">build v123</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4315,7 +4315,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v122";
+  const BUILD = "v123";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9639,32 +9639,47 @@ ${tabQtaPDF ? `<div class="sec scala">
     const G = aoCtx.G0 || aoGiftPlan(rows, S);
     const P = aoCtx.P || aoPayCalc(S);
     const simulating = rows.some(r => r.ov);
-    const pct = (v) => (v * 100).toFixed(1) + "%";
+    const pct = (v) => (v * 100).toFixed(1).replace(".", ",") + "%";
+    // Copertura: l'acconto al netto IVA (l'IVA si versa) contro il costo dell'ordine
+    const depNet = S.vatOn ? P.depAmt / (1 + S.vatRate) : P.depAmt;
+    const covPct = P.cost > 0 ? depNet / P.cost : 0;
+    const covSecPct = P.secure > 0 ? depNet / P.secure : 0;
+    const covSt = depNet + 1e-6 >= P.secure ? "good" : depNet + 1e-6 >= P.cost ? "warn" : "bad";
+    const covLeft = Math.max(0, P.cost - depNet);
     const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
     const cell = (was, now, fmt) => was !== null && was !== undefined ? `<s>${fmt(was)}</s> ${fmt(now)}` : fmt(now);
     const html = `<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Analisi ordine — ${esc(g.label)}</title>
 <style>
-  @page { size: A4; margin: 14mm; }
+  /* margin 0 + padding sul body: il browser non stampa URL/data nei margini */
+  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 11.5px; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #001D39; padding-bottom: 8px; margin-bottom: 14px; }
-  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; } .sub { color: #49769F; font-size: 11px; margin-top: 3px; }
-  .tag { font-size: 10px; font-weight: 700; color: #BC431B; border: 1px solid #BC431B; border-radius: 4px; padding: 2px 6px; }
-  h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 16px 0 6px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 6px 8px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; }
-  th { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: #49769F; background: #F1F5F9; }
-  th:first-child, td:first-child { text-align: left; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 11px; margin: 0; padding: 12mm 13mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #001D39; padding-bottom: 8px; margin-bottom: 12px; }
+  h1 { font-size: 19px; margin: 0; letter-spacing: .02em; } .sub { color: #49769F; font-size: 10.5px; margin-top: 3px; }
+  .tag { font-size: 9.5px; font-weight: 700; color: #BC431B; border: 1px solid #BC431B; border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+  h2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 14px 0 5px; break-after: avoid; }
+  table { width: 100%; border-collapse: collapse; break-inside: avoid; }
+  th, td { padding: 5px 7px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th { font-size: 9px; letter-spacing: .05em; text-transform: uppercase; color: #49769F; background: #F1F5F9; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
   td:first-child { font-weight: 700; }
+  td.wrap { white-space: normal; text-align: left; }
   s { color: #8a9ab5; margin-right: 4px; font-weight: 400; }
-  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .box { border: 1px solid #D7E3EE; border-radius: 8px; padding: 8px 10px; }
-  .box .l { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: #49769F; }
-  .box .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
-  .box .n { font-size: 9.5px; color: #49769F; margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; break-inside: avoid; }
+  .box { border: 1px solid #D7E3EE; border-radius: 7px; padding: 7px 9px; min-width: 0; }
+  .box .l { font-size: 8.5px; letter-spacing: .05em; text-transform: uppercase; color: #49769F; }
+  .box .v { font-size: 14px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
+  .box .n { font-size: 9px; color: #49769F; margin-top: 2px; }
+  .box.key { border-color: #001D39; background: #F1F5F9; }
   .good { color: #0A6E4E; } .warn { color: #9A6600; } .bad { color: #BC431B; }
-  .cmp { border: 1px solid #A8C8E0; background: #F1F5F9; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
-  .footer { margin-top: 18px; display: flex; justify-content: space-between; color: #8a9ab5; font-size: 9.5px; border-top: 1px solid #D7E3EE; padding-top: 6px; }
+  .cmp { border: 1px solid #A8C8E0; background: #F1F5F9; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; }
+  .cover { border: 1.5px solid #001D39; border-radius: 8px; padding: 9px 11px; break-inside: avoid; }
+  .cover-row { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+  .cover-row.tot { border-top: 1px solid #D7E3EE; margin-top: 3px; padding-top: 6px; font-weight: 700; }
+  .bar { height: 9px; border-radius: 5px; background: #D7E3EE; overflow: hidden; margin: 6px 0 4px; }
+  .bar i { display: block; height: 100%; }
+  .bar.good i { background: #0A6E4E; } .bar.warn i { background: #9A6600; } .bar.bad i { background: #BC431B; }
+  .footer { margin-top: 14px; display: flex; justify-content: space-between; color: #8a9ab5; font-size: 9px; border-top: 1px solid #D7E3EE; padding-top: 6px; }
 </style></head><body>
 <div class="head"><div><h1>${aoCur?.name ? esc(aoCur.name) : `Analisi ordine · ${esc(g.label)}`}</h1>
   <div class="sub">${rows.length} builder${excluded ? ` · ${excluded} non inclus${excluded === 1 ? "o" : "i"}` : ""}${simulating ? " · con simulazione (i builder non sono modificati)" : ""}</div></div>
@@ -9681,13 +9696,13 @@ ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="
 </tbody></table>
 <h2>Ordine</h2>
 <div class="grid">
-  <div class="box"><div class="l">Margine reale</div><div class="v ${S.margin + 5e-4 >= S.target ? "good" : S.margin + 5e-4 >= S.mMin ? "warn" : "bad"}">${pct(S.margin)}</div><div class="n">Target ${(S.target * 100).toFixed(0)}% · minimo ${(S.mMin * 100).toFixed(0)}%</div></div>
+  <div class="box key"><div class="l">Totale fatturato</div><div class="v">${eur(S.inv)}</div><div class="n">${S.vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
+  <div class="box"><div class="l">Imponibile</div><div class="v">${eur(S.rev)}</div><div class="n">IVA ${S.vatOn ? eur(S.vat) : "—"}</div></div>
+  <div class="box key"><div class="l">Costo totale ordine</div><div class="v">${eur(S.cost)}</div><div class="n">Di cui omaggi ${S.gift > 0 ? eur(S.gift) : "—"}</div></div>
   <div class="box"><div class="l">Margine dell'ordine</div><div class="v">${eur(S.prof)}</div><div class="n">Su imponibile</div></div>
+  <div class="box"><div class="l">Margine reale</div><div class="v ${S.margin + 5e-4 >= S.target ? "good" : S.margin + 5e-4 >= S.mMin ? "warn" : "bad"}">${pct(S.margin)}</div><div class="n">Target ${(S.target * 100).toFixed(0)}% · min ${(S.mMin * 100).toFixed(0)}%</div></div>
   <div class="box"><div class="l">A −20% quantità</div><div class="v">${pct(S.lmargin)}</div><div class="n">${eur(S.lprof)}</div></div>
   <div class="box"><div class="l">Sconto massimo</div><div class="v">${pct(S.scontoMax)}</div><div class="n">Uniforme, fino al minimo</div></div>
-  <div class="box"><div class="l">Totale fatturato</div><div class="v">${eur(S.inv)}</div><div class="n">${S.vatOn ? "IVA inclusa" : "Senza IVA"}</div></div>
-  <div class="box"><div class="l">Imponibile</div><div class="v">${eur(S.rev)}</div><div class="n">IVA ${S.vatOn ? eur(S.vat) : "—"}</div></div>
-  <div class="box"><div class="l">Costo totale reale</div><div class="v">${eur(S.cost)}</div><div class="n">Omaggi ${S.gift > 0 ? eur(S.gift) : "—"}</div></div>
   <div class="box"><div class="l">Budget omaggi ${fmtPct(G.pct)}</div><div class="v">${eur(G.budget)}</div><div class="n">A costo · tetto ${eur(S.space)}</div></div>
 </div>
 ${aoCtx.GQ?.count ? `<h2>Omaggi concordati con il club</h2>
@@ -9699,14 +9714,23 @@ ${!aoCtx.GQ?.count && G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<h2>Omagg
 <table><thead><tr><th>Proposta</th><th>Capi</th><th>Costo</th><th>Valore per il club</th><th>Margine dopo</th></tr></thead><tbody>
 ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>${o.lines.map(l => `${l.n} ${esc(l.name)}`).join(" · ")}</td><td>${eur(o.cost)}</td><td>${eur(o.value)}</td><td>${pct(o.marginAfter)}</td></tr>`).join("")}
 </tbody></table>` : ""}
+<h2>Costo ordine e copertura acconto</h2>
+<div class="cover">
+  <div class="cover-row"><span>Costo totale ordine</span><b>${eur(P.cost)}</b></div>
+  <div class="cover-row"><span>Con buffer ${(S.buf * 100).toFixed(0)}% (copertura sicura)</span><b>${eur(P.secure)}</b></div>
+  <div class="cover-row"><span>Acconto ${pct(P.dep)} · lordo ${eur(P.depAmt)}${S.vatOn ? " · netto IVA" : ""}</span><b>${eur(depNet)}</b></div>
+  <div class="bar ${covSt}"><i style="width:${Math.min(100, covPct * 100).toFixed(1)}%"></i></div>
+  <div class="cover-row tot"><span class="${covSt}">${covSt === "good" ? "✓ L'acconto copre i costi con buffer" : covSt === "warn" ? "! L'acconto copre i costi ma non il buffer" : "✕ L'acconto non copre i costi"} · ${pct(covPct)} del costo</span><span class="${covSt}">${covLeft > 0.005 ? `Da coprire col saldo ${eur(covLeft)}` : `Eccedenza ${eur(depNet - P.cost)}`}</span></div>
+  <div class="cover-row"><span>Acconto minimo sicuro (lordo) da richiedere</span><b>${eur(S.depMinGross)}</b></div>
+</div>
 <h2>Incasso</h2>
 <div class="grid">
   <div class="box"><div class="l">Acconto ${pct(P.dep)}</div><div class="v">${eur(P.depAmt)}</div><div class="n">Minimo sicuro ${eur(S.depMinGross)}</div></div>
   <div class="box"><div class="l">Incassato alla consegna</div><div class="v ${P.st}">${eur(P.cashDel)}</div><div class="n">${P.gap > 0.005 ? `Costi scoperti ${eur(P.gap)}` : "Costi coperti"}</div></div>
-  <div class="box"><div class="l">Costi dell'ordine</div><div class="v">${eur(P.cost)}</div><div class="n">Con buffer ${eur(P.secure)}</div></div>
+  <div class="box"><div class="l">Copertura costi</div><div class="v ${covSt}">${pct(covPct)}</div><div class="n">Con buffer ${pct(covSecPct)}</div></div>
   <div class="box"><div class="l">Credito dopo la consegna</div><div class="v">${P.credit > 0.005 ? eur(P.credit) : "—"}</div><div class="n">${P.credit > 0.005 ? `Ultima rata a ${P.lastDays} giorni` : "Saldo alla consegna"}</div></div>
 </div>
-<table style="margin-top:8px"><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
+<table style="margin-top:7px"><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
 ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.amount)}</td><td>${eur(st.cum)}</td></tr>`).join("")}
 </tbody></table>
 <div class="footer"><span>doubleu kit — analisi ordine · uso interno, non inviare al cliente</span><span>${date}</span></div>
