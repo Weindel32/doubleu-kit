@@ -2616,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v124</span>
+            <span id="buildTxt">build v125</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4315,7 +4315,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v124";
+  const BUILD = "v125";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9653,33 +9653,34 @@ ${tabQtaPDF ? `<div class="sec scala">
   /* margin 0 + padding sul body: il browser non stampa URL/data nei margini */
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 11px; margin: 0; padding: 10mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #001D39; padding-bottom: 8px; margin-bottom: 12px; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 10.5px; margin: 0; padding: 8mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #001D39; padding-bottom: 8px; margin-bottom: 8px; }
   h1 { font-size: 19px; margin: 0; letter-spacing: .02em; } .sub { color: #49769F; font-size: 10.5px; margin-top: 3px; }
   .tag { font-size: 9.5px; font-weight: 700; color: #BC431B; border: 1px solid #BC431B; border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
-  h2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 11px 0 4px; break-after: avoid; }
+  h2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 9px 0 4px; }
+  .blk { break-inside: avoid; page-break-inside: avoid; }
   table { width: 100%; border-collapse: collapse; break-inside: avoid; }
-  th, td { padding: 4px 7px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th, td { padding: 3px 7px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   th { font-size: 9px; letter-spacing: .05em; text-transform: uppercase; color: #49769F; background: #F1F5F9; }
-  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  th:first-child, td:first-child { text-align: left; }
   td:first-child { font-weight: 700; }
   td.wrap { white-space: normal; text-align: left; }
   s { color: #8a9ab5; margin-right: 4px; font-weight: 400; }
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; break-inside: avoid; }
-  .box { border: 1px solid #D7E3EE; border-radius: 7px; padding: 7px 9px; min-width: 0; }
+  .box { border: 1px solid #D7E3EE; border-radius: 7px; padding: 5px 8px; min-width: 0; }
   .box .l { font-size: 8.5px; letter-spacing: .05em; text-transform: uppercase; color: #49769F; }
-  .box .v { font-size: 14px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
+  .box .v { font-size: 13px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
   .box .n { font-size: 9px; color: #49769F; margin-top: 2px; }
   .box.key { border-color: #001D39; background: #F1F5F9; }
   .good { color: #0A6E4E; } .warn { color: #9A6600; } .bad { color: #BC431B; }
   .cmp { border: 1px solid #A8C8E0; background: #F1F5F9; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; }
-  .cover { border: 1.5px solid #001D39; border-radius: 8px; padding: 9px 11px; break-inside: avoid; }
-  .cover-row { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+  .cover { border: 1.5px solid #001D39; border-radius: 8px; padding: 7px 11px; break-inside: avoid; }
+  .cover-row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
   .cover-row.tot { border-top: 1px solid #D7E3EE; margin-top: 3px; padding-top: 6px; font-weight: 700; }
   .bar { height: 9px; border-radius: 5px; background: #D7E3EE; overflow: hidden; margin: 6px 0 4px; }
   .bar i { display: block; height: 100%; }
   .bar.good i { background: #0A6E4E; } .bar.warn i { background: #9A6600; } .bar.bad i { background: #BC431B; }
-  .footer { margin-top: 14px; display: flex; justify-content: space-between; color: #8a9ab5; font-size: 9px; border-top: 1px solid #D7E3EE; padding-top: 6px; }
+  .footer { margin-top: 10px; display: flex; justify-content: space-between; color: #8a9ab5; font-size: 9px; border-top: 1px solid #D7E3EE; padding-top: 6px; }
 </style></head><body>
 <div class="head"><div><h1>${aoCur?.name ? esc(aoCur.name) : `Analisi ordine · ${esc(g.label)}`}</h1>
   <div class="sub">${rows.length} builder${excluded ? ` · ${excluded} non inclus${excluded === 1 ? "o" : "i"}` : ""}${simulating ? " · con simulazione (i builder non sono modificati)" : ""}</div></div>
@@ -9714,21 +9715,17 @@ ${!aoCtx.GQ?.count && G.resto > 0.005 && (G.maxValue || G.staffMix) ? `<h2>Omagg
 <table><thead><tr><th>Proposta</th><th>Capi</th><th>Costo</th><th>Valore per il club</th><th>Margine dopo</th></tr></thead><tbody>
 ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>${o.lines.map(l => `${l.n} ${esc(l.name)}`).join(" · ")}</td><td>${eur(o.cost)}</td><td>${eur(o.value)}</td><td>${pct(o.marginAfter)}</td></tr>`).join("")}
 </tbody></table>` : ""}
-<h2>Costo ordine e copertura acconto</h2>
+<div class="blk"><h2>Costo ordine e copertura acconto</h2>
 <div class="cover">
-  <div class="cover-row"><span>Costo totale ordine</span><b>${eur(P.cost)}</b></div>
-  <div class="cover-row"><span>Con buffer ${(S.buf * 100).toFixed(0)}% (copertura sicura)</span><b>${eur(P.secure)}</b></div>
-  <div class="cover-row"><span>Acconto ${pct(P.dep)} · lordo ${eur(P.depAmt)}${S.vatOn ? " · netto IVA" : ""}</span><b>${eur(depNet)}</b></div>
+  <div class="cover-row"><span>Costo totale ordine <span style="color:#49769F">· con buffer ${(S.buf * 100).toFixed(0)}% ${eur(P.secure)}</span></span><b>${eur(P.cost)}</b></div>
+  <div class="cover-row"><span>Acconto ${pct(P.dep)} <span style="color:#49769F">· ${eur(P.depAmt)}${S.vatOn ? " lordo" : ""}</span>${S.vatOn ? ` <span style="color:#49769F">· netto IVA</span>` : ""}</span><b>${eur(depNet)}</b></div>
   <div class="bar ${covSt}"><i style="width:${Math.min(100, covPct * 100).toFixed(1)}%"></i></div>
-  <div class="cover-row tot"><span class="${covSt}">${covSt === "good" ? "✓ L'acconto copre i costi con buffer" : covSt === "warn" ? "! L'acconto copre i costi ma non il buffer" : "✕ L'acconto non copre i costi"} · ${pct(covPct)} del costo</span><span class="${covSt}">${covLeft > 0.005 ? `Da coprire col saldo ${eur(covLeft)}` : `Eccedenza ${eur(depNet - P.cost)}`}</span></div>
-  <div class="cover-row"><span>Acconto minimo sicuro (lordo) da richiedere</span><b>${eur(S.depMinGross)}</b></div>
-  <div class="cover-row"><span>Incassato alla consegna${P.gap > 0.005 ? ` · costi scoperti ${eur(P.gap)}` : " · costi coperti"}</span><b class="${P.st}">${eur(P.cashDel)}</b></div>
-  <div class="cover-row"><span>Credito dopo la consegna${P.credit > 0.005 ? ` · ultima rata a ${P.lastDays} giorni` : ""}</span><b>${P.credit > 0.005 ? eur(P.credit) : "—"}</b></div>
-</div>
-<h2>Piano di incasso</h2>
+  <div class="cover-row tot"><span class="${covSt}">${covSt === "good" ? "✓ Copre i costi con buffer" : covSt === "warn" ? "! Copre i costi, non il buffer" : "✕ Non copre i costi"} · ${pct(covPct)}</span><span class="${covSt}">${covLeft > 0.005 ? `Scoperto ${eur(covLeft)} · acconto sicuro ${eur(S.depMinGross)}` : `Eccedenza ${eur(depNet - P.cost)}`}</span></div>
+</div></div>
+<div class="blk"><h2>Piano di incasso</h2>
 <table><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
 ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.amount)}</td><td>${eur(st.cum)}</td></tr>`).join("")}
-</tbody></table>
+</tbody></table></div>
 <div class="footer"><span>doubleu kit — analisi ordine · uso interno, non inviare al cliente</span><span>${date}</span></div>
 </body></html>`;
     // Stessa stampa in iframe del builder: su iPhone una nuova scheda ricaricava l'app
