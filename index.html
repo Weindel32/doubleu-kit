@@ -2616,7 +2616,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v123</span>
+            <span id="buildTxt">build v124</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4315,7 +4315,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v123";
+  const BUILD = "v124";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9653,13 +9653,13 @@ ${tabQtaPDF ? `<div class="sec scala">
   /* margin 0 + padding sul body: il browser non stampa URL/data nei margini */
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 11px; margin: 0; padding: 12mm 13mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #001D39; font-size: 11px; margin: 0; padding: 10mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #001D39; padding-bottom: 8px; margin-bottom: 12px; }
   h1 { font-size: 19px; margin: 0; letter-spacing: .02em; } .sub { color: #49769F; font-size: 10.5px; margin-top: 3px; }
   .tag { font-size: 9.5px; font-weight: 700; color: #BC431B; border: 1px solid #BC431B; border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
-  h2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 14px 0 5px; break-after: avoid; }
+  h2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #49769F; margin: 11px 0 4px; break-after: avoid; }
   table { width: 100%; border-collapse: collapse; break-inside: avoid; }
-  th, td { padding: 5px 7px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th, td { padding: 4px 7px; border-bottom: 1px solid #D7E3EE; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   th { font-size: 9px; letter-spacing: .05em; text-transform: uppercase; color: #49769F; background: #F1F5F9; }
   th:first-child, td:first-child { text-align: left; white-space: normal; }
   td:first-child { font-weight: 700; }
@@ -9722,15 +9722,11 @@ ${[G.maxValue, G.staffMix].filter(Boolean).map(o => `<tr><td>${o.title}</td><td>
   <div class="bar ${covSt}"><i style="width:${Math.min(100, covPct * 100).toFixed(1)}%"></i></div>
   <div class="cover-row tot"><span class="${covSt}">${covSt === "good" ? "✓ L'acconto copre i costi con buffer" : covSt === "warn" ? "! L'acconto copre i costi ma non il buffer" : "✕ L'acconto non copre i costi"} · ${pct(covPct)} del costo</span><span class="${covSt}">${covLeft > 0.005 ? `Da coprire col saldo ${eur(covLeft)}` : `Eccedenza ${eur(depNet - P.cost)}`}</span></div>
   <div class="cover-row"><span>Acconto minimo sicuro (lordo) da richiedere</span><b>${eur(S.depMinGross)}</b></div>
+  <div class="cover-row"><span>Incassato alla consegna${P.gap > 0.005 ? ` · costi scoperti ${eur(P.gap)}` : " · costi coperti"}</span><b class="${P.st}">${eur(P.cashDel)}</b></div>
+  <div class="cover-row"><span>Credito dopo la consegna${P.credit > 0.005 ? ` · ultima rata a ${P.lastDays} giorni` : ""}</span><b>${P.credit > 0.005 ? eur(P.credit) : "—"}</b></div>
 </div>
-<h2>Incasso</h2>
-<div class="grid">
-  <div class="box"><div class="l">Acconto ${pct(P.dep)}</div><div class="v">${eur(P.depAmt)}</div><div class="n">Minimo sicuro ${eur(S.depMinGross)}</div></div>
-  <div class="box"><div class="l">Incassato alla consegna</div><div class="v ${P.st}">${eur(P.cashDel)}</div><div class="n">${P.gap > 0.005 ? `Costi scoperti ${eur(P.gap)}` : "Costi coperti"}</div></div>
-  <div class="box"><div class="l">Copertura costi</div><div class="v ${covSt}">${pct(covPct)}</div><div class="n">Con buffer ${pct(covSecPct)}</div></div>
-  <div class="box"><div class="l">Credito dopo la consegna</div><div class="v">${P.credit > 0.005 ? eur(P.credit) : "—"}</div><div class="n">${P.credit > 0.005 ? `Ultima rata a ${P.lastDays} giorni` : "Saldo alla consegna"}</div></div>
-</div>
-<table style="margin-top:7px"><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
+<h2>Piano di incasso</h2>
+<table><thead><tr><th>Quando</th><th>%</th><th>Importo</th><th>Incassato totale</th></tr></thead><tbody>
 ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.amount)}</td><td>${eur(st.cum)}</td></tr>`).join("")}
 </tbody></table>
 <div class="footer"><span>doubleu kit — analisi ordine · uso interno, non inviare al cliente</span><span>${date}</span></div>
