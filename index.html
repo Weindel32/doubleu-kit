@@ -674,7 +674,6 @@
     .art-cons-delta { font-weight: 700; }
     .art-cons-delta.good { color: var(--good); }
     .art-cons-delta.bad { color: var(--bad); }
-    .art-cons .art-tessuto { margin-top: 0 !important; }
     /* Preventivato bloccato in stato Ordine: si legge, non si modifica */
     .art-card input:disabled, .art-card select:disabled { opacity: .55; cursor: not-allowed; }
 
@@ -4570,9 +4569,10 @@ if("serviceWorker" in navigator) {
   };
 
   /* ─── Consuntivo di produzione (kit in stato Ordine) ───
-     Il preventivo nasce dal costo standard (es. consumo da 1 m). Con l'ordine
-     in produzione il cartamodello dà il costo vero: va nel consuntivo della
-     riga (it.cons), mentre base/extra restano il preventivato, bloccato.
+     Il preventivo nasce dal costo standard di Production Sheet. Con l'ordine
+     in produzione (cartamodello, accordi di taglio, stampa) il costo si
+     rifà lì e il nuovo valore si riporta nel consuntivo della riga
+     (it.cons: capo + stampa), mentre base/extra restano il preventivato.
      Il prezzo al cliente si calcola solo dal preventivato, quindi il
      consuntivo non lo muove mai: cambia soltanto il margine. Senza it.cons
      il consuntivo coincide col preventivato. */
@@ -4583,21 +4583,8 @@ if("serviceWorker" in navigator) {
   const ensureCons = (it) => {
     if(!it.cons){
       it.cons = { base: toNum(it.base), extra: toNum(it.extra) };
-      if(it.costParts) it.cons.costParts = { ...it.costParts };
     }
     return it.cons;
-  };
-  // Costo del capo dalla distinta (tessuto × consumo + altre voci). Vale per
-  // la riga (preventivato) e per il suo consuntivo: stessa struttura.
-  const baseDaDistinta = (obj) => {
-    const t = tessutoByCodice(obj.costParts.tessuto_default);
-    const m = toNum(obj.costParts.consumo_default);
-    if(!t || m <= 0) return;
-    const cent = (n) => Math.round(n * 100) / 100;
-    obj.costParts.tessuto = cent(toNum(t.costoMetro) * m);
-    const altreVoci = ["taglio","produzione","accessori","etichetta","altro"]
-      .reduce((s, k) => s + toNum(obj.costParts[k]), 0);
-    obj.base = cent(altreVoci + obj.costParts.tessuto);
   };
 
 
@@ -4785,47 +4772,40 @@ if("serviceWorker" in navigator) {
          scelta, non uno scostamento, quindi resta solo un riferimento. */
       const stampaRef  = catArt && catExtra(catArt) > 0 && Math.abs(toNum(it.extra) - catExtra(catArt)) >= 0.005
         ? ` <span class="cost-src-ref">· stampa catalogo ${eur(catExtra(catArt))}</span>` : "";
-      const catSrc     = catArt && psCostFor(catArt) ? "Production Sheet" : "file storico";
+      /* Il costo del capo si fa in Production Sheet: quando arriva da lì in
+         preventivo è in sola lettura, e se la scheda è cambiata dopo il
+         salvataggio del kit lo si dice, con un clic per allinearsi. Resta
+         modificabile solo per articoli manuali o del file storico. */
+      const psArt      = !!(catArt && psCostFor(catArt));
+      const baseLocked = ordine || psArt;
+      const baseDiff   = catArt && Math.abs(toNum(it.base) - catBase(catArt)) >= 0.005;
       const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
-        : Math.abs(toNum(it.base) - catBase(catArt)) < 0.005
-          ? `<span class="cost-src cat">capo da ${catSrc}</span>${stampaRef}`
-          : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">${catSrc} ${eur(catBase(catArt))}</span> ${ordine ? "" : `<button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`}${stampaRef}`;
+        : !baseDiff
+          ? `<span class="cost-src cat">capo da ${psArt ? "Production Sheet" : "file storico"}</span>${stampaRef}`
+          : psArt
+            ? `<span class="cost-src mod">Production Sheet ora ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">aggiorna</button>`}${stampaRef}`
+            : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">file storico ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`}${stampaRef}`;
 
-      // Il cambio tessuto vale solo per questo preventivo: la riga tiene una
-      // copia della distinta, l'articolo di catalogo non viene mai toccato.
-      const cp = it.costParts;
-      const tessutoRowHtml = (cp, actT, actC, dis) => {
-        const codici = tessutiCodificati().map(m => m.codice);
-        const cur  = (cp.tessuto_default || "").trim();
-        if(cur && !codici.some(c => c.toLowerCase() === cur.toLowerCase())) codici.push(cur);
-        const opts = codici.map(c => `<option value="${esc(c)}" ${c===cur ? "selected" : ""}>${esc(c)}</option>`).join("");
-        const consumoStr = cp.consumo_default ? String(cp.consumo_default).replace(".", ",") : "";
-        return `<div class="art-tessuto" style="display:flex;gap:6px;align-items:center;margin-top:4px">
-          <select data-act="${actT}" data-id="${it.id}" style="font-size:11px;padding:3px 6px;flex:1;min-width:0"${dis}>${opts}</select>
-          <input data-act="${actC}" data-id="${it.id}" value="${esc(consumoStr)}" inputmode="decimal" autocomplete="off" placeholder="m" title="Consumo in metri" style="width:48px;font-size:11px;padding:3px 6px"${dis}>
-        </div>`;
-      };
-      const tessutoRow = cp ? tessutoRowHtml(cp, "tessuto", "consumo", lock) : "";
-
-      // In stato Ordine il preventivato è bloccato e sotto compare il
-      // consuntivo, l'unico costo che si modifica a ordine chiuso.
+      /* In stato Ordine il preventivato è bloccato e sotto compare il
+         consuntivo: il costo del capo rifatto in Production Sheet dopo
+         cartamodello e accordi di taglio, riportato qui come numero unico,
+         e la stampa reale. Ognuno mostra il prima → dopo. */
       const consBlock = ordine ? (() => {
-        const c = it.cons || { base: it.base, extra: it.extra, costParts: it.costParts };
+        const c = it.cons || { base: it.base, extra: it.extra };
         const delta = consCost(it) - unitCost;
         const sgn = (n) => (n > 0 ? "+" : "−") + eur(Math.abs(n));
         const deltaHtml = Math.abs(delta) < 0.005
           ? `<span class="art-cons-delta">uguale al preventivato</span>`
           : `<span class="art-cons-delta ${delta < 0 ? "good" : "bad"}">${sgn(delta)}/capo · ${sgn(delta * toNum(it.qty))} sulla riga</span>`;
         return `<div class="art-cons">
-          <div class="art-cons-head"><b>Consuntivo produzione</b> <span>${eur(consCost(it))}/capo</span> ${deltaHtml}${it.cons ? ` <button type="button" class="cost-src-reset" data-act="consReset" data-id="${it.id}">riporta al preventivato</button>` : ""}</div>
-          ${c.costParts ? tessutoRowHtml(c.costParts, "consTessuto", "consConsumo", "") : ""}
+          <div class="art-cons-head"><b>Consuntivo produzione</b> <span>${eur(unitCost)} → ${eur(consCost(it))}/capo</span> ${deltaHtml}${it.cons ? ` <button type="button" class="cost-src-reset" data-act="consReset" data-id="${it.id}">riporta al preventivato</button>` : ""}</div>
           <div class="art-pricing">
             <div class="art-field">
-              <label>Base cons. €</label>
+              <label>Capo reale € · prev. ${eur(it.base)}</label>
               <input data-act="consBase" data-id="${it.id}" value="${c.base}" inputmode="decimal" autocomplete="off">
             </div>
             <div class="art-field">
-              <label>Stampa/Ric. cons. €</label>
+              <label>Stampa reale € · prev. ${eur(it.extra)}</label>
               <input data-act="consExtra" data-id="${it.id}" value="${c.extra}" inputmode="decimal" autocomplete="off">
             </div>
           </div>
@@ -4848,14 +4828,13 @@ if("serviceWorker" in navigator) {
       </div>
       <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costSrc}</div>
       <div class="art-rev-note" id="rev-${it.id}"></div>
-      ${tessutoRow}
     </div>
 
     <div class="art-fields">
       <div class="art-pricing">
         <div class="art-field">
-          <label>${ordine ? "Base prev. €" : "Base €"}</label>
-          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off"${lock}>
+          <label>${ordine ? "Capo prev. €" : "Costo capo €"}</label>
+          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off"${baseLocked ? " disabled" : ""}${psArt && !ordine ? ' title="Costo da Production Sheet: si modifica lì"' : ""}>
         </div>
         <div class="art-field">
           <label>${ordine ? "Stampa/Ric. prev. €" : "Stampa/Ric. €"}</label>
@@ -4914,31 +4893,8 @@ if("serviceWorker" in navigator) {
         return;
       }
 
-      if(act === "tessuto" || act === "consumo"){
-        el.addEventListener("change", () => {
-          const it = find(); if(!it || !it.costParts) return;
-          if(act === "tessuto") it.costParts.tessuto_default = el.value;
-          if(act === "consumo") it.costParts.consumo_default = Math.max(0, toNum(el.value));
-          baseDaDistinta(it);
-          render();
-        });
-        return;
-      }
-
       // Consuntivo: il primo ritocco crea la copia (it.cons) partendo dal
       // preventivato, che da lì in poi non si muove più.
-      if(act === "consTessuto" || act === "consConsumo"){
-        el.addEventListener("change", () => {
-          const it = find(); if(!it) return;
-          const c = ensureCons(it); if(!c.costParts) return;
-          if(act === "consTessuto") c.costParts.tessuto_default = el.value;
-          if(act === "consConsumo") c.costParts.consumo_default = Math.max(0, toNum(el.value));
-          baseDaDistinta(c);
-          render();
-        });
-        return;
-      }
-
       if(act === "consBase" || act === "consExtra"){
         const key = act === "consBase" ? "base" : "extra";
         el.addEventListener("input", () => {
@@ -5036,7 +4992,7 @@ if("serviceWorker" in navigator) {
           // Senza la copia profonda, cambiare tessuto su una riga ritoccava
           // anche l'altra: condividevano lo stesso oggetto costParts.
           if(copy.costParts) copy.costParts = { ...copy.costParts };
-          if(copy.cons) copy.cons = { ...copy.cons, ...(copy.cons.costParts ? { costParts: { ...copy.cons.costParts } } : {}) };
+          if(copy.cons) copy.cons = { ...copy.cons };
           items.splice(idx + 1, 0, copy);
           render();
         });
@@ -12316,6 +12272,7 @@ tr:last-child td{border-bottom:none}
       await loadMateriali();
       await loadCostiProduzione();
       renderArticoli(); // la lista era già stata disegnata col solo catalogo
+      render();         // anche il kit aperto: il costo del capo viene da Production Sheet
       renderDashboard();
     } catch(err) {
       console.error(err);
