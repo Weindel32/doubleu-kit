@@ -1924,6 +1924,15 @@
     .mb-chip.stato-chip { padding: 4px 11px; font-size: 12px; font-weight: 700; box-shadow: none; }
     .mb-chip.stato-preventivo { background: var(--surface-3); border-color: transparent; color: var(--text); }
     .mb-chip.stato-ordine     { background: var(--sb-bg); border-color: var(--sb-bg); color: #FFFFFF; }
+    .ar-list { display: flex; flex-direction: column; gap: 8px; }
+    .ar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .ar-amt { text-align: right; }
+    .ar-acts { display: flex; gap: 6px; }
+    @media (max-width: 640px) {
+      .ar-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+      .ar-amt { text-align: left; }
+    }
+    .mb-chip.stato-consegnato { background: var(--surface-2); border-color: var(--border-2); color: var(--muted); }
     .mb-chip.stato-calcolo    { background: transparent; border: 1px dashed var(--muted-2); color: #3F4E63; }
 
     /* Schede kit su telefono */
@@ -1946,6 +1955,10 @@
     }
     @media (max-width: 860px) {
       #dashCardList { display: flex; }
+    }
+    #dashArchivioMobile { display: none; }
+    @media (max-width: 860px) {
+      #dashArchivioMobile:not([hidden]) { display: block; width: 100%; margin-top: 12px; }
     }
 
     /* ═══ Tema DOUBLEU — fase 3: Kit builder ═══ */
@@ -2528,6 +2541,14 @@
           Kit builder
         </a>
 
+        <a class="nav-item" href="javascript:void(0)" data-view="archivio">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="2.5" y="3.5" width="15" height="4" rx="1"/>
+            <path d="M4 7.5v8a1 1 0 001 1h10a1 1 0 001-1v-8M8 11h4"/>
+          </svg>
+          Archivio
+        </a>
+
 
         <a class="nav-item" href="javascript:void(0)" data-view="ordine">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
@@ -2628,7 +2649,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v128</span>
+            <span id="buildTxt">build v129</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2694,6 +2715,7 @@
               <div class="dash-sub">Panoramica dei tuoi kit e delle performance economiche.</div>
             </div>
             <div style="display:flex;gap:8px">
+              <button class="ghost" id="btnArchivioDash" type="button">Archivio</button>
               <button class="secondary" id="btnQuickCalcDash">% Calcolo rapido</button>
               <button class="primary" id="btnNewKitDash">+ Nuovo kit</button>
             </div>
@@ -2768,6 +2790,8 @@
               </table>
             </div>
             <div class="dash-card-list" id="dashCardList"></div>
+            <!-- Su telefono la testata con il pulsante Archivio non c'è -->
+            <button type="button" class="secondary" id="dashArchivioMobile" hidden>Archivio</button>
           </div>
 
           <!-- Su telefono la targhetta della topbar è nascosta: senza questa
@@ -2970,8 +2994,9 @@
                       <span class="filter-pill" data-stato="calcolo">Calcolo</span>
                       <span class="filter-pill active" data-stato="preventivo">Preventivo</span>
                       <span class="filter-pill" data-stato="ordine">Ordine</span>
+                      <span class="filter-pill" data-stato="consegnato">Consegnato</span>
                     </div>
-                    <div class="hint">Calcolo = simulazione senza cliente. Preventivo = inviato, non ancora chiuso.</div>
+                    <div class="hint">Calcolo = simulazione senza cliente. Preventivo = inviato, non ancora chiuso. Ordine = in produzione. Consegnato = chiuso, va in Archivio.</div>
                   </div>
                 </div>
               </div>
@@ -3962,6 +3987,38 @@
         </div><!-- /materialiView -->
 
         <!-- ── Esportazioni View ── -->
+        <div id="archivioView" style="display:none">
+          <div class="dash-header">
+            <div>
+              <div class="dash-welcome">Archivio</div>
+              <div class="dash-sub">Ordini consegnati e chiusi. Fuori dalla dashboard, ma sempre conteggiati nelle statistiche.</div>
+            </div>
+          </div>
+
+          <div class="dash-kpis">
+            <div class="kpi dk-navy">
+              <div class="lbl">Ordini consegnati</div>
+              <div class="val" id="arCount">—</div>
+              <div class="note">In archivio</div>
+            </div>
+            <div class="kpi dk-mid">
+              <div class="lbl">Fatturato</div>
+              <div class="val" id="arGross">—</div>
+              <div class="note">Totale ordini consegnati</div>
+            </div>
+            <div class="kpi dk-orange">
+              <div class="lbl">Margine a consuntivo</div>
+              <div class="val" id="arMargin">—</div>
+              <div class="note" id="arMarginNote">Profitto reale ÷ ricavo</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <input type="search" id="arSearch" placeholder="Cerca club o kit" autocomplete="off" style="margin-bottom:12px">
+            <div class="ar-list" id="arList"></div>
+          </div>
+        </div>
+
         <div id="esportazioniView" style="display:none">
           <div class="dash-header">
             <div>
@@ -4334,7 +4391,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v128";
+  const BUILD = "v129";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4577,7 +4634,8 @@ if("serviceWorker" in navigator) {
      Il prezzo al cliente si calcola solo dal preventivato, quindi il
      consuntivo non lo muove mai: cambia soltanto il margine. Senza it.cons
      il consuntivo coincide col preventivato. */
-  const isOrdine = () => kitStato?.value === "ordine";
+  // Il consuntivo vale per l'ordine in produzione e per quello consegnato
+  const isOrdine = () => kitStato?.value === "ordine" || kitStato?.value === "consegnato";
   const consCost = (it) => it.cons
     ? toNum(it.cons.base) + toNum(it.cons.extra)
     : toNum(it.base) + toNum(it.extra);
@@ -7771,7 +7829,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   let currentView = "dashboard";
 
   const VIEW_TITLES = {
-    dashboard:"Dashboard", builder:"Kit builder",
+    dashboard:"Dashboard", builder:"Kit builder", archivio:"Archivio",
     analisi:"Analytics", ordine:"Analisi ordine", articoli:"Articoli", costo:"Costo articolo", materiali:"Materiali",
     esportazioni:"Esportazioni", impostazioni:"Impostazioni"
   };
@@ -7801,6 +7859,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(statusBarEl) statusBarEl.style.display = view === "builder" ? "" : "none";
     const renderFns = {
       dashboard:    renderDashboard,
+      archivio:     renderArchivio,
       analisi:      renderAnalisi,
       ordine:       renderAnalisiOrdine,
       articoli:     () => renderArticoli(true),
@@ -7878,6 +7937,9 @@ ${tabQtaPDF ? `<div class="sec scala">
     calcolo:    { label:"Calcolo",    cls:"",     icon:"" },
     preventivo: { label:"Preventivo", cls:"warn", icon:"" },
     ordine:     { label:"Ordine",     cls:"good", icon:"✓" },
+    // Ordine prodotto e consegnato: esce dalla dashboard e va in Archivio,
+    // ma resta nelle statistiche perché è fatturato vero.
+    consegnato: { label:"Consegnato", cls:"",     icon:"■" },
   };
   const getKitStato = (payload) => KIT_STATO[payload?.stato] ? payload.stato : "preventivo";
   const statoBadgeHtml = (stato) => {
@@ -9116,6 +9178,24 @@ ${tabQtaPDF ? `<div class="sec scala">
       // Prezzo minimo di trattativa del kit (IVA come nel builder)
       minPrice: (vatOn ? (variable + staffCost + fixed + ship) / (1 - mMin) * (1 + vatRate) : (variable + staffCost + fixed + ship) / (1 - mMin)) / q,
       ...scen(1), low: scen(0.8) };
+  };
+
+  /* Differenza di costo fra consuntivo e preventivato di un kit salvato
+     (stato Ordine o Consegnato). Il prezzo resta quello del preventivato,
+     quindi il profitto reale è quello di kitEconomics meno questa cifra.
+     Lo staff in omaggio segue il costo kit reale, come nel builder. */
+  const kitConsDelta = (p) => {
+    if(p?.stato !== "ordine" && p?.stato !== "consegnato") return 0;
+    const its = Array.isArray(p?.items) ? p.items : [];
+    const q   = toNum(p?.qtyEst) > 0 ? toNum(p.qtyEst) : 1;
+    let d = 0, dPagati = 0;
+    its.forEach(it => {
+      if(!it.cons) return;
+      const x = (toNum(it.cons.base) + toNum(it.cons.extra) - toNum(it.base) - toNum(it.extra)) * toNum(it.qty);
+      d += x;
+      if(!it.isGift) dPagati += x;
+    });
+    return d + Math.max(0, Math.floor(toNum(p?.staffOmaggio))) * dPagati / q;
   };
 
   const quoteKits = (id) => {
@@ -10370,7 +10450,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
                <div class="oa-qc-act"><button type="button" class="primary" id="oaQuoteUpdate"${oaBusy ? " disabled" : ""}>${oaBusy ? "Aggiornamento…" : "Aggiorna preventivo in Order App"}</button></div>`
             : `<div class="oa-qc-warn">Kit modificato, ma in Order App è già un ordine: le modifiche si fanno lì.</div>`)
           : `<div class="hint oa-qc-ok">✓ Allineato con il kit.</div>`}
-        ${info && info.status !== "PREVENTIVO" && info.status !== "ANNULLATO" && kitStato?.value !== "ordine"
+        ${info && info.status !== "PREVENTIVO" && info.status !== "ANNULLATO" && kitStato?.value !== "ordine" && kitStato?.value !== "consegnato"
           ? `<div class="oa-qc-act"><button type="button" class="secondary" id="oaMarkOrder">Segna il kit come Ordine</button>
              <span class="hint">In Order App è diventato ordine.</span></div>` : ""}
         ${totals}
@@ -10462,10 +10542,21 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       if(dkCost)   dkCost.textContent   = "—";
     }
 
+    /* I consegnati contano nei KPI qui sopra ma la lista è per il lavoro in
+       corso: loro stanno in Archivio. */
+    const nArchivio = rows.filter(k => getKitStato(k.payload) === "consegnato").length;
+    const btnArchivio = document.getElementById("btnArchivioDash");
+    if(btnArchivio) btnArchivio.textContent = nArchivio ? `Archivio · ${nArchivio}` : "Archivio";
+    const btnArchivioM = document.getElementById("dashArchivioMobile");
+    if(btnArchivioM) {
+      btnArchivioM.hidden = !nArchivio;
+      btnArchivioM.textContent = `Archivio · ${nArchivio} ${nArchivio === 1 ? "ordine consegnato" : "ordini consegnati"}`;
+    }
+
     /* Varianti dello stesso club raggruppate. Solo l'ordine di
        visualizzazione cambia: i KPI qui sopra sono già calcolati su tutti i
        kit, e i pulsanti puntano alla posizione nella lista riordinata. */
-    const groups = groupDashRows(rows);
+    const groups = groupDashRows(rows.filter(k => getKitStato(k.payload) !== "consegnato"));
     rows.length = 0;
     groups.forEach(g => rows.push(...g.kits));
     refreshClientList();
@@ -10489,6 +10580,9 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         } else if(cloudLoadFailed) {
           if(ttl)  ttl.textContent  = "Kit non caricati";
           if(hint) hint.textContent = "Non è stato possibile leggere i kit dal cloud: nulla è andato perso. Premi ↻ Ricarica qui sopra per riprovare.";
+        } else if(nArchivio) {
+          if(ttl)  ttl.textContent  = "Nessun kit in corso";
+          if(hint) hint.textContent = `${nArchivio === 1 ? "Il kit consegnato è" : `I ${nArchivio} kit consegnati sono`} in Archivio.`;
         } else {
           if(ttl)  ttl.textContent  = "Nessun kit salvato";
           if(hint) hint.textContent = "Crea il tuo primo kit per iniziare.";
@@ -10738,6 +10832,92 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     }
   };
 
+  /* ─── Archivio: ordini consegnati ───
+     Fuori dalla dashboard, che resta per il lavoro in corso, ma dentro le
+     statistiche (Analytics li conta: sono fatturato vero). Qui il margine
+     è quello a consuntivo, il dato più affidabile di un ordine chiuso. */
+  let arSearchText = "";
+  let arKitsCache  = [];
+  const renderArchivio = () => {
+    const listEl = document.getElementById("arList");
+    if(!listEl) return;
+    const store = getStore();
+    const all = [
+      ...Object.entries(store).map(([name, d]) => ({ name, payload: d.payload, date: d.savedAt || 0, source: "local" })),
+      ...cloudProjects.filter(p => !store[p.name]).map(p => ({ name: p.name || "Kit cloud", payload: p.data,
+        date: p.created_at ? new Date(p.created_at).getTime() : 0, source: "cloud", cloudId: p.id })),
+    ].filter(k => getKitStato(k.payload) === "consegnato").map(k => {
+      const st = calcKitStats(k.payload);
+      const profitCons = st ? st.profit - kitConsDelta(k.payload) : 0;
+      return { ...k, stats: st, profitCons, marginCons: st && st.revenueNet > 0 ? profitCons / st.revenueNet : 0 };
+    }).sort((a, b) => b.date - a.date);
+
+    // KPI sull'intero archivio, non sul risultato della ricerca
+    const conStats = all.filter(k => k.stats);
+    const totNet   = conStats.reduce((a, k) => a + k.stats.revenueNet, 0);
+    const totProf  = conStats.reduce((a, k) => a + k.profitCons, 0);
+    const totPrev  = conStats.reduce((a, k) => a + k.stats.profit, 0);
+    setText("arCount", String(all.length));
+    setText("arGross", conStats.length ? eur(conStats.reduce((a, k) => a + k.stats.invoiceTotal, 0)) : "—");
+    setText("arMargin", totNet > 0 ? (totProf / totNet * 100).toFixed(1) + "%" : "—");
+    setText("arMarginNote", totNet > 0 && Math.abs(totProf - totPrev) >= 0.005
+      ? `Preventivato ${(totPrev / totNet * 100).toFixed(1)}% · ${totProf > totPrev ? "+" : "−"}${eur(Math.abs(totProf - totPrev))}`
+      : "Profitto reale ÷ ricavo");
+
+    const txt = arSearchText.trim().toLowerCase();
+    arKitsCache = all.filter(k => !txt
+      || k.name.toLowerCase().includes(txt)
+      || String(k.payload?.clientName || "").toLowerCase().includes(txt));
+
+    listEl.innerHTML = arKitsCache.length ? arKitsCache.map((k, i) => {
+      const st     = k.stats;
+      const club   = (k.payload?.clientName || "").trim();
+      const date   = k.date ? new Date(k.date).toLocaleDateString("it-IT") : "—";
+      const scarto = st && Math.abs(k.profitCons - st.profit) >= 0.005;
+      return `<div class="ar-row">
+        <div>
+          <div class="dash-kit-name">${esc(k.name)} ${statoBadgeHtml("consegnato")}</div>
+          <div class="dash-kit-sub">${club ? esc(club) + " · " : ""}salvato il ${date}</div>
+        </div>
+        <div class="ar-amt">${st
+          ? `<div class="dash-amt">${eur(st.invoiceTotal)}</div>
+             <div class="dash-amt-sub">margine ${(k.marginCons * 100).toFixed(1)}%${scarto ? ` a consuntivo · prev. ${(st.margin * 100).toFixed(1)}%` : ""}</div>`
+          : `<span class="dash-amt-none">—</span>`}</div>
+        <div class="ar-acts">
+          <button type="button" class="secondary" data-ar-open="${i}">Apri</button>
+          <button type="button" class="ghost" data-ar-reopen="${i}" title="Torna fra gli ordini in corso">Riporta a Ordine</button>
+        </div>
+      </div>`;
+    }).join("") : `<div class="hint">${all.length ? "Nessun ordine consegnato corrisponde alla ricerca." : "Nessun ordine consegnato. Un kit va in Archivio quando lo segni come Consegnato."}</div>`;
+
+    listEl.querySelectorAll("[data-ar-open]").forEach(btn => btn.addEventListener("click", () => {
+      const k = arKitsCache[+btn.getAttribute("data-ar-open")];
+      if(!k) return;
+      if(k.source === "cloud") {
+        const proj = cloudProjects.find(p => p.id === k.cloudId);
+        if(!proj) return;
+        activeCloudId = proj.id; applyPayload(proj.data); markSaveBase("cloud");
+      } else {
+        activeCloudId = null; applyPayload(k.payload); markSaveBase("local", k.date);
+      }
+      toast(`"${k.name}" caricato ✓`, "ok");
+      if(isIphoneLayout()) startUnifiedFlow(false);
+      else { showView("builder"); goToStep(1); }
+    }));
+    listEl.querySelectorAll("[data-ar-reopen]").forEach(btn => btn.addEventListener("click", async () => {
+      const k = arKitsCache[+btn.getAttribute("data-ar-reopen")];
+      if(!k || !await setStatoKitSalvato(k, "ordine")) return;
+      toast(`"${k.name}" riportato fra gli ordini in corso`, "ok");
+      renderArchivio();
+    }));
+  };
+  document.getElementById("arSearch")?.addEventListener("input", (e) => {
+    arSearchText = e.target.value;
+    renderArchivio();
+  });
+  document.getElementById("btnArchivioDash")?.addEventListener("click", () => showView("archivio"));
+  document.getElementById("dashArchivioMobile")?.addEventListener("click", () => showView("archivio"));
+
   /* ─── helper: build a margin bar (tick = target, chip = stato con icona) ─── */
   // forceState, se passato, sostituisce l'euristica interna (distanza dal
   // target) con uno stato già deciso altrove — serve ad allineare questa
@@ -10873,6 +11053,22 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   // diventati ordini falserebbe articoli/linee e KPI del confronto.
   let portfolioStatoFilter = "ALL";
 
+  // Cambia lo stato di un kit salvato (locale o cloud) senza aprirlo
+  const setStatoKitSalvato = async (k, nuovoStato) => {
+    const payload = { ...k.payload, stato: nuovoStato };
+    if(k.source === "locale" || k.source === "local"){
+      const store = getStore();
+      if(store[k.name]) store[k.name].payload = payload;
+      setStore(store);
+    } else if(k.source === "cloud" && supabase && k.cloudId){
+      const { error } = await supabase.from("projects").update({ data: payload }).eq("id", k.cloudId);
+      if(error){ toast("Errore aggiornamento cloud", "warn"); return false; }
+      const idx = cloudProjects.findIndex(p => p.id === k.cloudId);
+      if(idx > -1) cloudProjects[idx] = { ...cloudProjects[idx], data: payload };
+    }
+    return true;
+  };
+
   const getPortfolioKits = () => {
     const store = getStore();
     const all = [
@@ -10890,7 +11086,9 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         qtyBase: s.qtyBase, state: s.state,
         stato: getKitStato(k.payload),
       };
-    }).filter(Boolean).filter(k => portfolioStatoFilter === "ALL" || k.stato === portfolioStatoFilter);
+    }).filter(Boolean).filter(k => portfolioStatoFilter === "ALL" || k.stato === portfolioStatoFilter
+      // Un consegnato è un ordine chiuso: fra gli ordini ci sta
+      || (portfolioStatoFilter === "ordine" && k.stato === "consegnato"));
   };
 
   document.querySelectorAll("#portfolioStatoFilter [data-stato-filter]").forEach(el => {
@@ -11000,25 +11198,15 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       });
     });
 
-    // Cambia stato (calcolo → preventivo → ordine → calcolo) senza dover
-    // riaprire il kit nel Builder.
-    const STATO_CYCLE = { calcolo:"preventivo", preventivo:"ordine", ordine:"calcolo" };
+    // Cambia stato (calcolo → preventivo → ordine → consegnato → calcolo)
+    // senza dover riaprire il kit nel Builder.
+    const STATO_CYCLE = { calcolo:"preventivo", preventivo:"ordine", ordine:"consegnato", consegnato:"calcolo" };
     listEl.querySelectorAll("[data-cmp-toggle-stato]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const k = cmpKitsCache[+btn.getAttribute("data-cmp-toggle-stato")];
         if(!k) return;
         const nuovoStato = STATO_CYCLE[k.stato] || "preventivo";
-        const payload = { ...k.payload, stato: nuovoStato };
-        if(k.source === "locale"){
-          const store = getStore();
-          if(store[k.name]) store[k.name].payload = payload;
-          setStore(store);
-        } else if(k.source === "cloud" && supabase && k.cloudId){
-          const { error } = await supabase.from("projects").update({ data: payload }).eq("id", k.cloudId);
-          if(error){ toast("Errore aggiornamento cloud", "warn"); return; }
-          const idx = cloudProjects.findIndex(p => p.id === k.cloudId);
-          if(idx > -1) cloudProjects[idx] = { ...cloudProjects[idx], data: payload };
-        }
+        if(!await setStatoKitSalvato(k, nuovoStato)) return;
         toast(`Segnato come "${KIT_STATO[nuovoStato].label}" ✓`, "ok");
         renderConfronto();
       });
