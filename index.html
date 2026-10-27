@@ -1933,16 +1933,38 @@
       .ar-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
       .ar-amt { text-align: left; }
     }
-    .stato-select {
-      -webkit-appearance: none; appearance: none; width: auto; min-width: 0;
-      font-size: 12px; font-weight: 700; line-height: 1.2; padding: 4px 24px 4px 11px;
-      border-radius: 999px; border: 1px solid var(--border-2); cursor: pointer; color: var(--text);
-      background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 9px center / 9px 6px;
+    /* Stato in dashboard: chip che apre un menu disegnato dall'app (il
+       menu a tendina nativo non si può stilizzare ed era fuori tono). */
+    .stato-btn {
+      display: inline-flex; align-items: center; gap: 7px; width: auto;
+      font-size: 12px; font-weight: 700; line-height: 1.2; padding: 4px 9px 4px 11px;
+      border-radius: 999px; border: 1px solid var(--border-2); cursor: pointer;
+      color: var(--text); background: var(--surface); box-shadow: none;
     }
-    .stato-select.stato-preventivo { color: var(--warn); border-color: var(--warn-bd); }
-    .stato-select.stato-ordine     { background-color: var(--sb-bg); border-color: var(--sb-bg); color: #FFFFFF; }
-    .stato-select.stato-consegnato { background-color: var(--surface-2); color: var(--muted); }
-    .stato-select option { color: var(--text); background: var(--surface); }
+    .stato-btn svg { width: 9px; height: 6px; opacity: .7; transition: transform .15s; }
+    .stato-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .stato-btn.stato-preventivo { color: var(--warn); border-color: var(--warn-bd); }
+    .stato-btn.stato-ordine     { background: var(--sb-bg); border-color: var(--sb-bg); color: #FFFFFF; }
+    .stato-btn.stato-consegnato { background: var(--surface-2); color: var(--muted); }
+    .stato-menu {
+      position: fixed; z-index: 1000; min-width: 230px; padding: 6px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+    }
+    .stato-menu-item {
+      display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px;
+      width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent;
+      color: var(--text); text-align: left; cursor: pointer; box-shadow: none;
+    }
+    .stato-menu-item:hover, .stato-menu-item:focus-visible { background: var(--surface-2); outline: none; }
+    .stato-menu-item.is-current { background: var(--surface-2); }
+    .stato-menu-lbl { font-size: 13px; font-weight: 700; }
+    .stato-menu-sub { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 1px; }
+    .stato-menu-check { font-size: 12px; color: var(--good); font-weight: 800; }
+    .stato-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-2); }
+    .stato-dot.stato-preventivo { background: var(--warn); }
+    .stato-dot.stato-ordine     { background: var(--sb-bg); }
+    .stato-dot.stato-consegnato { background: var(--muted); }
     .mb-chip.stato-consegnato { background: var(--surface-2); border-color: var(--border-2); color: var(--muted); }
     .mb-chip.stato-calcolo    { background: transparent; border: 1px dashed var(--muted-2); color: #3F4E63; }
 
@@ -2660,7 +2682,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v130</span>
+            <span id="buildTxt">build v131</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4402,7 +4424,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v130";
+  const BUILD = "v131";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7957,11 +7979,71 @@ ${tabQtaPDF ? `<div class="sec scala">
     const def = KIT_STATO[stato] || KIT_STATO.preventivo;
     return `<span class="mb-chip ${def.cls} stato-chip stato-${KIT_STATO[stato] ? stato : "preventivo"}">${def.icon ? def.icon + " " : ""}${def.label}</span>`;
   };
-  // Stato modificabile dalla dashboard, senza aprire il kit
+  // Stato modificabile dalla dashboard, senza aprire il kit: un chip che
+  // apre un menu dell'app (vedi apriMenuStato)
   const statoSelectHtml = (stato, attrs) => {
     const v = KIT_STATO[stato] ? stato : "preventivo";
-    return `<select class="stato-select stato-${v}" ${attrs} aria-label="Stato del kit" title="Cambia stato">${
-      Object.entries(KIT_STATO).map(([k, d]) => `<option value="${k}"${k === v ? " selected" : ""}>${d.label}</option>`).join("")}</select>`;
+    return `<button type="button" class="stato-btn stato-${v}" ${attrs} data-stato="${v}" aria-haspopup="menu" aria-expanded="false" title="Cambia stato">${KIT_STATO[v].label}<svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>`;
+  };
+  const STATO_SUB = {
+    calcolo:    "Simulazione, senza cliente",
+    preventivo: "Inviato, non ancora chiuso",
+    ordine:     "Confermato, in produzione",
+    consegnato: "Chiuso, va in Archivio",
+  };
+  let menuStatoAperto = null;
+  const chiudiMenuStato = () => {
+    if(!menuStatoAperto) return;
+    menuStatoAperto.btn.setAttribute("aria-expanded", "false");
+    menuStatoAperto.el.remove();
+    document.removeEventListener("mousedown", menuStatoAperto.fuori, true);
+    document.removeEventListener("keydown", menuStatoAperto.tasti, true);
+    window.removeEventListener("scroll", chiudiMenuStato, true);
+    window.removeEventListener("resize", chiudiMenuStato);
+    menuStatoAperto = null;
+  };
+  const apriMenuStato = (btn, onPick) => {
+    const eraQuesto = menuStatoAperto?.btn === btn;
+    chiudiMenuStato();
+    if(eraQuesto) return;
+    const cur = btn.getAttribute("data-stato");
+    const el = document.createElement("div");
+    el.className = "stato-menu";
+    el.setAttribute("role", "menu");
+    el.innerHTML = Object.entries(KIT_STATO).map(([k, d]) =>
+      `<button type="button" class="stato-menu-item${k === cur ? " is-current" : ""}" role="menuitemradio" aria-checked="${k === cur}" data-v="${k}">
+        <span class="stato-dot stato-${k}"></span>
+        <span><span class="stato-menu-lbl">${d.label}</span><span class="stato-menu-sub">${STATO_SUB[k]}</span></span>
+        <span class="stato-menu-check">${k === cur ? "✓" : ""}</span>
+      </button>`).join("");
+    document.body.appendChild(el);
+    // Sotto il chip; sopra se in fondo allo schermo non c'è spazio
+    const r = btn.getBoundingClientRect(), h = el.offsetHeight, w = el.offsetWidth;
+    const top = r.bottom + 6 + h > window.innerHeight - 8 ? r.top - 6 - h : r.bottom + 6;
+    el.style.top  = Math.max(8, top) + "px";
+    el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + "px";
+    btn.setAttribute("aria-expanded", "true");
+    const voci = [...el.querySelectorAll(".stato-menu-item")];
+    voci.forEach(v => v.addEventListener("click", () => {
+      const nuovo = v.getAttribute("data-v");
+      chiudiMenuStato();
+      if(nuovo !== cur) onPick(nuovo);
+    }));
+    const fuori = (e) => { if(!el.contains(e.target) && !btn.contains(e.target)) chiudiMenuStato(); };
+    const tasti = (e) => {
+      if(e.key === "Escape") { chiudiMenuStato(); btn.focus(); return; }
+      if(e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const i = voci.indexOf(document.activeElement);
+      const n = e.key === "ArrowDown" ? (i + 1) % voci.length : (i - 1 + voci.length) % voci.length;
+      voci[n].focus();
+    };
+    document.addEventListener("mousedown", fuori, true);
+    document.addEventListener("keydown", tasti, true);
+    window.addEventListener("scroll", chiudiMenuStato, true);
+    window.addEventListener("resize", chiudiMenuStato);
+    menuStatoAperto = { el, btn, fuori, tasti };
+    (voci.find(v => v.classList.contains("is-current")) || voci[0]).focus();
   };
 
   // Margine di portafoglio: profitto totale / ricavo netto totale, non la
@@ -10718,8 +10800,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       });
     });
 
-    tbody.querySelectorAll("select[data-act='stato']").forEach(sel => {
-      sel.addEventListener("change", () => cambiaStatoDaDashboard(rows[parseInt(sel.getAttribute("data-row"))], sel.value));
+    tbody.querySelectorAll("button[data-act='stato']").forEach(btn => {
+      btn.addEventListener("click", () => apriMenuStato(btn, (v) => cambiaStatoDaDashboard(rows[parseInt(btn.getAttribute("data-row"))], v)));
     });
 
     tbody.querySelectorAll("[data-act='del']").forEach(btn => {
@@ -10831,8 +10913,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
           });
         });
 
-        cardList.querySelectorAll("select[data-ca='stato']").forEach(sel => {
-          sel.addEventListener("change", () => cambiaStatoDaDashboard(rows[parseInt(sel.getAttribute("data-ci"))], sel.value));
+        cardList.querySelectorAll("button[data-ca='stato']").forEach(btn => {
+          btn.addEventListener("click", () => apriMenuStato(btn, (v) => cambiaStatoDaDashboard(rows[parseInt(btn.getAttribute("data-ci"))], v)));
         });
 
         cardList.querySelectorAll("[data-ca='del']").forEach(btn => {
