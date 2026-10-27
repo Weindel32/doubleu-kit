@@ -666,6 +666,17 @@
 
     .art-qty { display: flex; align-items: center; gap: 4px; }
 
+    /* Consuntivo di produzione (kit in stato Ordine): il costo vero dopo il
+       cartamodello, sotto al preventivato che resta bloccato. */
+    .art-cons { margin: 0 12px 10px; padding: 8px 10px; border: 1px dashed var(--border-2); border-radius: 8px; background: var(--surface-2); display: flex; flex-direction: column; gap: 6px; }
+    .art-cons-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 11px; color: var(--muted); }
+    .art-cons-head b { color: var(--text); }
+    .art-cons-delta { font-weight: 700; }
+    .art-cons-delta.good { color: var(--good); }
+    .art-cons-delta.bad { color: var(--bad); }
+    /* Preventivato bloccato in stato Ordine: si legge, non si modifica */
+    .art-card input:disabled, .art-card select:disabled { opacity: .55; cursor: not-allowed; }
+
     .qty-btn {
       width: 28px; height: 28px;
       border-radius: 7px;
@@ -691,6 +702,7 @@
     }
 
     .art-price.is-gift { color: var(--warn); }
+    .art-price-prev { font-size: 11px; font-weight: 600; color: var(--muted); text-decoration: line-through; }
 
     .art-actions {
       display: flex; gap: 5px; align-items: center;
@@ -2616,7 +2628,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v126</span>
+            <span id="buildTxt">build v128</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3378,9 +3390,16 @@
 
                 <!-- I due numeri che servono in trattativa, in evidenza -->
                 <div class="kpi kpi-hero" id="kpiMargin">
-                  <div class="lbl">Margine reale</div>
+                  <div class="lbl" id="kRealMarginLbl">Margine reale</div>
                   <div class="val" id="kRealMargin">—</div>
                   <div class="note" id="kTarget">Target: —</div>
+                </div>
+
+                <!-- Solo kit in stato Ordine: stesso prezzo, costi a consuntivo -->
+                <div class="kpi kpi-hero" id="kpiCons" style="display:none">
+                  <div class="lbl">Margine a consuntivo</div>
+                  <div class="val" id="kConsMargin">—</div>
+                  <div class="note" id="kConsNote">—</div>
                 </div>
 
                 <div class="kpi kpi-hero" id="kpiPrice">
@@ -4315,7 +4334,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v126";
+  const BUILD = "v128";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4550,6 +4569,25 @@ if("serviceWorker" in navigator) {
     return { id: uid(), article:"T-shirt", line:"PREMIUM", base:0, extra:0, qty:q, isGift:false };
   };
 
+  /* ─── Consuntivo di produzione (kit in stato Ordine) ───
+     Il preventivo nasce dal costo standard di Production Sheet. Con l'ordine
+     in produzione (cartamodello, accordi di taglio, stampa) il costo si
+     rifà lì e il nuovo valore si riporta nel consuntivo della riga
+     (it.cons: capo + stampa), mentre base/extra restano il preventivato.
+     Il prezzo al cliente si calcola solo dal preventivato, quindi il
+     consuntivo non lo muove mai: cambia soltanto il margine. Senza it.cons
+     il consuntivo coincide col preventivato. */
+  const isOrdine = () => kitStato?.value === "ordine";
+  const consCost = (it) => it.cons
+    ? toNum(it.cons.base) + toNum(it.cons.extra)
+    : toNum(it.base) + toNum(it.extra);
+  const ensureCons = (it) => {
+    if(!it.cons){
+      it.cons = { base: toNum(it.base), extra: toNum(it.extra) };
+    }
+    return it.cons;
+  };
+
 
   // Etichette di stato: icona + parola (accessibilità daltonismo — il colore da solo non basta)
   const STATE_FLAG = {
@@ -4656,7 +4694,8 @@ if("serviceWorker" in navigator) {
       p.classList.toggle("active", p.getAttribute("data-stato") === v));
   };
   document.querySelectorAll("#kitStatoPicker .filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => setKitStatoPicker(pill.getAttribute("data-stato")));
+    // Passare a/da Ordine cambia la scheda (preventivato bloccato, consuntivo)
+    pill.addEventListener("click", () => { setKitStatoPicker(pill.getAttribute("data-stato")); render(); });
   });
 
   /* ─── Icona del capo nella scheda articolo ───
@@ -4714,6 +4753,8 @@ if("serviceWorker" in navigator) {
   /* ─── render() ─── */
   const render = () => {
     let html = "";
+    const ordine = isOrdine();
+    const lock   = ordine ? " disabled" : "";
 
     items.forEach(it => {
       // Include anche articoli custom dal catalogo (non presenti nella lista base)
@@ -4732,27 +4773,50 @@ if("serviceWorker" in navigator) {
          scelta, non uno scostamento, quindi resta solo un riferimento. */
       const stampaRef  = catArt && catExtra(catArt) > 0 && Math.abs(toNum(it.extra) - catExtra(catArt)) >= 0.005
         ? ` <span class="cost-src-ref">· stampa catalogo ${eur(catExtra(catArt))}</span>` : "";
-      const catSrc     = catArt && psCostFor(catArt) ? "Production Sheet" : "file storico";
+      /* Il costo del capo si fa in Production Sheet: quando arriva da lì in
+         preventivo è in sola lettura, e se la scheda è cambiata dopo il
+         salvataggio del kit lo si dice, con un clic per allinearsi. Resta
+         modificabile solo per articoli manuali o del file storico. */
+      const psArt      = !!(catArt && psCostFor(catArt));
+      const baseLocked = ordine || psArt;
+      const baseDiff   = catArt && Math.abs(toNum(it.base) - catBase(catArt)) >= 0.005;
       const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
-        : Math.abs(toNum(it.base) - catBase(catArt)) < 0.005
-          ? `<span class="cost-src cat">capo da ${catSrc}</span>${stampaRef}`
-          : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">${catSrc} ${eur(catBase(catArt))}</span> <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>${stampaRef}`;
+        : !baseDiff
+          ? `<span class="cost-src cat">capo da ${psArt ? "Production Sheet" : "file storico"}</span>${stampaRef}`
+          : psArt
+            ? `<span class="cost-src mod">Production Sheet ora ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">aggiorna</button>`}${stampaRef}`
+            : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">file storico ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`}${stampaRef}`;
 
-      // Il cambio tessuto vale solo per questo preventivo: la riga tiene una
-      // copia della distinta, l'articolo di catalogo non viene mai toccato.
-      const cp = it.costParts;
-      const tessutoRow = cp ? (() => {
-        const codici = tessutiCodificati().map(m => m.codice);
-        const cur  = (cp.tessuto_default || "").trim();
-        if(cur && !codici.some(c => c.toLowerCase() === cur.toLowerCase())) codici.push(cur);
-        const opts = codici.map(c => `<option value="${esc(c)}" ${c===cur ? "selected" : ""}>${esc(c)}</option>`).join("");
-        const consumoStr = cp.consumo_default ? String(cp.consumo_default).replace(".", ",") : "";
-        return `<div class="art-tessuto" style="display:flex;gap:6px;align-items:center;margin-top:4px">
-          <select data-act="tessuto" data-id="${it.id}" style="font-size:11px;padding:3px 6px;flex:1;min-width:0">${opts}</select>
-          <input data-act="consumo" data-id="${it.id}" value="${esc(consumoStr)}" inputmode="decimal" autocomplete="off" placeholder="m" title="Consumo in metri" style="width:48px;font-size:11px;padding:3px 6px">
+      /* In stato Ordine il preventivato è bloccato e sotto compare il
+         consuntivo: il costo del capo rifatto in Production Sheet dopo
+         cartamodello e accordi di taglio, riportato qui come numero unico,
+         e la stampa reale. Ognuno mostra il prima → dopo. */
+      const consBlock = ordine ? (() => {
+        const c = it.cons || { base: it.base, extra: it.extra };
+        const delta = consCost(it) - unitCost;
+        const sgn = (n) => (n > 0 ? "+" : "−") + eur(Math.abs(n));
+        const deltaHtml = Math.abs(delta) < 0.005
+          ? `<span class="art-cons-delta">uguale al preventivato</span>`
+          : `<span class="art-cons-delta ${delta < 0 ? "good" : "bad"}">${sgn(delta)}/capo · ${sgn(delta * toNum(it.qty))} sulla riga</span>`;
+        return `<div class="art-cons">
+          <div class="art-cons-head"><b>Consuntivo produzione</b> <span>${eur(unitCost)} → ${eur(consCost(it))}/capo</span> ${deltaHtml}${it.cons ? ` <button type="button" class="cost-src-reset" data-act="consReset" data-id="${it.id}">riporta al preventivato</button>` : ""}</div>
+          <div class="art-pricing">
+            <div class="art-field">
+              <label>Capo reale € · prev. ${eur(it.base)}</label>
+              <input data-act="consBase" data-id="${it.id}" value="${c.base}" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="art-field">
+              <label>Stampa reale € · prev. ${eur(it.extra)}</label>
+              <input data-act="consExtra" data-id="${it.id}" value="${c.extra}" inputmode="decimal" autocomplete="off">
+            </div>
+          </div>
         </div>`;
       })() : "";
-      const subtot     = unitCost * toNum(it.qty);
+      // In Ordine il totale di riga è quello reale (consuntivo); il
+      // preventivato resta sotto, piccolo, come termine di confronto.
+      const subtotPrev = unitCost * toNum(it.qty);
+      const subtot     = ordine ? consCost(it) * toNum(it.qty) : subtotPrev;
+      const prevDiff   = ordine && Math.abs(subtot - subtotPrev) >= 0.005;
       const subtotStr  = subtot > 0 ? eur(subtot) + (it.isGift ? " · omaggio" : "") : "—";
       const giftClass  = it.isGift ? " is-gift" : "";
 
@@ -4767,20 +4831,19 @@ if("serviceWorker" in navigator) {
         <select data-act="article" data-id="${it.id}" style="flex:1;min-width:110px">${optsA}</select>
         <select data-act="line"    data-id="${it.id}" style="min-width:110px">${optsL}</select>
       </div>
-      <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costSrc}</div>
+      <div class="art-cost-note">${ordine ? "Costo unitario preventivato" : "Costo unitario"}: ${eur(unitCost)} · ${costSrc}</div>
       <div class="art-rev-note" id="rev-${it.id}"></div>
-      ${tessutoRow}
     </div>
 
     <div class="art-fields">
       <div class="art-pricing">
         <div class="art-field">
-          <label>Base €</label>
-          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off">
+          <label>${ordine ? "Capo prev. €" : "Costo capo €"}</label>
+          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off"${baseLocked ? " disabled" : ""}${psArt && !ordine ? ' title="Costo da Production Sheet: si modifica lì"' : ""}>
         </div>
         <div class="art-field">
-          <label>Stampa/Ric. €</label>
-          <input data-act="extra" data-id="${it.id}" value="${it.extra}" inputmode="decimal" autocomplete="off">
+          <label>${ordine ? "Stampa/Ric. prev. €" : "Stampa/Ric. €"}</label>
+          <input data-act="extra" data-id="${it.id}" value="${it.extra}" inputmode="decimal" autocomplete="off"${lock}>
         </div>
       </div>
       <div class="art-qty">
@@ -4790,9 +4853,10 @@ if("serviceWorker" in navigator) {
       </div>
     </div>
 
-    <div class="art-price${giftClass}">${subtot > 0 ? eur(subtot) : "—"}</div>
+    <div class="art-price${giftClass}">${subtot > 0 ? eur(subtot) : "—"}${prevDiff ? `<div class="art-price-prev">preventivato ${eur(subtotPrev)}</div>` : ""}</div>
 
   </div>
+  ${consBlock}
 
   <div class="art-actions">
     <span class="art-badge${giftClass}">${subtotStr}</span>
@@ -4834,20 +4898,27 @@ if("serviceWorker" in navigator) {
         return;
       }
 
-      if(act === "tessuto" || act === "consumo"){
+      // Consuntivo: il primo ritocco crea la copia (it.cons) partendo dal
+      // preventivato, che da lì in poi non si muove più.
+      if(act === "consBase" || act === "consExtra"){
+        const key = act === "consBase" ? "base" : "extra";
+        el.addEventListener("input", () => {
+          const it = find(); if(!it) return;
+          ensureCons(it)[key] = toNum(el.value);
+          calc();
+        });
         el.addEventListener("change", () => {
-          const it = find(); if(!it || !it.costParts) return;
-          if(act === "tessuto") it.costParts.tessuto_default = el.value;
-          if(act === "consumo") it.costParts.consumo_default = Math.max(0, toNum(el.value));
-          const t = tessutoByCodice(it.costParts.tessuto_default);
-          const m = toNum(it.costParts.consumo_default);
-          if(t && m > 0){
-            const cent = (n) => Math.round(n * 100) / 100;
-            it.costParts.tessuto = cent(toNum(t.costoMetro) * m);
-            const altreVoci = ["taglio","produzione","accessori","etichetta","altro"]
-              .reduce((s, k) => s + toNum(it.costParts[k]), 0);
-            it.base = cent(altreVoci + it.costParts.tessuto);
-          }
+          const it = find(); if(!it) return;
+          ensureCons(it)[key] = toNum(el.value);
+          render();
+        });
+        return;
+      }
+
+      if(act === "consReset"){
+        el.addEventListener("click", () => {
+          const it = find(); if(!it) return;
+          delete it.cons;
           render();
         });
         return;
@@ -4926,6 +4997,7 @@ if("serviceWorker" in navigator) {
           // Senza la copia profonda, cambiare tessuto su una riga ritoccava
           // anche l'altra: condividevano lo stesso oggetto costParts.
           if(copy.costParts) copy.costParts = { ...copy.costParts };
+          if(copy.cons) copy.cons = { ...copy.cons };
           items.splice(idx + 1, 0, copy);
           render();
         });
@@ -5526,6 +5598,9 @@ if("serviceWorker" in navigator) {
       setText("kMinPriceLiveNote", "Prezzo minimo trattativa per atleta");
       const boxOmaggiVuoto = document.getElementById("kpiOmaggi");
       if(boxOmaggiVuoto) boxOmaggiVuoto.style.display = "none";
+      const boxConsVuoto = document.getElementById("kpiCons");
+      if(boxConsVuoto) boxConsVuoto.style.display = "none";
+      setText("kRealMarginLbl", isOrdine() ? "Margine preventivato" : "Margine reale");
       setText("kMinPriceNote", "Al margine minimo accettabile");
       kMinDeposit.textContent     = "—";
       setText("kQtaSum", "—"); setText("kVatDue", "—"); setText("kSaldo", "—");
@@ -5599,6 +5674,35 @@ if("serviceWorker" in navigator) {
     const costPerAthlete  = totalCost / qtyBase;
     const pricePerAthlete = invoiceTotal / qtyBase;
 
+    /* ─── Consuntivo (solo Ordine) ───
+       Stesso incasso, costi dei capi a consuntivo: il prezzo è già nato dal
+       preventivato e qui non viene ricalcolato. Costi fissi e spedizione
+       restano quelli inseriti. Lo staff omaggio segue il costo kit reale. */
+    const ordine = isOrdine();
+    let profitCons = profit, marginCons = realMargin;
+    if(ordine){
+      let varCons = 0, nonGiftCons = 0;
+      items.forEach(it => {
+        const c = consCost(it) * toNum(it.qty);
+        varCons += c;
+        if(!it.isGift) nonGiftCons += c;
+      });
+      varCons   += staffKit * (nonGiftCons / qtyBase);
+      profitCons = revenueNet - (varCons + fixed + ship);
+      marginCons = revenueNet > 0 ? profitCons / revenueNet : 0;
+    }
+    const boxCons = document.getElementById("kpiCons");
+    if(boxCons) boxCons.style.display = ordine ? "" : "none";
+    setText("kRealMarginLbl", ordine ? "Margine preventivato" : "Margine reale");
+    if(ordine){
+      const dProfit = profitCons - profit;
+      setText("kConsMargin", (marginCons * 100).toFixed(1) + "%");
+      setText("kConsNote", Math.abs(dProfit) < 0.005
+        ? "Uguale al preventivato: nessun consuntivo inserito"
+        : `${dProfit > 0 ? "+" : "−"}${eur(Math.abs(dProfit))} di profitto sul preventivato · ${marginCons >= realMargin ? "+" : "−"}${(Math.abs(marginCons - realMargin) * 100).toFixed(1)} punti`);
+      setBox(boxCons, marginCons >= realMargin - 0.0005 ? "good" : "bad");
+    }
+
     /* ─── Prezzo e margine per singola referenza ───
        Il prezzo dell'ordine è uno solo. Attribuire a ogni riga un prezzo
        diverso, ricavato dal suo costo, faceva sembrare che si incassassero
@@ -5635,6 +5739,7 @@ if("serviceWorker" in navigator) {
       if(qty <= 0 || costoUnit <= 0){ el.textContent = ""; return; }
       if(righeRipartite && prezzoUnitNet > 0){
         el.textContent = `Prezzo: ${eur(pricePerAthlete)} · Margine: ${(margineRiga(costoUnit) * 100).toFixed(1)}%`
+          + (ordine && it.cons ? ` → ${(margineRiga(consCost(it)) * 100).toFixed(1)}% a consuntivo` : "")
           + ` · Ricavo: ${eur(pricePerAthlete * qty)}`;
       } else if(costoVenduti > 0){
         el.textContent = `Quota sul costo dell'ordine: ${((costoUnit * qty / costoVenduti) * 100).toFixed(0)}%`;
@@ -10280,6 +10385,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       document.getElementById("oaQuoteUnlink")?.addEventListener("click", oaUnlinkQuote);
       document.getElementById("oaMarkOrder")?.addEventListener("click", async () => {
         setKitStatoPicker("ordine");
+        render();
         await saveProject();
         renderOaQuoteCard();
       });
@@ -12171,6 +12277,7 @@ tr:last-child td{border-bottom:none}
       await loadMateriali();
       await loadCostiProduzione();
       renderArticoli(); // la lista era già stata disegnata col solo catalogo
+      render();         // anche il kit aperto: il costo del capo viene da Production Sheet
       renderDashboard();
     } catch(err) {
       console.error(err);
