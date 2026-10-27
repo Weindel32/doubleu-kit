@@ -702,6 +702,7 @@
     }
 
     .art-price.is-gift { color: var(--warn); }
+    .art-price-prev { font-size: 11px; font-weight: 600; color: var(--muted); text-decoration: line-through; }
 
     .art-actions {
       display: flex; gap: 5px; align-items: center;
@@ -2627,7 +2628,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v127</span>
+            <span id="buildTxt">build v128</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4333,7 +4334,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v127";
+  const BUILD = "v128";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4811,7 +4812,11 @@ if("serviceWorker" in navigator) {
           </div>
         </div>`;
       })() : "";
-      const subtot     = unitCost * toNum(it.qty);
+      // In Ordine il totale di riga è quello reale (consuntivo); il
+      // preventivato resta sotto, piccolo, come termine di confronto.
+      const subtotPrev = unitCost * toNum(it.qty);
+      const subtot     = ordine ? consCost(it) * toNum(it.qty) : subtotPrev;
+      const prevDiff   = ordine && Math.abs(subtot - subtotPrev) >= 0.005;
       const subtotStr  = subtot > 0 ? eur(subtot) + (it.isGift ? " · omaggio" : "") : "—";
       const giftClass  = it.isGift ? " is-gift" : "";
 
@@ -4826,7 +4831,7 @@ if("serviceWorker" in navigator) {
         <select data-act="article" data-id="${it.id}" style="flex:1;min-width:110px">${optsA}</select>
         <select data-act="line"    data-id="${it.id}" style="min-width:110px">${optsL}</select>
       </div>
-      <div class="art-cost-note">Costo unitario: ${eur(unitCost)} · ${costSrc}</div>
+      <div class="art-cost-note">${ordine ? "Costo unitario preventivato" : "Costo unitario"}: ${eur(unitCost)} · ${costSrc}</div>
       <div class="art-rev-note" id="rev-${it.id}"></div>
     </div>
 
@@ -4848,7 +4853,7 @@ if("serviceWorker" in navigator) {
       </div>
     </div>
 
-    <div class="art-price${giftClass}">${subtot > 0 ? eur(subtot) : "—"}</div>
+    <div class="art-price${giftClass}">${subtot > 0 ? eur(subtot) : "—"}${prevDiff ? `<div class="art-price-prev">preventivato ${eur(subtotPrev)}</div>` : ""}</div>
 
   </div>
   ${consBlock}
