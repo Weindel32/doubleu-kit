@@ -832,6 +832,7 @@
     .dash-amt-kit span { font-size: 11.5px; font-weight: 500; color: var(--muted); }
     .dash-amt-kit + .dash-amt-sub { margin-top: 4px; }
     .dash-amt-m { font-weight: 700; }
+    .dash-amt-prev { color: var(--muted); }
     .dash-amt-m.good { color: var(--good); }
     .dash-amt-m.warn { color: var(--warn); }
     .dash-amt-m.low, .dash-amt-m.bad { color: var(--bad); }
@@ -1932,6 +1933,16 @@
       .ar-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
       .ar-amt { text-align: left; }
     }
+    .stato-select {
+      -webkit-appearance: none; appearance: none; width: auto; min-width: 0;
+      font-size: 12px; font-weight: 700; line-height: 1.2; padding: 4px 24px 4px 11px;
+      border-radius: 999px; border: 1px solid var(--border-2); cursor: pointer; color: var(--text);
+      background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 9px center / 9px 6px;
+    }
+    .stato-select.stato-preventivo { color: var(--warn); border-color: var(--warn-bd); }
+    .stato-select.stato-ordine     { background-color: var(--sb-bg); border-color: var(--sb-bg); color: #FFFFFF; }
+    .stato-select.stato-consegnato { background-color: var(--surface-2); color: var(--muted); }
+    .stato-select option { color: var(--text); background: var(--surface); }
     .mb-chip.stato-consegnato { background: var(--surface-2); border-color: var(--border-2); color: var(--muted); }
     .mb-chip.stato-calcolo    { background: transparent; border: 1px dashed var(--muted-2); color: #3F4E63; }
 
@@ -2649,7 +2660,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v129</span>
+            <span id="buildTxt">build v130</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -2735,7 +2746,7 @@
             <div class="kpi dk-orange" id="dkMarginKpi">
               <div class="lbl">Margine di portafoglio</div>
               <div class="val" id="dkMargin">—</div>
-              <div class="note">Profitto totale ÷ ricavo totale</div>
+              <div class="note">Profitto ÷ ricavo · ordini a consuntivo</div>
             </div>
             <div class="kpi dk-light">
               <div class="lbl">Costo/atleta medio</div>
@@ -4391,7 +4402,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v129";
+  const BUILD = "v130";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7946,6 +7957,12 @@ ${tabQtaPDF ? `<div class="sec scala">
     const def = KIT_STATO[stato] || KIT_STATO.preventivo;
     return `<span class="mb-chip ${def.cls} stato-chip stato-${KIT_STATO[stato] ? stato : "preventivo"}">${def.icon ? def.icon + " " : ""}${def.label}</span>`;
   };
+  // Stato modificabile dalla dashboard, senza aprire il kit
+  const statoSelectHtml = (stato, attrs) => {
+    const v = KIT_STATO[stato] ? stato : "preventivo";
+    return `<select class="stato-select stato-${v}" ${attrs} aria-label="Stato del kit" title="Cambia stato">${
+      Object.entries(KIT_STATO).map(([k, d]) => `<option value="${k}"${k === v ? " selected" : ""}>${d.label}</option>`).join("")}</select>`;
+  };
 
   // Margine di portafoglio: profitto totale / ricavo netto totale, non la
   // media dei margini percentuali. La media aritmetica pesa un kit da 20
@@ -7982,11 +7999,16 @@ ${tabQtaPDF ? `<div class="sec scala">
     const qtyNote = perKit ? "prezzo di 1 kit, quantità n.d." : noQty ? "quantità n.d." : "";
     // Prezzo del singolo kit: seconda riga, più leggera del totale. Non serve
     // quando l'importo è già il prezzo di un kit (quantità non indicata).
+    // Ordine con consuntivo: in evidenza il margine reale, il preventivato accanto
+    const reale = Math.abs(st.consDelta || 0) >= 0.005;
+    const marginHtml = reale
+      ? `<span class="dash-amt-m ${KIT_STATES[st.stateCons]?.cls || ""}">margine reale ${(st.marginCons * 100).toFixed(1)}%</span> <span class="dash-amt-prev">prev. ${(st.margin * 100).toFixed(1)}%</span>`
+      : `<span class="dash-amt-m ${cls}">margine ${(st.margin * 100).toFixed(1)}%</span>`;
     const kitLine = !noQty && st.qtyBase > 1
       ? `<div class="dash-amt-kit">${eur(st.pricePerAthlete)} <span>a kit · ${Math.round(st.qtyBase)} kit</span></div>` : "";
     return `<div class="dash-amt">${src}${eur(st.invoiceTotal)}${perKit ? `<span class="dash-amt-unit"> / kit</span>` : ""}</div>
       ${kitLine}
-      <div class="dash-amt-sub">${vatOn ? "IVA incl." : "senza IVA"}${qtyNote ? ` · <span class="dash-amt-qty">${qtyNote}</span>` : ""} · <span class="dash-amt-m ${cls}">margine ${(st.margin * 100).toFixed(1)}%</span></div>`;
+      <div class="dash-amt-sub">${vatOn ? "IVA incl." : "senza IVA"}${qtyNote ? ` · <span class="dash-amt-qty">${qtyNote}</span>` : ""} · ${marginHtml}</div>`;
   };
 
   /* ─── Dashboard: kit raggruppati per club ───
@@ -8033,7 +8055,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     const st = g.kits.map(k => k.stats).filter(Boolean);
     const out = { range: "", margin: "", last: "—", ordini: "" };
     if(st.length) {
-      const tot = st.map(x => x.invoiceTotal), mar = st.map(x => x.margin * 100);
+      const tot = st.map(x => x.invoiceTotal), mar = st.map(x => (x.marginCons ?? x.margin) * 100);
       const lo = Math.min(...tot), hi = Math.max(...tot);
       out.range = lo === hi ? eur(lo) : `${eur(lo)} – ${eur(hi)}`;
       const mlo = Math.min(...mar), mhi = Math.max(...mar);
@@ -8048,7 +8070,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     const st = g.kits.map(k => k.stats).filter(Boolean);
     const parts = [`${g.kits.length} varianti`];
     if(st.length) {
-      const tot = st.map(s => s.invoiceTotal), mar = st.map(s => s.margin * 100);
+      const tot = st.map(s => s.invoiceTotal), mar = st.map(s => (s.marginCons ?? s.margin) * 100);
       const lo = Math.min(...tot), hi = Math.max(...tot);
       parts.push(lo === hi ? eur(lo) : `da ${eur(lo)} a ${eur(hi)}`);
       const mlo = Math.min(...mar), mhi = Math.max(...mar);
@@ -9196,6 +9218,17 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(!it.isGift) dPagati += x;
     });
     return d + Math.max(0, Math.floor(toNum(p?.staffOmaggio))) * dPagati / q;
+  };
+  // Statistiche di un kit salvato con il dato reale accanto: in Ordine e
+  // Consegnato profitto e margine a consuntivo (stesso prezzo, costo vero).
+  // Senza consuntivo coincidono col preventivato.
+  const withCons = (st, p) => {
+    if(!st) return st;
+    const consDelta  = kitConsDelta(p);
+    const profitCons = st.profit - consDelta;
+    const marginCons = st.revenueNet > 0 ? profitCons / st.revenueNet : 0;
+    return { ...st, consDelta, profitCons, marginCons,
+      stateCons: kitState(marginCons, profitCons, st.minMargin, st.target) };
   };
 
   const quoteKits = (id) => {
@@ -10497,6 +10530,15 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   };
 
   /* ─── Dashboard render ─── */
+  const cambiaStatoDaDashboard = async (kit, nuovoStato) => {
+    if(!kit || !KIT_STATO[nuovoStato]) return;
+    if(!await setStatoKitSalvato(kit, nuovoStato)) { renderDashboard(); return; }
+    toast(nuovoStato === "consegnato"
+      ? `"${kit.name}" consegnato: spostato in Archivio`
+      : `"${kit.name}" segnato come ${KIT_STATO[nuovoStato].label}`, "ok");
+    renderDashboard();
+  };
+
   const renderDashboard = () => {
     const store     = getStore();
     const localKits = Object.entries(store)
@@ -10509,7 +10551,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         savedAt:   data.savedAt,
         payload:   data.payload,
         itemCount: Array.isArray(data.payload?.items) ? data.payload.items.length : 0,
-        stats:     calcKitStats(data.payload),
+        stats:     withCons(calcKitStats(data.payload), data.payload),
       })),
       ...cloudProjects
         .filter(p => !localNames.has(p.name))
@@ -10520,7 +10562,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
           savedAt:   p.created_at ? new Date(p.created_at).getTime() : 0,
           payload:   p.data,
           itemCount: Array.isArray(p.data?.items) ? p.data.items.length : 0,
-          stats:     calcKitStats(p.data),
+          stats:     withCons(calcKitStats(p.data), p.data),
         })),
     ];
 
@@ -10535,7 +10577,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     const stats = rows.map(k => k.stats).filter(Boolean);
     if(stats.length) {
       const avgCost = stats.reduce((s, v) => s + v.costPerAthlete, 0) / stats.length;
-      if(dkMargin) dkMargin.textContent = (portfolioMargin(stats) * 100).toFixed(1) + "%";
+      // Sugli ordini con consuntivo conta il profitto reale
+      if(dkMargin) dkMargin.textContent = (portfolioMargin(stats.map(v => ({ profit: v.profitCons, revenueNet: v.revenueNet }))) * 100).toFixed(1) + "%";
       if(dkCost)   dkCost.textContent   = eur(avgCost);
     } else {
       if(dkMargin) dkMargin.textContent = "—";
@@ -10641,7 +10684,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         <td>${kit.itemCount}</td>
         <td class="dash-amt-td">${dashAmountHtml(kit)}</td>
         <td>${date}</td>
-        <td><div class="dash-stato">${statoBadgeHtml(getKitStato(kit.payload))}${oaQuoteBadge(kit.payload)}</div></td>
+        <td><div class="dash-stato">${statoSelectHtml(getKitStato(kit.payload), `data-row="${i}" data-act="stato"`)}${oaQuoteBadge(kit.payload)}</div></td>
         <td><span class="dash-badge ${kit.source}">${kit.source === "cloud"
           ? `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 10.5A4 4 0 0011.5 7H11a5 5 0 00-4.9 4A3 3 0 107 17h8a3 3 0 000-6z"/></svg> Cloud`
           : `<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="16" height="11" rx="1.5"/><line x1="6" y1="17" x2="14" y2="17"/><line x1="10" y1="15" x2="10" y2="17"/></svg> Locale`
@@ -10673,6 +10716,10 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         if(isIphoneLayout()) startUnifiedFlow(false);
         else { showView("builder"); goToStep(1); }
       });
+    });
+
+    tbody.querySelectorAll("select[data-act='stato']").forEach(sel => {
+      sel.addEventListener("change", () => cambiaStatoDaDashboard(rows[parseInt(sel.getAttribute("data-row"))], sel.value));
     });
 
     tbody.querySelectorAll("[data-act='del']").forEach(btn => {
@@ -10750,7 +10797,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
           return `<div class="dash-kit-card${member ? " dash-grp-row" : ""}"${member ? ` data-gm="${esc(g.key)}"${g.open ? "" : " hidden"}` : ""}>
             <div class="dash-kit-card-top">
               <div>
-                <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)} ${statoBadgeHtml(getKitStato(kit.payload))}${oaQuoteBadge(kit.payload)}</div>
+                <div class="dash-kit-name">${esc(member ? variantName(kit) : kit.name)} ${statoSelectHtml(getKitStato(kit.payload), `data-ci="${i}" data-ca="stato"`)}${oaQuoteBadge(kit.payload)}</div>
                 ${client && !member ? `<div class="dash-kit-sub">${esc(g.label)} ${oaBadge(g.kind)}</div>` : ""}
               </div>
               ${src}
@@ -10782,6 +10829,10 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
             if(isIphoneLayout()) startUnifiedFlow(false);
             else { showView("builder"); goToStep(1); }
           });
+        });
+
+        cardList.querySelectorAll("select[data-ca='stato']").forEach(sel => {
+          sel.addEventListener("change", () => cambiaStatoDaDashboard(rows[parseInt(sel.getAttribute("data-ci"))], sel.value));
         });
 
         cardList.querySelectorAll("[data-ca='del']").forEach(btn => {
@@ -11065,6 +11116,16 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       if(error){ toast("Errore aggiornamento cloud", "warn"); return false; }
       const idx = cloudProjects.findIndex(p => p.id === k.cloudId);
       if(idx > -1) cloudProjects[idx] = { ...cloudProjects[idx], data: payload };
+    }
+    /* Se lo stesso kit è aperto nel builder, si allinea anche lì: altrimenti
+       il prossimo salvataggio rimetterebbe lo stato vecchio. Senza modifiche
+       in sospeso resta "salvato", visto che coincide con la copia salvata. */
+    const aperto = k.source === "cloud" ? activeCloudId === k.cloudId : (!activeCloudId && currentKitName() === k.name);
+    if(aperto) {
+      const pulito = !hasUnsavedChanges();
+      setKitStatoPicker(nuovoStato);
+      render();
+      if(pulito && saveBase) markSaveBase(saveBase.where, saveBase.at);
     }
     return true;
   };
