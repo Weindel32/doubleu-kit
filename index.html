@@ -2682,7 +2682,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v131</span>
+            <span id="buildTxt">build v132</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4424,7 +4424,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v131";
+  const BUILD = "v132";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4500,24 +4500,43 @@ if("serviceWorker" in navigator) {
   // mostrava "undefined" come titolo del gruppo.
   const LINE_LABEL = Object.fromEntries(LINES.map(l => [l.value, l.label]));
 
+  // Categorie create dall'utente (es. "Jacket"): non stanno in un elenco a
+  // parte, esistono perché un articolo del catalogo le usa. Così viaggiano
+  // col catalogo (cloud) e compaiono su ogni dispositivo senza altro sync.
+  // Vanno prima di "Altro", che resta il fondo della lista.
+  const NEW_LINE_OPT = "__new_line__";
+  const ensureLine = (value) => {
+    const v = String(value || "").trim();
+    if(!v || LINE_LABEL[v]) return false;
+    LINES.splice(LINES.length - 1, 0, { value: v, label: v });
+    LINE_LABEL[v] = v;
+    return true;
+  };
+
   // Anche le pill dei filtri erano scritte a mano nell'HTML: senza queste le
   // linee nuove restavano filtrabili solo da "Tutti". Vanno generate prima che
   // più sotto si aggancino i listener, altrimenti resterebbero senza click.
   const fillLinePills = (id) => {
     const el = document.getElementById(id);
     if(!el) return;
-    el.innerHTML = '<span class="filter-pill active" data-line="ALL">Tutti</span>'
+    const act = el.querySelector(".filter-pill.active")?.getAttribute("data-line") || "ALL";
+    el.innerHTML = '<span class="filter-pill" data-line="ALL">Tutti</span>'
       + LINES.map(l => `<span class="filter-pill" data-line="${esc(l.value)}">${esc(l.label)}</span>`).join("");
+    const pills = [...el.querySelectorAll(".filter-pill")];
+    (pills.find(p => p.getAttribute("data-line") === act) || pills[0]).classList.add("active");
   };
   fillLinePills("artFilters");
   fillLinePills("pickerFilters");
 
+  // In coda la voce "+ Nuova categoria…": sceglierla chiede il nome e la
+  // aggiunge subito a tutte le liste (vedi bindNewLineSelect).
   const fillLineSelect = (id) => {
     const sel = document.getElementById(id);
-    if(!sel || sel.options.length === LINES.length) return;
+    if(!sel || sel.options.length === LINES.length + 1) return;
     const cur = sel.value;
-    sel.innerHTML = LINES.map(l => `<option value="${esc(l.value)}">${esc(l.label)}</option>`).join("");
-    if(cur) sel.value = cur;
+    sel.innerHTML = LINES.map(l => `<option value="${esc(l.value)}">${esc(l.label)}</option>`).join("")
+      + `<option value="${NEW_LINE_OPT}">+ Nuova categoria…</option>`;
+    if(cur && cur !== NEW_LINE_OPT) sel.value = cur;
   };
 
   // Select "linea" dell'export catalogo: a differenza di fillLineSelect ha
@@ -4532,6 +4551,46 @@ if("serviceWorker" in navigator) {
     if(cur) sel.value = cur;
   };
   fillExportLineSelect();
+
+  // Riallinea tutte le liste di linee/categorie dopo che se n'è aggiunta una
+  const refreshLineUI = () => {
+    fillLinePills("artFilters");
+    fillLinePills("pickerFilters");
+    fillExportLineSelect();
+    ["catalogCategoria", "costoCategoria"].forEach(fillLineSelect);
+  };
+  const syncLinesFromCatalog = (arr) => {
+    let added = false;
+    (arr || []).forEach(a => { if(a && a.categoria && ensureLine(a.categoria)) added = true; });
+    if(added) refreshLineUI();
+  };
+
+  const bindNewLineSelect = (id) => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    let prev = sel.value;
+    sel.addEventListener("focus", () => { if(sel.value !== NEW_LINE_OPT) prev = sel.value; });
+    sel.addEventListener("change", () => {
+      if(sel.value !== NEW_LINE_OPT){ prev = sel.value; return; }
+      const name = (prompt("Nome della nuova categoria (es. Jacket):") || "").trim();
+      if(!name){ sel.value = prev || "ALTRO"; return; }
+      const hit = LINES.find(l => l.value.toLowerCase() === name.toLowerCase()
+        || l.label.toLowerCase() === name.toLowerCase());
+      const value = hit ? hit.value : name;
+      if(!hit){ ensureLine(value); refreshLineUI(); }
+      sel.value = value;
+      prev = value;
+      toast(hit ? `Categoria "${hit.label}" già presente: selezionata` :
+        `Categoria "${value}" creata: salva l'articolo per tenerla ✓`, "ok");
+    });
+  };
+  bindNewLineSelect("catalogCategoria");
+  bindNewLineSelect("costoCategoria");
+  // Valore del select senza la voce "+ Nuova categoria…"
+  const lineSelValue = (id) => {
+    const v = document.getElementById(id)?.value;
+    return v && v !== NEW_LINE_OPT ? v : "ALTRO";
+  };
 
   const clientName  = document.getElementById("clientName");
   const projectName = document.getElementById("projectName");
@@ -4767,13 +4826,14 @@ if("serviceWorker" in navigator) {
     applyArtFilter();
   });
 
-  document.querySelectorAll("#artFilters .filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      artFilterLine = pill.getAttribute("data-line") || "ALL";
-      document.querySelectorAll("#artFilters .filter-pill").forEach(x =>
-        x.classList.toggle("active", x === pill));
-      applyArtFilter();
-    });
+  // Delegato sul contenitore: le pill si rigenerano quando nasce una categoria
+  document.getElementById("artFilters")?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".filter-pill");
+    if(!pill) return;
+    artFilterLine = pill.getAttribute("data-line") || "ALL";
+    document.querySelectorAll("#artFilters .filter-pill").forEach(x =>
+      x.classList.toggle("active", x === pill));
+    applyArtFilter();
   });
 
   // Segmented control Calcolo/Preventivo/Ordine del kit corrente: il valore
@@ -4853,7 +4913,9 @@ if("serviceWorker" in navigator) {
       const optsA = artList.map(a =>
         `<option value="${esc(a)}" ${a===it.article ? "selected" : ""}>${esc(a)}</option>`
       ).join("");
-      const optsL = LINES.map(l =>
+      // Una categoria che il catalogo non ha più resta comunque selezionata
+      const lineList = LINE_LABEL[it.line] || !it.line ? LINES : [{ value: it.line, label: it.line }, ...LINES];
+      const optsL = lineList.map(l =>
         `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`
       ).join("");
 
@@ -5216,12 +5278,12 @@ if("serviceWorker" in navigator) {
     applyPickerFilter();
   });
 
-  document.querySelectorAll("#pickerFilters .filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      pickerFilterLine = pill.getAttribute("data-line") || "ALL";
-      document.querySelectorAll("#pickerFilters .filter-pill").forEach(x => x.classList.toggle("active", x === pill));
-      applyPickerFilter();
-    });
+  document.getElementById("pickerFilters")?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".filter-pill");
+    if(!pill) return;
+    pickerFilterLine = pill.getAttribute("data-line") || "ALL";
+    document.querySelectorAll("#pickerFilters .filter-pill").forEach(x => x.classList.toggle("active", x === pill));
+    applyPickerFilter();
   });
 
   const togglePicker = (show) => {
@@ -11386,7 +11448,10 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   };
 
   const getCatalog = () => {
-    try { const r = localStorage.getItem(CATALOG_KEY); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+    let arr = [];
+    try { const r = localStorage.getItem(CATALOG_KEY); arr = r ? JSON.parse(r) : []; } catch(e) { arr = []; }
+    syncLinesFromCatalog(arr); // categorie create dall'utente o arrivate dal cloud
+    return arr;
   };
   const setCatalog = (arr) => {
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(arr)); } catch(e) {}
@@ -11588,7 +11653,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     const tipo      = document.getElementById("catalogTipo").value || CATALOG_TIPI[0];
     const genere    = document.getElementById("catalogGenere").value || "Unisex";
     const name      = document.getElementById("catalogName").value.trim();
-    const categoria = document.getElementById("catalogCategoria").value || "ALTRO";
+    const categoria = lineSelValue("catalogCategoria");
     const base      = parseFloat(document.getElementById("catalogBase").value)  || 0;
     const extra     = parseFloat(document.getElementById("catalogExtra").value) || 0;
     const editId    = document.getElementById("catalogEditId").value;
@@ -11979,7 +12044,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       tipo,
       genere:    document.getElementById("costoGenere").value || "Unisex",
       name,
-      categoria: document.getElementById("costoCategoria").value || "ALTRO",
+      categoria: lineSelValue("costoCategoria"),
       base:      capo,
       extra:     stampa,
       costParts: p,
