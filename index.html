@@ -1531,7 +1531,12 @@
     .catalog-group:first-child .catalog-group-head { padding-top: 2px; }
     .cat-caret { width: 13px; height: 13px; flex-shrink: 0; color: var(--accent); transition: transform .18s; }
     .catalog-group.collapsed .cat-caret { transform: rotate(-90deg); }
-    .catalog-group.collapsed .catalog-item { display: none; }
+    .catalog-group.collapsed .catalog-item,
+    .catalog-group.collapsed .catalog-subgroup { display: none; }
+    .catalog-sub-head {
+      font-size: 11px; font-weight: 700; color: var(--text-2);
+      padding: 10px 2px 2px; border-bottom: 1px dashed var(--border);
+    }
     .catalog-group-count {
       font-size: 10px; font-weight: 700; color: var(--accent);
       background: var(--accent-light); border-radius: 999px; padding: 1px 8px;
@@ -2682,7 +2687,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v131</span>
+            <span id="buildTxt">build v133</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3687,9 +3692,13 @@
                 </select>
               </div>
               <div class="field">
-                <label class="lbl">Categoria / linea</label>
+                <label class="lbl">Categoria</label>
                 <select id="catalogCategoria"></select>
               </div>
+            </div>
+            <div class="field" style="margin-bottom:12px">
+              <label class="lbl">Linee <span style="font-weight:400;color:var(--muted)">(lo stesso capo può stare in più linee, es. LS24 e Basic)</span></label>
+              <div class="art-filters" id="catalogLinee" role="group" aria-label="Linee"></div>
             </div>
             <div class="field" style="margin-bottom:12px">
               <label class="lbl">Nome / descrizione <span style="font-weight:400;color:var(--muted)">(opz. — utile per articoli LS24)</span></label>
@@ -3804,9 +3813,13 @@
                     </select>
                   </div>
                   <div class="field">
-                    <label class="lbl">Linea</label>
+                    <label class="lbl">Categoria</label>
                     <select id="costoCategoria"></select>
                   </div>
+                </div>
+                <div class="field" style="margin-top:12px">
+                  <label class="lbl">Linee <span style="font-weight:400;color:var(--muted)">(anche più di una)</span></label>
+                  <div class="art-filters" id="costoLinee" role="group" aria-label="Linee"></div>
                 </div>
               </div>
 
@@ -4424,7 +4437,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v131";
+  const BUILD = "v133";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4471,38 +4484,90 @@ if("serviceWorker" in navigator) {
     ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 
   const ARTICLES = ["T-shirt","T-Shirt Cot.","Polo","Pantaloncino","Gonnellino","Dress","Sweatshirt","Hoodie","Zip Hoodie","Pantalone","Cappellino"];
-  // Linee di catalogo. Le prime tre sono storiche; quelle che seguono vengono
-  // dal listino costi DOUBLEU, dove la "Categoria" identifica la famiglia di
-  // capo. Senza elencarle qui finirebbero tutte nella sezione "Altro".
+  /* Linea e categoria sono due assi distinti.
+     - LINEA (Premium, Basic, LS24): la macro categoria commerciale, quella
+       che va in Order App e su cui si leggono i margini. Fissa.
+     - CATEGORIA (T-Shirt PRF, Hoodie, Jacket…): la famiglia di capo,
+       estendibile dall'utente.
+     Fino alla v132 un solo campo `categoria` faceva da entrambe: l'import del
+     listino 2026 ci aveva messo la famiglia, e la linea Premium risultava
+     vuota. Lo stesso capo può stare in più linee (es. LS24 per Snauwaert e
+     Basic per i club): l'articolo ha `linee` (array), la riga del kit ha una
+     sola `line`, quella con cui è stato aggiunto (modificabile). */
   const LINES = [
     { value:"PREMIUM", label:"Premium" },
     { value:"BASIC",   label:"Basic" },
     { value:"LS24",    label:"LS24" },
-    { value:"T-Shirt PRF", label:"T-Shirt PRF" },
-    { value:"T-Shirt PRF Ws", label:"T-Shirt PRF Ws" },
-    { value:"T-Shirt Cotone", label:"T-Shirt Cotone" },
-    { value:"Polo", label:"Polo" },
-    { value:"Short", label:"Short" },
-    { value:"Skirt", label:"Skirt" },
-    { value:"Dress", label:"Dress" },
-    { value:"Sweatshirt", label:"Sweatshirt" },
-    { value:"Hoodie", label:"Hoodie" },
-    { value:"Zip Hoodie", label:"Zip Hoodie" },
-    { value:"Sweatpants", label:"Sweatpants" },
     { value:"ALTRO",   label:"Altro" }
   ];
-
-  // I <select> delle linee si riempiono da qui: elencarle a mano nell'HTML
-  // significava che un articolo importato con una categoria nuova, riaperto
-  // nel form, si ritrovava selezionata la prima linea della lista e veniva
-  // riassegnato in silenzio al primo salvataggio.
-  // Etichette di sezione: derivate da LINES, altrimenti una linea nuova
-  // mostrava "undefined" come titolo del gruppo.
+  const LINE_CODES = LINES.map(l => l.value);
   const LINE_LABEL = Object.fromEntries(LINES.map(l => [l.value, l.label]));
 
-  // Anche le pill dei filtri erano scritte a mano nell'HTML: senza queste le
-  // linee nuove restavano filtrabili solo da "Tutti". Vanno generate prima che
-  // più sotto si aggancino i listener, altrimenti resterebbero senza click.
+  // Famiglie del listino DOUBLEU; quelle create dall'utente si aggiungono in
+  // coda. Una categoria nuova esiste perché un articolo del catalogo la usa:
+  // viaggia col catalogo (cloud) e compare su ogni dispositivo.
+  const CATEGORIES = ["T-Shirt PRF","T-Shirt PRF Ws","T-Shirt Cotone","Polo","Short","Skirt","Dress",
+    "Sweatshirt","Hoodie","Zip Hoodie","Sweatpants","Jacket"];
+  const NEW_CAT_OPT = "__new_cat__";
+  const ensureCategory = (value) => {
+    const v = String(value || "").trim();
+    if(!v || CATEGORIES.some(c => c.toLowerCase() === v.toLowerCase())) return false;
+    CATEGORIES.push(v);
+    return true;
+  };
+
+  // Lettura tollerante dei dati vecchi. Articolo senza `linee`: se la sua
+  // categoria era una linea (PREMIUM/BASIC/LS24/ALTRO) quella è la linea e la
+  // famiglia manca; se era una famiglia del listino 2026 l'articolo è Premium
+  // (era già così in Order App, dove tutto ciò che non è Basic/LS24 è Premium).
+  const artLines = (a) => {
+    const arr = Array.isArray(a?.linee) ? a.linee.filter(l => LINE_CODES.includes(l)) : [];
+    if(arr.length) return arr;
+    if(LINE_CODES.includes(a?.categoria)) return [a.categoria];
+    return ["PREMIUM"];
+  };
+  const artCat = (a) => {
+    if(Array.isArray(a?.linee) && a.linee.length) return a?.categoria || "";
+    return LINE_CODES.includes(a?.categoria) ? "" : (a?.categoria || "");
+  };
+  const normArticle = (a) => a && typeof a === "object"
+    ? { ...a, linee: artLines(a), categoria: artCat(a) } : a;
+  // Riga di kit: idem, con una sola linea
+  const itemLine = (it) => LINE_CODES.includes(it?.line) ? it.line : "PREMIUM";
+  const itemCat  = (it) => it?.categoria !== undefined ? (it.categoria || "")
+    : (LINE_CODES.includes(it?.line) ? "" : (it?.line || ""));
+  const normItem = (it) => it && typeof it === "object"
+    ? { ...it, line: itemLine(it), categoria: itemCat(it) } : it;
+  // Testo per riepiloghi ed export: "Premium · Hoodie"
+  const itemLineTxt = (it) => [LINE_LABEL[itemLine(it)], itemCat(it)].filter(Boolean).join(" · ");
+
+  /* Catalogo raggruppato per linea e, dentro, per categoria. Un articolo in
+     più linee compare in ognuna: aggiungerlo da "Basic" lo mette nel kit come
+     Basic. Senza categoria il sottogruppo è il tipo di capo. Restituisce
+     [{ line, count, subs: [{ label, arts }] }] nell'ordine di LINES. */
+  const catalogTree = (catalog) => {
+    const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
+    const subOf = (a) => artCat(a) || a.tipo || "Altro";
+    const subIdx = (label) => { const i = CATEGORIES.indexOf(label); return i < 0 ? 500 + tipoIdx(label) : i; };
+    return LINES.map(l => {
+      const arts = catalog.filter(a => artLines(a).includes(l.value));
+      const subs = new Map();
+      arts.forEach(a => { const k = subOf(a); if(!subs.has(k)) subs.set(k, []); subs.get(k).push(a); });
+      const list = [...subs.entries()]
+        .sort((x, y) => subIdx(x[0]) - subIdx(y[0]) || x[0].localeCompare(y[0]))
+        .map(([label, as]) => ({ label, arts: as.sort((a, b) =>
+          tipoIdx(a.tipo) - tipoIdx(b.tipo) || catalogLabel(a).localeCompare(catalogLabel(b))) }));
+      return { line: l.value, count: arts.length, subs: list };
+    }).filter(g => g.count);
+  };
+  // "anche Basic" sotto un articolo che sta in più linee
+  const otherLinesTxt = (a, line) => {
+    const o = artLines(a).filter(l => l !== line).map(l => LINE_LABEL[l]);
+    return o.length ? `anche ${o.join(", ")}` : "";
+  };
+  const CARET_SVG = '<svg class="cat-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 8 10 13 15 8"/></svg>';
+
+  // Pill dei filtri per linea (kit e picker): generate da LINES.
   const fillLinePills = (id) => {
     const el = document.getElementById(id);
     if(!el) return;
@@ -4512,17 +4577,63 @@ if("serviceWorker" in navigator) {
   fillLinePills("artFilters");
   fillLinePills("pickerFilters");
 
-  const fillLineSelect = (id) => {
-    const sel = document.getElementById(id);
-    if(!sel || sel.options.length === LINES.length) return;
-    const cur = sel.value;
-    sel.innerHTML = LINES.map(l => `<option value="${esc(l.value)}">${esc(l.label)}</option>`).join("");
-    if(cur) sel.value = cur;
+  // Scelta delle linee di un articolo nei form (catalogo e distinta): pill a
+  // selezione multipla, almeno una sempre attiva.
+  const fillLineChecks = (id) => {
+    const el = document.getElementById(id);
+    if(!el || el.children.length) return;
+    el.innerHTML = LINES.map(l => `<span class="filter-pill" role="checkbox" tabindex="0" data-lc="${esc(l.value)}">${esc(l.label)}</span>`).join("");
+    const toggle = (pill) => {
+      const on = !pill.classList.contains("active");
+      if(!on && el.querySelectorAll(".filter-pill.active").length <= 1){
+        toast("Serve almeno una linea", "warn"); return;
+      }
+      pill.classList.toggle("active", on);
+      pill.setAttribute("aria-checked", on ? "true" : "false");
+    };
+    el.addEventListener("click", (e) => { const p = e.target.closest("[data-lc]"); if(p) toggle(p); });
+    el.addEventListener("keydown", (e) => {
+      const p = e.target.closest("[data-lc]");
+      if(p && (e.key === " " || e.key === "Enter")){ e.preventDefault(); toggle(p); }
+    });
+  };
+  const setLineChecks = (id, lines) => {
+    fillLineChecks(id);
+    const want = lines && lines.length ? lines : ["PREMIUM"];
+    document.querySelectorAll(`#${id} [data-lc]`).forEach(p => {
+      const on = want.includes(p.getAttribute("data-lc"));
+      p.classList.toggle("active", on);
+      p.setAttribute("aria-checked", on ? "true" : "false");
+    });
+  };
+  const getLineChecks = (id) => {
+    const v = [...document.querySelectorAll(`#${id} [data-lc].active`)].map(p => p.getAttribute("data-lc"));
+    return v.length ? v : ["PREMIUM"];
   };
 
-  // Select "linea" dell'export catalogo: a differenza di fillLineSelect ha
-  // in più "Tutte le linee" in testa, quindi non riusa quella funzione (il
-  // suo guard sulla lunghezza è tarato esattamente su LINES.length).
+  // Select della categoria: "— nessuna —", le categorie, "+ Nuova categoria…"
+  const fillCatSelect = (id) => {
+    const sel = document.getElementById(id);
+    if(!sel || sel.options.length === CATEGORIES.length + 2) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— nessuna —</option>'
+      + CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("")
+      + `<option value="${NEW_CAT_OPT}">+ Nuova categoria…</option>`;
+    if(cur && cur !== NEW_CAT_OPT) sel.value = cur;
+  };
+  const setCatSelect = (id, value) => {
+    const v = String(value || "");
+    if(v) ensureCategory(v);
+    fillCatSelect(id);
+    const sel = document.getElementById(id);
+    if(sel) sel.value = CATEGORIES.find(c => c.toLowerCase() === v.toLowerCase()) || "";
+  };
+  const catSelValue = (id) => {
+    const v = document.getElementById(id)?.value;
+    return v && v !== NEW_CAT_OPT ? v : "";
+  };
+
+  // Select "linea" dell'export catalogo, con "Tutte le linee" in testa
   const fillExportLineSelect = () => {
     const sel = document.getElementById("exportCatalogLine");
     if(!sel) return;
@@ -4532,6 +4643,37 @@ if("serviceWorker" in navigator) {
     if(cur) sel.value = cur;
   };
   fillExportLineSelect();
+
+  const CAT_SELECTS = ["catalogCategoria", "costoCategoria"];
+  const syncCatsFromCatalog = (arr) => {
+    let added = false;
+    (arr || []).forEach(a => { const c = artCat(a); if(c && ensureCategory(c)) added = true; });
+    if(added) CAT_SELECTS.forEach(fillCatSelect);
+  };
+
+  const bindNewCatSelect = (id) => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    let prev = sel.value;
+    sel.addEventListener("focus", () => { if(sel.value !== NEW_CAT_OPT) prev = sel.value; });
+    sel.addEventListener("change", () => {
+      if(sel.value !== NEW_CAT_OPT){ prev = sel.value; return; }
+      const name = (prompt("Nome della nuova categoria (es. Jacket):") || "").trim();
+      if(!name){ sel.value = prev || ""; return; }
+      if(LINE_CODES.some(l => l.toLowerCase() === name.toLowerCase())){
+        toast(`"${name}" è una linea, non una categoria: sceglila tra le linee`, "warn");
+        sel.value = prev || ""; return;
+      }
+      const hit = CATEGORIES.find(c => c.toLowerCase() === name.toLowerCase());
+      const value = hit || name;
+      if(!hit){ ensureCategory(value); CAT_SELECTS.forEach(fillCatSelect); }
+      sel.value = value;
+      prev = value;
+      toast(hit ? `Categoria "${hit}" già presente: selezionata` :
+        `Categoria "${value}" creata: salva l'articolo per tenerla ✓`, "ok");
+    });
+  };
+  CAT_SELECTS.forEach(bindNewCatSelect);
 
   const clientName  = document.getElementById("clientName");
   const projectName = document.getElementById("projectName");
@@ -4644,7 +4786,7 @@ if("serviceWorker" in navigator) {
   // senza toccare l'articolo: cambiarlo qui non deve riscrivere il catalogo.
   const kitItemFromCatalog = (art, line, label) => {
     const it = { id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
-      line, base: catBase(art), extra: catExtra(art), qty: toNum(qtyEst.value) || 1,
+      line, categoria: artCat(art), base: catBase(art), extra: catExtra(art), qty: toNum(qtyEst.value) || 1,
       isGift: false };
     // Con il costo di Production Sheet la distinta è quella della scheda
     const ps = psCostFor(art);
@@ -4656,7 +4798,7 @@ if("serviceWorker" in navigator) {
   const newItem = () => {
     const q = toNum(qtyEst.value) || 0;
     // Articolo generico: il costo lo inserisci tu, nessun valore inventato
-    return { id: uid(), article:"T-shirt", line:"PREMIUM", base:0, extra:0, qty:q, isGift:false };
+    return { id: uid(), article:"T-shirt", line:"PREMIUM", categoria:"", base:0, extra:0, qty:q, isGift:false };
   };
 
   /* ─── Consuntivo di produzione (kit in stato Ordine) ───
@@ -4767,13 +4909,14 @@ if("serviceWorker" in navigator) {
     applyArtFilter();
   });
 
-  document.querySelectorAll("#artFilters .filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      artFilterLine = pill.getAttribute("data-line") || "ALL";
-      document.querySelectorAll("#artFilters .filter-pill").forEach(x =>
-        x.classList.toggle("active", x === pill));
-      applyArtFilter();
-    });
+  // Delegato sul contenitore: le pill si rigenerano quando nasce una categoria
+  document.getElementById("artFilters")?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".filter-pill");
+    if(!pill) return;
+    artFilterLine = pill.getAttribute("data-line") || "ALL";
+    document.querySelectorAll("#artFilters .filter-pill").forEach(x =>
+      x.classList.toggle("active", x === pill));
+    applyArtFilter();
   });
 
   // Segmented control Calcolo/Preventivo/Ordine del kit corrente: il valore
@@ -4854,8 +4997,9 @@ if("serviceWorker" in navigator) {
         `<option value="${esc(a)}" ${a===it.article ? "selected" : ""}>${esc(a)}</option>`
       ).join("");
       const optsL = LINES.map(l =>
-        `<option value="${l.value}" ${l.value===it.line ? "selected" : ""}>${l.label}</option>`
+        `<option value="${l.value}" ${l.value===itemLine(it) ? "selected" : ""}>${l.label}</option>`
       ).join("");
+      const catTxt = itemCat(it);
 
       const unitCost   = toNum(it.base) + toNum(it.extra);
       const catArt     = catalogFor(it);
@@ -4912,7 +5056,7 @@ if("serviceWorker" in navigator) {
       const giftClass  = it.isGift ? " is-gift" : "";
 
       html += `
-<div class="art-card${giftClass}" data-name="${esc(String(it.article).toLowerCase())}" data-line="${esc(it.line)}">
+<div class="art-card${giftClass}" data-name="${esc(String(it.article).toLowerCase())}" data-line="${esc(itemLine(it))}">
   <div class="art-card-main">
 
     <div class="art-thumb" title="${esc(it.article)}">${garmentIcon(it.article, it.tipo)}</div>
@@ -4922,7 +5066,7 @@ if("serviceWorker" in navigator) {
         <select data-act="article" data-id="${it.id}" style="flex:1;min-width:110px">${optsA}</select>
         <select data-act="line"    data-id="${it.id}" style="min-width:110px">${optsL}</select>
       </div>
-      <div class="art-cost-note">${ordine ? "Costo unitario preventivato" : "Costo unitario"}: ${eur(unitCost)} · ${costSrc}</div>
+      <div class="art-cost-note">${catTxt ? `<b>${esc(catTxt)}</b> · ` : ""}${ordine ? "Costo unitario preventivato" : "Costo unitario"}: ${eur(unitCost)} · ${costSrc}</div>
       <div class="art-rev-note" id="rev-${it.id}"></div>
     </div>
 
@@ -5126,44 +5270,27 @@ if("serviceWorker" in navigator) {
     }
     if(pickerEmpty) pickerEmpty.style.display = "none";
 
-    const LINE_ORDER = LINES.map(l => l.value);
-    const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
-
-    const rowHtml = (art) => {
+    const rowHtml = (art, line) => {
       const priceStr = `Costo: ${eur(catBase(art))}` + (catExtra(art) > 0 ? ` · Stampa/ricamo: ${eur(catExtra(art))}` : "");
       const label = catalogLabel(art);
-      const meta  = catalogMeta(art);
+      const meta  = [catalogMeta(art), otherLinesTxt(art, line)].filter(Boolean).join(" · ");
       const inKit = items.filter(it => it.article === label).length;
       const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
-      const line  = LINE_ORDER.includes(art.categoria) ? art.categoria : "ALTRO";
-      return `<div class="catalog-item" data-name="${esc(label.toLowerCase())}" data-line="${line}">
+      return `<div class="catalog-item" data-name="${esc(label.toLowerCase())}" data-line="${esc(line)}">
         <div class="catalog-item-info">
           <div class="catalog-item-name">${esc(label)}${inKitBadge}</div>
           <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
         </div>
         <div class="catalog-item-actions">
-          <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}">+ Aggiungi</button>
+          <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cline="${esc(line)}">+ Aggiungi</button>
         </div>
       </div>`;
     };
 
-    const byLine = {};
-    catalog.forEach(a => {
-      const l = LINE_ORDER.includes(a.categoria) ? a.categoria : "ALTRO";
-      (byLine[l] = byLine[l] || []).push(a);
-    });
-
-    let html = "";
-    LINE_ORDER.forEach(line => {
-      const arts = byLine[line];
-      if(!arts || !arts.length) return;
-      arts.sort((a, b) => tipoIdx(a.tipo) - tipoIdx(b.tipo) || catalogLabel(a).localeCompare(catalogLabel(b)));
-      html += `<div class="catalog-group${pickerOpen.has(line) ? "" : " collapsed"}" data-pick-line="${line}">
-        <button type="button" class="catalog-group-head" data-pick-head="${line}"><svg class="cat-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 8 10 13 15 8"/></svg><span class="catalog-group-title">${esc(LINE_LABEL[line] || line)}</span><span class="catalog-group-count">${arts.length}</span></button>
-        ${arts.map(rowHtml).join("")}
-      </div>`;
-    });
-    pickerList.innerHTML = html;
+    pickerList.innerHTML = catalogTree(catalog).map(g => `<div class="catalog-group${pickerOpen.has(g.line) ? "" : " collapsed"}" data-pick-line="${g.line}">
+        <button type="button" class="catalog-group-head" data-pick-head="${g.line}">${CARET_SVG}<span class="catalog-group-title">${esc(LINE_LABEL[g.line])}</span><span class="catalog-group-count">${g.count}</span></button>
+        ${g.subs.map(sg => `<div class="catalog-subgroup"><div class="catalog-sub-head">${esc(sg.label)}</div>${sg.arts.map(a => rowHtml(a, g.line)).join("")}</div>`).join("")}
+      </div>`).join("");
 
     pickerList.querySelectorAll("[data-pick-head]").forEach(head => {
       head.addEventListener("click", () => {
@@ -5177,13 +5304,13 @@ if("serviceWorker" in navigator) {
       btn.addEventListener("click", () => {
         const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
         if(!art) return;
-        const line  = LINE_ORDER.includes(art.categoria) ? art.categoria : "ALTRO";
+        const line  = btn.getAttribute("data-cline") || artLines(art)[0];
         const label = catalogLabel(art);
         items.push(kitItemFromCatalog(art, line, label));
         resetArtFilter();   // la riga appena aggiunta deve vedersi
         render();
         renderPicker();
-        toast(`"${label}" aggiunto al kit ✓`, "ok");
+        toast(`"${label}" aggiunto al kit come ${LINE_LABEL[line]} ✓`, "ok");
       });
     });
 
@@ -5201,6 +5328,9 @@ if("serviceWorker" in navigator) {
       card.style.display = show ? "" : "none";
       if(show) visibleLine[line] = true;
     });
+    pickerList.querySelectorAll(".catalog-subgroup").forEach(sg => {
+      sg.style.display = [...sg.querySelectorAll(".catalog-item")].some(c => c.style.display !== "none") ? "" : "none";
+    });
     // Con una ricerca o una linea scelta i risultati si vedono subito;
     // senza filtri ogni linea torna com'era (chiusa, se non aperta a mano).
     const filtering = !!txt || pickerFilterLine !== "ALL";
@@ -5216,12 +5346,12 @@ if("serviceWorker" in navigator) {
     applyPickerFilter();
   });
 
-  document.querySelectorAll("#pickerFilters .filter-pill").forEach(pill => {
-    pill.addEventListener("click", () => {
-      pickerFilterLine = pill.getAttribute("data-line") || "ALL";
-      document.querySelectorAll("#pickerFilters .filter-pill").forEach(x => x.classList.toggle("active", x === pill));
-      applyPickerFilter();
-    });
+  document.getElementById("pickerFilters")?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".filter-pill");
+    if(!pill) return;
+    pickerFilterLine = pill.getAttribute("data-line") || "ALL";
+    document.querySelectorAll("#pickerFilters .filter-pill").forEach(x => x.classList.toggle("active", x === pill));
+    applyPickerFilter();
   });
 
   const togglePicker = (show) => {
@@ -6200,7 +6330,7 @@ if("serviceWorker" in navigator) {
     items.forEach(it => {
       const giftMark = it.isGift ? " | OMAGGIO" : "";
       const codePrefix = it.code ? `[${it.code}] ` : "";
-      lines.push(`- ${codePrefix}${it.article} | ${it.line} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
+      lines.push(`- ${codePrefix}${it.article} | ${itemLineTxt(it)} | base ${eur(toNum(it.base))} | extra ${eur(toNum(it.extra))} | qty ${toNum(it.qty)}${giftMark}`);
     });
     const staffCopy = staffOmaggioInfo();
     if(staffCopy.kit > 0)
@@ -6279,7 +6409,7 @@ if("serviceWorker" in navigator) {
       const margStr   = mostra ? (margine * 100).toFixed(1) + "%" : "—";
       return `<tr${it.isGift ? ' style="background:rgba(232,124,43,.04)"' : ''}>
         <td>${codeCell}${esc(it.article)}${giftTag}</td>
-        <td>${esc(it.line)}</td>
+        <td>${esc(itemLineTxt(it))}</td>
         <td>${eur(toNum(it.base))}</td>
         <td>${eur(toNum(it.extra))}</td>
         <td style="font-weight:700">${qty}</td>
@@ -6544,7 +6674,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(shipAbsorbed) shipAbsorbed.checked = p.shipAbsorbed !== undefined ? !!p.shipAbsorbed : true;
     if(staffOmaggio) staffOmaggio.value = p.staffOmaggio ?? "";
     setKitStatoPicker(p.stato || "preventivo");
-    items = Array.isArray(p.items) ? p.items : [];
+    items = Array.isArray(p.items) ? p.items.map(normItem) : [];
     resetArtFilter();
     render();
     updateSidebarKit();
@@ -8744,7 +8874,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const oaQuoteInfo = {};        // id → { status, lost, standby, date } letto da Order App
 
   // Linea e categoria come in Order App (tabella concordata con Marco).
-  const oaLineOf = (it) => it.line === "BASIC" ? "Basic" : it.line === "LS24" ? "LS24" : "Premium";
+  const oaLineOf = (it) => { const l = itemLine(it); return l === "BASIC" ? "Basic" : l === "LS24" ? "LS24" : "Premium"; };
   const oaCategoryOf = (it) => {
     const t = String(it.tipo || "").trim().toLowerCase();
     const a = String(it.article || "").toLowerCase();
@@ -8764,8 +8894,8 @@ ${tabQtaPDF ? `<div class="sec scala">
       case "polo":      return "Polo";
       case "cappello":  return line === "Premium" ? "Cap PRF" : "Cap BSC";
     }
-    if(it.line === "T-Shirt PRF Ws" || /\bws\b/.test(a)) return "T-Shirt Ws";
-    if(it.line === "T-Shirt Cotone" || a.includes("cotone")) return "T-Shirt Cot";
+    if(itemCat(it) === "T-Shirt PRF Ws" || /\bws\b/.test(a)) return "T-Shirt Ws";
+    if(itemCat(it) === "T-Shirt Cotone" || a.includes("cotone")) return "T-Shirt Cot";
     if(line === "Basic" || line === "LS24") return "T-Shirt Bsc";
     return "T-Shirt PRF";
   };
@@ -11100,7 +11230,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         const revenue = cost / k.totalCost * k.revenueNet;
         const profit  = revenue - cost;
         const label = (it.article || "").trim() || "—";
-        const line  = it.line || "ALTRO";
+        const line  = itemLine(it);
 
         if(!articles.has(label)) articles.set(label, { label, kitNames:new Set(), qty:0, cost:0, revenue:0, profit:0, lines:new Set() });
         const a = articles.get(label);
@@ -11386,7 +11516,12 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   };
 
   const getCatalog = () => {
-    try { const r = localStorage.getItem(CATALOG_KEY); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+    let arr = [];
+    try { const r = localStorage.getItem(CATALOG_KEY); arr = r ? JSON.parse(r) : []; } catch(e) { arr = []; }
+    if(!Array.isArray(arr)) arr = [];
+    arr = arr.map(normArticle);   // linea/categoria separate anche sui dati vecchi
+    syncCatsFromCatalog(arr);     // categorie create dall'utente o arrivate dal cloud
+    return arr;
   };
   const setCatalog = (arr) => {
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(arr)); } catch(e) {}
@@ -11417,7 +11552,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       const k = it.article.toLowerCase();
       if(!found.has(k)) found.set(k, {
         id: uid(), code: it.code || "", tipo: guessTipo(it.article), genere: "Unisex", name: it.article,
-        categoria: ["PREMIUM","BASIC","LS24"].includes(it.line) ? it.line : "ALTRO",
+        linee: [itemLine(it)], categoria: itemCat(it),
         base: toNum(it.base), extra: toNum(it.extra),
       });
     }));
@@ -11433,8 +11568,9 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   /* ─── Articoli render ─── */
   const renderArticoli = (fresh) => {
     if(fresh === true) catalogOpen.clear();
-    fillLineSelect("catalogCategoria");
     const catalog = getCatalog();
+    fillCatSelect("catalogCategoria");
+    fillLineChecks("catalogLinee");
     const listEl  = document.getElementById("catalogList");
     const emptyEl = document.getElementById("catalogEmpty");
 
@@ -11449,13 +11585,10 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         listEl.insertAdjacentHTML("afterbegin", `<div class="catalog-group hint" style="margin:0 0 10px">
           Costo da <b>Production Sheet</b>: ${nPs} di ${catalog.length} articoli · gli altri usano il <b>file storico</b>.</div>`);
 
-        const LINE_ORDER = LINES.map(l => l.value);
-        const tipoIdx = (t) => { const i = CATALOG_TIPI.indexOf(t); return i < 0 ? 999 : i; };
-
-        const rowHtml = (art) => {
+        const rowHtml = (art, line) => {
           const priceStr = `Costo: ${eur(catBase(art))}` + (catExtra(art) > 0 ? ` · Stampa/ricamo: ${eur(catExtra(art))}` : "");
           const label = catalogLabel(art);
-          const meta  = catalogMeta(art);
+          const meta  = [catalogMeta(art), otherLinesTxt(art, line)].filter(Boolean).join(" · ");
           const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
           const distintaBadge = catSrcBadge(art);
@@ -11465,7 +11598,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
               <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
             </div>
             <div class="catalog-item-actions">
-              <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cact="add">+ Kit</button>
+              <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cline="${esc(line)}" data-cact="add">+ Kit</button>
               <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="costo">Distinta</button>
               <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="edit">Modifica</button>
               <button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-cid="${art.id}" data-cact="del">✕</button>
@@ -11473,19 +11606,12 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
           </div>`;
         };
 
-        // Raggruppa per linea, sezioni sempre aperte, ordine interno per Tipo
-        const byLine = {};
-        catalog.forEach(a => {
-          const l = LINE_ORDER.includes(a.categoria) ? a.categoria : "ALTRO";
-          (byLine[l] = byLine[l] || []).push(a);
-        });
-        LINE_ORDER.forEach(line => {
-          const arts = byLine[line];
-          if(!arts || !arts.length) return;
-          arts.sort((a, b) => tipoIdx(a.tipo) - tipoIdx(b.tipo) || catalogLabel(a).localeCompare(catalogLabel(b)));
+        // Raggruppa per linea e, dentro, per categoria
+        catalogTree(catalog).forEach(g => {
           const group = document.createElement("div");
-          group.className = "catalog-group" + (catalogOpen.has(line) ? "" : " collapsed");
-          group.innerHTML = `<button type="button" class="catalog-group-head" data-line="${line}"><svg class="cat-caret" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 8 10 13 15 8"/></svg><span class="catalog-group-title">${esc(LINE_LABEL[line] || line)}</span><span class="catalog-group-count">${arts.length}</span></button>${arts.map(rowHtml).join("")}`;
+          group.className = "catalog-group" + (catalogOpen.has(g.line) ? "" : " collapsed");
+          group.innerHTML = `<button type="button" class="catalog-group-head" data-line="${g.line}">${CARET_SVG}<span class="catalog-group-title">${esc(LINE_LABEL[g.line])}</span><span class="catalog-group-count">${g.count}</span></button>`
+            + g.subs.map(sg => `<div class="catalog-subgroup"><div class="catalog-sub-head">${esc(sg.label)}</div>${sg.arts.map(a => rowHtml(a, g.line)).join("")}</div>`).join("");
           listEl.appendChild(group);
         });
 
@@ -11503,7 +11629,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
           btn.addEventListener("click", () => {
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
-            const line = art.categoria && LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
+            const line = btn.getAttribute("data-cline") || artLines(art)[0];
             const label = catalogLabel(art);
             items.push(kitItemFromCatalog(art, line, label));
             render();
@@ -11529,7 +11655,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
             document.getElementById("catalogTipo").value      = CATALOG_TIPI.includes(art.tipo) ? art.tipo : CATALOG_TIPI[0];
             document.getElementById("catalogGenere").value    = CATALOG_GENERI.includes(art.genere) ? art.genere : "Unisex";
             document.getElementById("catalogName").value      = art.name || "";
-            document.getElementById("catalogCategoria").value = art.categoria || "ALTRO";
+            setCatSelect("catalogCategoria", artCat(art));
+            setLineChecks("catalogLinee", artLines(art));
             document.getElementById("catalogBase").value      = art.base || "";
             document.getElementById("catalogExtra").value     = art.extra || "";
             document.getElementById("catalogFormTitle").textContent = "Modifica articolo";
@@ -11568,7 +11695,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     document.getElementById("catalogTipo").value      = CATALOG_TIPI[0];
     document.getElementById("catalogGenere").value    = "Unisex";
     document.getElementById("catalogName").value      = "";
-    document.getElementById("catalogCategoria").value = "ALTRO";
+    setCatSelect("catalogCategoria", "");
+    setLineChecks("catalogLinee", ["PREMIUM"]);
     document.getElementById("catalogBase").value      = "";
     document.getElementById("catalogExtra").value     = "";
   };
@@ -11588,7 +11716,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     const tipo      = document.getElementById("catalogTipo").value || CATALOG_TIPI[0];
     const genere    = document.getElementById("catalogGenere").value || "Unisex";
     const name      = document.getElementById("catalogName").value.trim();
-    const categoria = document.getElementById("catalogCategoria").value || "ALTRO";
+    const categoria = catSelValue("catalogCategoria");
+    const linee     = getLineChecks("catalogLinee");
     const base      = parseFloat(document.getElementById("catalogBase").value)  || 0;
     const extra     = parseFloat(document.getElementById("catalogExtra").value) || 0;
     const editId    = document.getElementById("catalogEditId").value;
@@ -11597,7 +11726,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       const idx = catalog.findIndex(a => a.id === editId);
       if(idx >= 0) {
         const prev = catalog[idx];
-        catalog[idx] = { ...prev, code, tipo, genere, name, categoria, base, extra };
+        catalog[idx] = { ...prev, code, tipo, genere, name, linee, categoria, base, extra };
         // Ritoccando base/extra a mano la distinta non somma più: tenerla
         // significherebbe mostrare un badge "distinta" che dice il falso.
         if(prev.costParts && (toNum(prev.base) !== base || toNum(prev.extra) !== extra)) {
@@ -11605,7 +11734,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         }
       }
     } else {
-      catalog.push({ id: uid(), code, tipo, genere, name, categoria, base, extra });
+      catalog.push({ id: uid(), code, tipo, genere, name, linee, categoria, base, extra });
     }
     setCatalog(catalog);
     document.getElementById("catalogForm").style.display = "none";
@@ -11766,7 +11895,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
 
       const fields = {
         code: val("code").trim(), tipo: val("tipo"), genere: "Unisex", name,
-        categoria: val("linea"), base: capo, extra: stampa, costParts,
+        linee: [LINE_CODES.includes(val("linea")) ? val("linea") : "PREMIUM"], base: capo, extra: stampa, costParts,
       };
       const existing = byName.get(name.toLowerCase());
       if(existing){ Object.assign(existing, fields); updated++; }
@@ -11851,8 +11980,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     if(tipo) tipo.value = CATALOG_TIPI[0];
     const gen = document.getElementById("costoGenere");
     if(gen) gen.value = "Unisex";
-    const cat = document.getElementById("costoCategoria");
-    if(cat) cat.value = "ALTRO";
+    setCatSelect("costoCategoria", "");
+    setLineChecks("costoLinee", ["PREMIUM"]);
     fillTessutoSelect();
     const selT = document.getElementById("costoTessutoSel");
     if(selT) selT.value = "";
@@ -11916,7 +12045,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     document.getElementById("costoCode").value      = art.code || "";
     document.getElementById("costoTipo").value      = CATALOG_TIPI.includes(art.tipo) ? art.tipo : CATALOG_TIPI[0];
     document.getElementById("costoGenere").value    = CATALOG_GENERI.includes(art.genere) ? art.genere : "Unisex";
-    document.getElementById("costoCategoria").value = art.categoria || "ALTRO";
+    setCatSelect("costoCategoria", artCat(art));
+    setLineChecks("costoLinee", artLines(art));
     const cp = art.costParts;
     fillTessutoSelect(cp?.tessuto_default);
     const selT  = document.getElementById("costoTessutoSel");
@@ -11943,7 +12073,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   };
 
   const renderCostoView = () => {
-    fillLineSelect("costoCategoria");
+    fillCatSelect("costoCategoria");
+    fillLineChecks("costoLinee");
     fillTessutoSelect(document.getElementById("costoTessutoSel")?.value);
     const tipoSel = document.getElementById("costoTipo");
     if(tipoSel && !tipoSel.options.length)
@@ -11979,7 +12110,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       tipo,
       genere:    document.getElementById("costoGenere").value || "Unisex",
       name,
-      categoria: document.getElementById("costoCategoria").value || "ALTRO",
+      linee:     getLineChecks("costoLinee"),
+      categoria: catSelValue("costoCategoria"),
       base:      capo,
       extra:     stampa,
       costParts: p,
@@ -12018,7 +12150,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   document.getElementById("btnCostoSaveAdd")?.addEventListener("click", () => {
     const art = saveCostoToCatalog();
     if(!art) return;
-    const line  = LINES.find(l => l.value === art.categoria) ? art.categoria : "ALTRO";
+    const line  = artLines(art)[0];
     const label = catalogLabel(art);
     items.push(kitItemFromCatalog(art, line, label));
     render();
@@ -12222,7 +12354,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     const rows = items.map(it => {
       const cost = toNum(it.base) + toNum(it.extra);
       const sub  = cost * toNum(it.qty);
-      return [csvCell(it.code || ""), csvCell(it.article), csvCell(it.line), toNum(it.base).toFixed(2), toNum(it.extra).toFixed(2), toNum(it.qty), sub.toFixed(2)].join(",");
+      return [csvCell(it.code || ""), csvCell(it.article), csvCell(itemLineTxt(it)), toNum(it.base).toFixed(2), toNum(it.extra).toFixed(2), toNum(it.qty), sub.toFixed(2)].join(",");
     });
     const csv  = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type:"text/csv" });
@@ -12238,19 +12370,19 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     const sel  = document.getElementById("exportCatalogLine");
     const line = sel ? sel.value : "ALL";
     const all  = getCatalog();
-    return { line, rows: line === "ALL" ? all : all.filter(a => a.categoria === line) };
+    return { line, rows: line === "ALL" ? all : all.filter(a => artLines(a).includes(line)) };
   };
 
   const _btnExportCatalogCSV = document.getElementById("btnExportCatalogCSV");
   if(_btnExportCatalogCSV) _btnExportCatalogCSV.addEventListener("click", () => {
     const { line, rows } = catalogForExport();
     if(!rows.length){ toast("Nessun articolo in questa linea", "warn"); return; }
-    const header  = "Codice,Nome,Tipo,Genere,Linea,Costo base €,Extra €,Totale €";
+    const header  = "Codice,Nome,Tipo,Genere,Linea,Categoria,Costo base €,Extra €,Totale €";
     const csvCell = (v) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const csvRows = rows.map(a => {
       const tot = catBase(a) + catExtra(a);
       return [csvCell(a.code || ""), csvCell(a.name || ""), csvCell(a.tipo || ""), csvCell(a.genere || ""),
-        csvCell(LINE_LABEL[a.categoria] || a.categoria || ""), catBase(a).toFixed(2), catExtra(a).toFixed(2), tot.toFixed(2)].join(",");
+        csvCell(artLines(a).map(l => LINE_LABEL[l]).join(" / ")), csvCell(artCat(a)), catBase(a).toFixed(2), catExtra(a).toFixed(2), tot.toFixed(2)].join(",");
     });
     const csv  = [header, ...csvRows].join("\n");
     const blob = new Blob([csv], { type:"text/csv" });
@@ -12275,7 +12407,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         <td>${esc(a.name || "")}</td>
         <td>${esc(a.tipo || "")}</td>
         <td>${esc(a.genere || "")}</td>
-        <td>${esc(LINE_LABEL[a.categoria] || a.categoria || "")}</td>
+        <td>${esc([artLines(a).map(l => LINE_LABEL[l]).join(" / "), artCat(a)].filter(Boolean).join(" · "))}</td>
         <td>${eur(catBase(a))}</td>
         <td>${eur(catExtra(a))}</td>
         <td style="font-weight:800">${eur(tot)}</td>
