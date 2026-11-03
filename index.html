@@ -652,6 +652,7 @@
     .cost-src { font-weight: 700; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; }
     .cost-src.cat { background: rgba(10, 110, 78, .12); color: var(--good); }
     .cost-src.mod { background: rgba(232, 124, 43, .16); color: var(--text); }
+    .cost-src.hist { background: rgba(232, 124, 43, .16); color: #9A4A0C; border: 1px solid rgba(232, 124, 43, .45); }
     .cost-src.manual { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
     .cost-src-ref { color: var(--muted); }
     .cost-src-reset { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 700; }
@@ -2687,7 +2688,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v133</span>
+            <span id="buildTxt">build v134</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4437,7 +4438,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v133";
+  const BUILD = "v134";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5017,7 +5018,8 @@ if("serviceWorker" in navigator) {
       const baseDiff   = catArt && Math.abs(toNum(it.base) - catBase(catArt)) >= 0.005;
       const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
         : !baseDiff
-          ? `<span class="cost-src cat">capo da ${psArt ? "Production Sheet" : "file storico"}</span>${stampaRef}`
+          ? (psArt ? `<span class="cost-src cat">capo da Production Sheet</span>${stampaRef}`
+                   : `<span class="cost-src hist" title="Nessuna scheda costo in Production Sheet per questo codice: costo dal vecchio listino, da verificare">⚠ file storico, non verificato</span>${stampaRef}`)
           : psArt
             ? `<span class="cost-src mod">Production Sheet ora ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">aggiorna</button>`}${stampaRef}`
             : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">file storico ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`}${stampaRef}`;
@@ -6208,6 +6210,35 @@ if("serviceWorker" in navigator) {
         title: "Minimo sopra il target",
         text: `Il margine minimo accettabile (${(mMin*100).toFixed(0)}%) è più alto del target (${(m*100).toFixed(0)}%): il prezzo minimo di trattativa risulta più caro del prezzo target. Abbassa il minimo o alza il target.`
       });
+    }
+
+    /* Affidabilità del costo. Un preventivo fatto su un costo del vecchio
+       listino (file storico) può essere sbagliato di qualche euro a capo:
+       è successo col gonnellino DUSP 13, 9,50 € a listino contro 13,45 € in
+       Production Sheet. L'etichetta sulla riga da sola non bastava. */
+    {
+      const righe = items.filter(it => toNum(it.qty) > 0);
+      const storico = [], manuali = [], cambiati = [];
+      righe.forEach(it => {
+        const art = catalogFor(it);
+        if(!art){ manuali.push(it); return; }
+        const ps = psCostFor(art);
+        if(!ps){ storico.push(it); return; }
+        if(Math.abs(toNum(it.base) - ps.totale) >= 0.005) cambiati.push({ it, ps: ps.totale });
+      });
+      const nomi = (arr) => [...new Set(arr.map(it => it.article))].join(", ");
+      if(cambiati.length && !isOrdine()){
+        const delta = cambiati.reduce((a, c) => a + (c.ps - toNum(c.it.base)) * toNum(c.it.qty), 0);
+        alerts.push({ level: delta > 0 ? "bad" : "warn", title:"Costo Production Sheet cambiato",
+          text:`${cambiati.length === 1 ? "1 articolo ha" : cambiati.length + " articoli hanno"} un costo capo diverso da Production Sheet oggi (${nomi(cambiati.map(c => c.it))}): ${delta >= 0 ? "+" : "−"}${eur(Math.abs(delta))} sull'ordine. Premi "aggiorna" sulla riga per allinearti.` });
+      }
+      if(storico.length || manuali.length){
+        const parti = [];
+        if(storico.length) parti.push(`${storico.length === 1 ? "1 articolo usa" : storico.length + " articoli usano"} il costo del file storico, senza scheda costo in Production Sheet (${nomi(storico)})`);
+        if(manuali.length) parti.push(`${manuali.length === 1 ? "1 articolo ha" : manuali.length + " articoli hanno"} un costo inserito a mano (${nomi(manuali)})`);
+        alerts.push({ level:"warn", title:"Costo non verificato",
+          text:`${parti.join("; ")}. Il margine può essere sbagliato: crea la scheda costo in Production Sheet prima di mandare il prezzo.` });
+      }
     }
 
     if(realMargin + 1e-9 < m){
