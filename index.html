@@ -2691,7 +2691,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v135</span>
+            <span id="buildTxt">build v136</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4445,7 +4445,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v135";
+  const BUILD = "v136";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -12927,6 +12927,27 @@ tr:last-child td{border-bottom:none}
     if(authOverlay) authOverlay.style.display = "flex";
     if(appShell)    appShell.style.display    = "none";
   };
+  // Con un accesso salvato non si mostra il modulo mentre la sessione si
+  // ripristina: sembrava di doversi riloggare anche quando non serviva.
+  const setAuthRestoring = (on) => {
+    const card = authOverlay?.querySelector(".auth-card");
+    if(!card) return;
+    let msg = document.getElementById("authRestoring");
+    if(on && !msg){
+      msg = document.createElement("div");
+      msg.id = "authRestoring";
+      msg.style.cssText = "padding:18px 0;font-size:14px;font-weight:600;color:var(--muted);text-align:center";
+      msg.textContent = "Ripristino dell'accesso…";
+      card.appendChild(msg);
+    }
+    card.querySelectorAll(":scope > *:not(#authRestoring):not(.auth-logo)").forEach(el => { el.style.visibility = on ? "hidden" : ""; });
+    if(msg) msg.style.display = on ? "" : "none";
+  };
+  if(supabase && tokenDaStorage()){
+    setAuthRestoring(true);
+    // Rete lenta o assente: dopo 12 s si torna comunque al modulo
+    setTimeout(() => { if(authOverlay && authOverlay.style.display !== "none") setAuthRestoring(false); }, 12000);
+  }
   const hideAuthOverlay = () => {
     if(authOverlay) authOverlay.style.display = "none";
     if(appShell)    appShell.style.display    = "";
@@ -12985,20 +13006,30 @@ tr:last-child td{border-bottom:none}
   };
 
   if(supabase) {
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if(session) {
-        hideAuthOverlay();
-        updateSidebarUser(session.user);
-        if(!appInited) {
-          appInited = true;
-          await initApp();
+    /* Il lavoro va fatto FUORI dalla callback: Supabase la esegue tenendo il
+       lucchetto della sessione, e qualsiasi chiamata al database fatta lì
+       dentro (initApp carica i kit) aspetta quello stesso lucchetto. Si
+       bloccava tutto per secondi; lo "sblocco" automatico all'avvio lo
+       scambiava per un client incastrato, cancellava l'accesso salvato e
+       ricaricava: per questo a ogni aggiornamento si tornava al login.
+       Soluzione indicata da Supabase: rimandare con setTimeout(…, 0). */
+    supabase.auth.onAuthStateChange((event, session) => {
+      setTimeout(async () => {
+        if(session) {
+          hideAuthOverlay();
+          updateSidebarUser(session.user);
+          if(!appInited) {
+            appInited = true;
+            await initApp();
+          } else if(event === "SIGNED_IN") {
+            await loadProjectsFromCloud();
+            renderDashboard();
+          }
         } else {
-          await loadProjectsFromCloud();
-          renderDashboard();
+          setAuthRestoring(false);
+          showAuthOverlay();
         }
-      } else {
-        showAuthOverlay();
-      }
+      }, 0);
     });
   } else {
     // Supabase non disponibile (rete assente o CDN bloccato). Tutti i calcoli
