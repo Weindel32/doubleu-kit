@@ -5036,7 +5036,9 @@ if("serviceWorker" in navigator) {
             ? `<span class="cost-src prov" title="Nessuna scheda costo in Production Sheet: il costo è scritto a mano">✕ costo provvisorio</span>${oldRef}`
             : `<span class="cost-src manual">in attesa di Production Sheet</span>`)
         : !baseDiff
-          ? `<span class="cost-src cat">${costSrcArt?.src === "acq" ? "prezzo d'acquisto" : "capo da Production Sheet"}</span>${stampaRef}`
+          ? (costSrcArt?.verifica
+              ? `<span class="cost-src hist" title="Scheda costo generata da un modello: controllala in Production Sheet e togli la nota DA VERIFICARE">⚠ Production Sheet ${esc(costSrcArt.codice || "")}, da verificare</span>${stampaRef}`
+              : `<span class="cost-src cat">${costSrcArt?.src === "acq" ? "prezzo d'acquisto" : "capo da Production Sheet"}</span>${stampaRef}`)
           : `<span class="cost-src mod">${srcName} ora ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">aggiorna</button>`}${stampaRef}`;
 
       /* In stato Ordine il preventivato è bloccato e sotto compare il
@@ -6245,6 +6247,11 @@ if("serviceWorker" in navigator) {
         alerts.push({ level: delta > 0 ? "bad" : "warn", title:"Costo Production Sheet cambiato",
           text:`${cambiati.length === 1 ? "1 articolo ha" : cambiati.length + " articoli hanno"} un costo capo diverso da Production Sheet oggi (${nomi(cambiati.map(c => c.it))}): ${delta >= 0 ? "+" : "−"}${eur(Math.abs(delta))} sull'ordine. Premi "aggiorna" sulla riga per allinearti.` });
       }
+      const daVerif = righe.filter(it => { const a = catalogFor(it); const c = a && costFor(a); return c && c.verifica; });
+      if(daVerif.length){
+        alerts.push({ level:"warn", title:"Costo da verificare",
+          text:`${daVerif.length === 1 ? "1 articolo usa" : daVerif.length + " articoli usano"} una scheda costo generata da un modello (${nomi(daVerif)}): controlla consumi e lavorazioni in Production Sheet e togli la nota "DA VERIFICARE".` });
+      }
       if(provv.length && isOrdine()){
         alerts.push({ level:"warn", title:"Costo provvisorio nel preventivato",
           text:`${provv.length === 1 ? "1 articolo" : provv.length + " articoli"} senza scheda costo (${nomi(provv)}): il margine preventivato non è affidabile. Inserisci il costo reale nel consuntivo.` });
@@ -7277,7 +7284,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     if(!supabase) return;
     try {
       const { data, error } = await supabase.from("Scheda")
-        .select("id,codice,codiceModello,nomeArticolo,categoria,genere,tipo,consumoMateriale,accessori,costoTaglio,costoCucitura,costoStampa,costoRicamo,costoLavorazione,updatedAt")
+        .select("id,codice,codiceModello,nomeArticolo,categoria,genere,tipo,noteRapide,consumoMateriale,accessori,costoTaglio,costoCucitura,costoStampa,costoRicamo,costoLavorazione,updatedAt")
         .in("tipo", ["costo", "preventivo"])
         .order("updatedAt", { ascending: false });
       if(error){ console.error("Production Sheet load error:", error); return; }
@@ -7312,7 +7319,10 @@ ${tabQtaPDF ? `<div class="sec scala">
     const code = normCode(art?.code);
     if(!code) return null;
     const sc = psSchede.find(x => normCode(x.codiceModello) === code);
-    return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc) } : null;
+    // Schede generate in automatico (dal Kit Builder o da modello): si usano,
+    // ma restano "da verificare" finché non si toglie la nota in Production Sheet
+    return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc),
+      verifica: /^\s*DA VERIFICARE/i.test(sc.noteRapide || "") } : null;
   };
   /* Distinta per la riga del kit: il materiale principale (quello che costa
      di più, con un codice in anagrafica) resta cambiabile per il singolo
@@ -7362,6 +7372,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const oldListino = (art) => isAcquisto(art) ? 0 : toNum(art?.base) + toNum(art?.extra);
   const catSrcBadge = (art) => {
     const c = costFor(art);
+    if(c?.src === "ps" && c.verifica) return ' <span class="cat-badge hist" style="color:#9A4A0C;border-color:rgba(232,124,43,.45);background:rgba(232,124,43,.16)">Production Sheet · da verificare</span>';
     if(c?.src === "ps")  return ' <span class="cat-badge ps">Production Sheet</span>';
     if(c?.src === "acq") return ' <span class="cat-badge ps">prezzo d\'acquisto</span>';
     return isAcquisto(art) ? ' <span class="cat-badge prov">senza prezzo d\'acquisto</span>'
