@@ -652,6 +652,9 @@
     .cost-src { font-weight: 700; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; }
     .cost-src.cat { background: rgba(10, 110, 78, .12); color: var(--good); }
     .cost-src.mod { background: rgba(232, 124, 43, .16); color: var(--text); }
+    .cost-src.prov { background: rgba(200, 40, 40, .12); color: var(--bad); border: 1px solid rgba(200, 40, 40, .45); }
+    input.prov-input { border-color: var(--bad) !important; box-shadow: 0 0 0 1px rgba(200, 40, 40, .25); }
+    .cat-badge.prov { background: rgba(200, 40, 40, .12); color: var(--bad); border: 1px solid rgba(200, 40, 40, .4); }
     .cost-src.hist { background: rgba(232, 124, 43, .16); color: #9A4A0C; border: 1px solid rgba(232, 124, 43, .45); }
     .cost-src.manual { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
     .cost-src-ref { color: var(--muted); }
@@ -2688,7 +2691,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v134</span>
+            <span id="buildTxt">build v135</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3705,12 +3708,16 @@
               <label class="lbl">Nome / descrizione <span style="font-weight:400;color:var(--muted)">(opz. — utile per articoli LS24)</span></label>
               <input type="text" id="catalogName" placeholder="es. Maglia Pro Team" autocomplete="off">
             </div>
-            <div class="row2" style="margin-bottom:16px">
+            <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:13px;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="catalogAcquisto" style="width:auto"> Capo acquistato finito (es. LS24): il costo è il prezzo d'acquisto
+            </label>
+            <div class="hint" id="catalogCostoHint" style="margin-bottom:12px">Il costo non si scrive qui: arriva dalla <b>scheda costo in Production Sheet</b> con lo stesso codice.</div>
+            <div class="row2" id="catalogCostoRow" style="margin-bottom:16px;display:none">
               <div class="field">
-                <label class="lbl">Costo base €</label>
+                <label class="lbl">Prezzo d'acquisto €</label>
                 <input type="number" autocomplete="off" id="catalogBase" placeholder="0.00" min="0" step="0.01">
               </div>
-              <div class="field">
+              <div class="field" style="display:none">
                 <label class="lbl">Extra € <span style="font-weight:400;color:var(--muted)">(opz.)</span></label>
                 <input type="number" autocomplete="off" id="catalogExtra" placeholder="0.00" min="0" step="0.01">
               </div>
@@ -4438,7 +4445,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v134";
+  const BUILD = "v135";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4776,7 +4783,7 @@ if("serviceWorker" in navigator) {
      codice: i kit vecchi con nomi generici ("Pantalone") finivano su un
      articolo LS24 qualsiasi con lo stesso nome. */
   const catalogFor = (it) => {
-    const cat = getCatalog();
+    const cat = getFullCatalog();
     if(it.code) return cat.find(a => a.code === it.code && catalogLabel(a) === it.article)
       || cat.find(a => a.code === it.code) || null;
     return cat.find(a => !a.code && catalogLabel(a) === it.article) || null;
@@ -4789,10 +4796,11 @@ if("serviceWorker" in navigator) {
     const it = { id: uid(), article: label, code: art.code || "", tipo: art.tipo || "", genere: art.genere || "",
       line, categoria: artCat(art), base: catBase(art), extra: catExtra(art), qty: toNum(qtyEst.value) || 1,
       isGift: false };
-    // Con il costo di Production Sheet la distinta è quella della scheda
-    const ps = psCostFor(art);
+    // Con il costo di Production Sheet la distinta è quella della scheda;
+    // senza scheda il costo resta vuoto (provvisorio, da scrivere a mano)
+    const ps = costFor(art);
     if(ps) { if(ps.costParts) it.costParts = ps.costParts; }
-    else if(art.costParts) it.costParts = { ...art.costParts };
+    else it.base = "";
     return it;
   };
 
@@ -4987,6 +4995,8 @@ if("serviceWorker" in navigator) {
 
   /* ─── render() ─── */
   const render = () => {
+    const allineati = syncCostiDaPS();
+    if(allineati) toast(`${allineati === 1 ? "1 costo aggiornato" : allineati + " costi aggiornati"} da Production Sheet`, "ok");
     let html = "";
     const ordine = isOrdine();
     const lock   = ordine ? " disabled" : "";
@@ -5013,16 +5023,23 @@ if("serviceWorker" in navigator) {
          preventivo è in sola lettura, e se la scheda è cambiata dopo il
          salvataggio del kit lo si dice, con un clic per allinearsi. Resta
          modificabile solo per articoli manuali o del file storico. */
-      const psArt      = !!(catArt && psCostFor(catArt));
+      const costSrcArt = catArt ? costFor(catArt) : null;
+      const psArt      = !!costSrcArt;
+      const srcName    = costSrcArt?.src === "acq" ? "prezzo d'acquisto" : "Production Sheet";
+      const provv      = isProvv(it);
       const baseLocked = ordine || psArt;
-      const baseDiff   = catArt && Math.abs(toNum(it.base) - catBase(catArt)) >= 0.005;
-      const costSrc    = !catArt ? `<span class="cost-src manual">manuale</span>`
+      const baseDiff   = psArt && Math.abs(toNum(it.base) - catBase(catArt)) >= 0.005;
+      const oldRef     = catArt && oldListino(catArt) > 0
+        ? ` <span class="cost-src-ref">· vecchio listino ${eur(oldListino(catArt))}, non affidabile</span>` : "";
+      const costSrc    = provv || (!psArt && !psLoaded)
+        ? (psLoaded
+            ? `<span class="cost-src prov" title="Nessuna scheda costo in Production Sheet: il costo è scritto a mano">✕ costo provvisorio</span>${oldRef}`
+            : `<span class="cost-src manual">in attesa di Production Sheet</span>`)
         : !baseDiff
-          ? (psArt ? `<span class="cost-src cat">capo da Production Sheet</span>${stampaRef}`
-                   : `<span class="cost-src hist" title="Nessuna scheda costo in Production Sheet per questo codice: costo dal vecchio listino, da verificare">⚠ file storico, non verificato</span>${stampaRef}`)
-          : psArt
-            ? `<span class="cost-src mod">Production Sheet ora ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">aggiorna</button>`}${stampaRef}`
-            : `<span class="cost-src mod">capo modificato</span> <span class="cost-src-ref">file storico ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">ripristina</button>`}${stampaRef}`;
+          ? (costSrcArt?.verifica
+              ? `<span class="cost-src hist" title="Scheda costo generata da un modello: controllala in Production Sheet e togli la nota DA VERIFICARE">⚠ Production Sheet ${esc(costSrcArt.codice || "")}, da verificare</span>${stampaRef}`
+              : `<span class="cost-src cat">${costSrcArt?.src === "acq" ? "prezzo d'acquisto" : "capo da Production Sheet"}</span>${stampaRef}`)
+          : `<span class="cost-src mod">${srcName} ora ${eur(catBase(catArt))}</span>${ordine ? "" : ` <button type="button" class="cost-src-reset" data-act="costReset" data-id="${it.id}">aggiorna</button>`}${stampaRef}`;
 
       /* In stato Ordine il preventivato è bloccato e sotto compare il
          consuntivo: il costo del capo rifatto in Production Sheet dopo
@@ -5076,7 +5093,7 @@ if("serviceWorker" in navigator) {
       <div class="art-pricing">
         <div class="art-field">
           <label>${ordine ? "Capo prev. €" : "Costo capo €"}</label>
-          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off"${baseLocked ? " disabled" : ""}${psArt && !ordine ? ' title="Costo da Production Sheet: si modifica lì"' : ""}>
+          <input data-act="base" data-id="${it.id}" value="${it.base}" inputmode="decimal" autocomplete="off"${provv ? ' class="prov-input" placeholder="costo a mano"' : ""}${baseLocked ? " disabled" : ""}${psArt && !ordine ? ' title="Costo da Production Sheet: si modifica lì"' : ""}>
         </div>
         <div class="art-field">
           <label>${ordine ? "Stampa/Ric. prev. €" : "Stampa/Ric. €"}</label>
@@ -5264,7 +5281,7 @@ if("serviceWorker" in navigator) {
 
   const renderPicker = () => {
     if(!pickerList) return;
-    const catalog = getCatalog();
+    const catalog = getFullCatalog();
     if(!catalog.length){
       pickerList.innerHTML = "";
       if(pickerEmpty) pickerEmpty.style.display = "";
@@ -5273,7 +5290,7 @@ if("serviceWorker" in navigator) {
     if(pickerEmpty) pickerEmpty.style.display = "none";
 
     const rowHtml = (art, line) => {
-      const priceStr = `Costo: ${eur(catBase(art))}` + (catExtra(art) > 0 ? ` · Stampa/ricamo: ${eur(catExtra(art))}` : "");
+      const priceStr = costFor(art) ? `Costo: ${eur(catBase(art))}` : (isAcquisto(art) ? "senza prezzo d'acquisto: costo provvisorio" : psLoaded ? "senza scheda costo: costo provvisorio" : "costo da Production Sheet");
       const label = catalogLabel(art);
       const meta  = [catalogMeta(art), otherLinesTxt(art, line)].filter(Boolean).join(" · ");
       const inKit = items.filter(it => it.article === label).length;
@@ -5304,7 +5321,7 @@ if("serviceWorker" in navigator) {
 
     pickerList.querySelectorAll("[data-cid]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+        const art = getFullCatalog().find(a => a.id === btn.getAttribute("data-cid"));
         if(!art) return;
         const line  = btn.getAttribute("data-cline") || artLines(art)[0];
         const label = catalogLabel(art);
@@ -6218,13 +6235,11 @@ if("serviceWorker" in navigator) {
        Production Sheet. L'etichetta sulla riga da sola non bastava. */
     {
       const righe = items.filter(it => toNum(it.qty) > 0);
-      const storico = [], manuali = [], cambiati = [];
+      const provv = psLoaded ? provvRows() : [], cambiati = [];
       righe.forEach(it => {
         const art = catalogFor(it);
-        if(!art){ manuali.push(it); return; }
-        const ps = psCostFor(art);
-        if(!ps){ storico.push(it); return; }
-        if(Math.abs(toNum(it.base) - ps.totale) >= 0.005) cambiati.push({ it, ps: ps.totale });
+        const ps = art && costFor(art);
+        if(ps && Math.abs(toNum(it.base) - ps.totale) >= 0.005) cambiati.push({ it, ps: ps.totale });
       });
       const nomi = (arr) => [...new Set(arr.map(it => it.article))].join(", ");
       if(cambiati.length && !isOrdine()){
@@ -6232,12 +6247,17 @@ if("serviceWorker" in navigator) {
         alerts.push({ level: delta > 0 ? "bad" : "warn", title:"Costo Production Sheet cambiato",
           text:`${cambiati.length === 1 ? "1 articolo ha" : cambiati.length + " articoli hanno"} un costo capo diverso da Production Sheet oggi (${nomi(cambiati.map(c => c.it))}): ${delta >= 0 ? "+" : "−"}${eur(Math.abs(delta))} sull'ordine. Premi "aggiorna" sulla riga per allinearti.` });
       }
-      if(storico.length || manuali.length){
-        const parti = [];
-        if(storico.length) parti.push(`${storico.length === 1 ? "1 articolo usa" : storico.length + " articoli usano"} il costo del file storico, senza scheda costo in Production Sheet (${nomi(storico)})`);
-        if(manuali.length) parti.push(`${manuali.length === 1 ? "1 articolo ha" : manuali.length + " articoli hanno"} un costo inserito a mano (${nomi(manuali)})`);
-        alerts.push({ level:"warn", title:"Costo non verificato",
-          text:`${parti.join("; ")}. Il margine può essere sbagliato: crea la scheda costo in Production Sheet prima di mandare il prezzo.` });
+      const daVerif = righe.filter(it => { const a = catalogFor(it); const c = a && costFor(a); return c && c.verifica; });
+      if(daVerif.length){
+        alerts.push({ level:"warn", title:"Costo da verificare",
+          text:`${daVerif.length === 1 ? "1 articolo usa" : daVerif.length + " articoli usano"} una scheda costo generata da un modello (${nomi(daVerif)}): controlla consumi e lavorazioni in Production Sheet e togli la nota "DA VERIFICARE".` });
+      }
+      if(provv.length && isOrdine()){
+        alerts.push({ level:"warn", title:"Costo provvisorio nel preventivato",
+          text:`${provv.length === 1 ? "1 articolo" : provv.length + " articoli"} senza scheda costo (${nomi(provv)}): il margine preventivato non è affidabile. Inserisci il costo reale nel consuntivo.` });
+      } else if(provv.length){
+        alerts.push({ level:"bad", title:"Costo provvisorio",
+          text:`${provv.length === 1 ? "1 articolo è" : provv.length + " articoli sono"} senza costo verificato (${nomi(provv)}): il costo è scritto a mano e il margine non è affidabile. Finché c'è, il kit non si invia a Order App e non si stampa. Crea la scheda costo in Production Sheet (o, per i capi acquistati come LS24, metti il prezzo d'acquisto in Articoli): il costo si aggiorna da solo.` });
       }
     }
 
@@ -6405,6 +6425,7 @@ if("serviceWorker" in navigator) {
   };
 
   const printPDF = () => {
+    if(provvBlock("stampare il preventivo")) return;
     if(document.getElementById("kTotalCost").textContent === "—"){
       toast("Inserisci i dati prima di stampare", "warn"); return;
     }
@@ -7256,15 +7277,19 @@ ${tabQtaPDF ? `<div class="sec scala">
      Il calcolo è lo stesso di Production Sheet (calcolaRiepilogoCosti):
      consumi × prezzo attuale del tessuto + accessori + lavorazioni. */
   let psSchede = [];
+  // Finché le schede non sono arrivate non si può dire se un costo è
+  // provvisorio: senza questo flag ogni riga lampeggerebbe in rosso al login.
+  let psLoaded = false;
   const loadCostiProduzione = async () => {
     if(!supabase) return;
     try {
       const { data, error } = await supabase.from("Scheda")
-        .select("id,codice,codiceModello,tipo,consumoMateriale,accessori,costoTaglio,costoCucitura,costoStampa,costoRicamo,costoLavorazione,updatedAt")
+        .select("id,codice,codiceModello,nomeArticolo,categoria,genere,tipo,noteRapide,consumoMateriale,accessori,costoTaglio,costoCucitura,costoStampa,costoRicamo,costoLavorazione,updatedAt")
         .in("tipo", ["costo", "preventivo"])
         .order("updatedAt", { ascending: false });
       if(error){ console.error("Production Sheet load error:", error); return; }
       psSchede = Array.isArray(data) ? data : [];
+      psLoaded = true;
     } catch(e){ console.error("Production Sheet load exception:", e); }
   };
   const psCostoUnitario = (m) => {
@@ -7294,7 +7319,10 @@ ${tabQtaPDF ? `<div class="sec scala">
     const code = normCode(art?.code);
     if(!code) return null;
     const sc = psSchede.find(x => normCode(x.codiceModello) === code);
-    return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc) } : null;
+    // Schede generate in automatico (dal Kit Builder o da modello): si usano,
+    // ma restano "da verificare" finché non si toglie la nota in Production Sheet
+    return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc),
+      verifica: /^\s*DA VERIFICARE/i.test(sc.noteRapide || "") } : null;
   };
   /* Distinta per la riga del kit: il materiale principale (quello che costa
      di più, con un codice in anagrafica) resta cambiabile per il singolo
@@ -7318,11 +7346,68 @@ ${tabQtaPDF ? `<div class="sec scala">
       altro: cent(psTotale(sc) - tessuto), altroNome: "Production Sheet", fonte: "ps" };
   };
   // Costo del capo e stampa di un articolo di catalogo, con Production Sheet se c'è
-  const catBase  = (art) => { const ps = psCostFor(art); return ps ? ps.totale : toNum(art.base); };
-  const catExtra = (art) => psCostFor(art) ? 0 : toNum(art.extra);
-  const catSrcBadge = (art) => psCostFor(art)
-    ? ' <span class="cat-badge ps">Production Sheet</span>'
-    : ' <span class="cat-badge hist">file storico</span>';
+  /* Production Sheet è l'unica fonte del costo (v135). Il costo salvato nel
+     catalogo (file storico, vecchio listino) non si usa più: un articolo
+     senza scheda costo entra nel kit a "costo provvisorio", scritto a mano,
+     in rosso e bloccante per l'invio. Il vecchio valore resta solo come
+     riferimento (oldListino). */
+  /* Due fonti di costo verificate, una per tipo di articolo:
+     - capi prodotti da DOUBLEU → scheda costo in Production Sheet;
+     - capi acquistati finiti (LS24) → prezzo d'acquisto nel catalogo. Non
+       stanno in Production Sheet perché non si producono; il prezzo è
+       sull'articolo, non sul codice (la BGL bianca e la colorata hanno lo
+       stesso codice fornitore e prezzi diversi).
+     Senza scheda e senza prezzo d'acquisto il costo è provvisorio. Un
+     articolo LS senza indicazione esplicita è considerato acquistato. */
+  const isAcquisto = (art) => art?.acquisto === true
+    || (art?.acquisto === undefined && /^LS/i.test(String(art?.code || "").trim()));
+  const costFor = (art) => {
+    if(!art) return null;
+    if(isAcquisto(art)) return toNum(art.base) > 0 ? { totale: toNum(art.base), src: "acq" } : null;
+    const ps = psCostFor(art);
+    return ps ? { ...ps, src: "ps" } : null;
+  };
+  const catBase  = (art) => { const c = costFor(art); return c ? c.totale : 0; };
+  const catExtra = () => 0;
+  const oldListino = (art) => isAcquisto(art) ? 0 : toNum(art?.base) + toNum(art?.extra);
+  const catSrcBadge = (art) => {
+    const c = costFor(art);
+    if(c?.src === "ps" && c.verifica) return ' <span class="cat-badge hist" style="color:#9A4A0C;border-color:rgba(232,124,43,.45);background:rgba(232,124,43,.16)">Production Sheet · da verificare</span>';
+    if(c?.src === "ps")  return ' <span class="cat-badge ps">Production Sheet</span>';
+    if(c?.src === "acq") return ' <span class="cat-badge ps">prezzo d\'acquisto</span>';
+    return isAcquisto(art) ? ' <span class="cat-badge prov">senza prezzo d\'acquisto</span>'
+      : ' <span class="cat-badge prov">senza scheda costo</span>';
+  };
+  // Riga del kit a costo provvisorio: senza scheda costo o inserita a mano
+  const isProvv = (it) => {
+    if(!psLoaded) return false;
+    const art = catalogFor(it);
+    return !art || !costFor(art);
+  };
+  const provvRows = () => items.filter(it => toNum(it.qty) > 0 && isProvv(it));
+  const provvBlock = (azione) => {
+    if(isOrdine()) return false;   // in Ordine conta il consuntivo, non si blocca
+    const n = provvRows().length;
+    if(!n) return false;
+    toast(`Non puoi ${azione}: ${n === 1 ? "1 articolo è" : n + " articoli sono"} a costo provvisorio. Crea la scheda costo in Production Sheet.`, "warn", 6000);
+    return true;
+  };
+  /* Prima dell'invio a Order App il costo segue Production Sheet da solo:
+     il prezzo non è ancora uscito, quindi non c'è niente da proteggere. Dopo
+     l'invio (o in Ordine) resta fermo e si avvisa se la scheda cambia. */
+  const syncCostiDaPS = () => {
+    if(!psLoaded || isOrdine() || oaQuote) return 0;
+    let n = 0;
+    items.forEach(it => {
+      const art = catalogFor(it); if(!art) return;
+      const ps = costFor(art); if(!ps) return;
+      if(Math.abs(toNum(it.base) - ps.totale) < 0.005) return;
+      it.base = ps.totale;
+      if(ps.costParts) it.costParts = ps.costParts; else delete it.costParts;
+      n++;
+    });
+    return n;
+  };
 
   const resetMaterialeForm = () => {
     materialeEditId = null;
@@ -9101,6 +9186,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const oaCreateQuote = async () => {
     const ex = oaExport();
     if(oaBusy || !ex || !clientRef || !oa || !oaEmail) return;
+    if(provvBlock("creare il preventivo")) return;
     const cl = oaClientFields();
     const paying = ex.quantity - ex.omaggio;
     const imponibile = paying * ex.price;
@@ -9191,6 +9277,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   const oaUpdateQuote = async () => {
     const ex = oaExport();
     if(oaBusy || !ex || !oaQuote || !oa || !oaEmail) return;
+    if(provvBlock("aggiornare il preventivo")) return;
     oaBusy = true; renderOaQuoteCard();
     try {
       const id = oaQuote.id;
@@ -9288,6 +9375,7 @@ ${tabQtaPDF ? `<div class="sec scala">
   let oaPicking = false;
   const oaAddToQuote = async (targetId = null) => {
     if(oaBusy || oaPicking || !clientRef || !oa || !oaEmail || !oaExport()) return;
+    if(provvBlock("aggiungere il kit al preventivo")) return;
     oaPicking = true;
     // La spedizione è già nel primo kit del preventivo: qui va tolta, e il
     // prezzo si ricalcola senza. Se si annulla torna com'era.
@@ -10689,7 +10777,8 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     // ridisegna solo se cambia qualcosa, altrimenti un clic sul pulsante
     // potrebbe cadere nel mezzo di un ridisegno.
     const totals = oaQuote && oaEmail ? quoteTotalsHtml(oaQuote.id) : "";
-    const sig = stableJson([oaEmail, clientRef, oaQuote, oaPendingAdd, oaBusy, oaQuoteInfo[oaQuote?.id] || null, oaExportHash(oaExport()), kitStato?.value, totals]);
+    const nProvv = provvRows().length;
+    const sig = stableJson([oaEmail, clientRef, oaQuote, oaPendingAdd, oaBusy, oaQuoteInfo[oaQuote?.id] || null, oaExportHash(oaExport()), kitStato?.value, totals, nProvv]);
     if(!force && sig === oaCardSig) return;
     oaCardSig = sig;
     const body = (html) => { box.innerHTML = `<div class="card-title">Preventivo in Order App</div>${html}`; };
@@ -10749,6 +10838,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     }
     if(!clientRef) { body(`<div class="hint">Scegli il club dall'anagrafica (campo Cliente, step Articoli) per creare il preventivo.</div>`); return; }
     if(!ex) { body(`<div class="hint">Completa il kit (quantità stimata e articoli) per ${oaPendingAdd ? `aggiungerlo al preventivo ${esc(oaPendingAdd.id)}` : "creare il preventivo"}.</div>`); return; }
+    if(nProvv) { body(`<div class="oa-qc-warn">✕ ${nProvv === 1 ? "1 articolo è" : nProvv + " articoli sono"} a costo provvisorio: crea la scheda costo in Production Sheet prima di inviare il preventivo.</div>`); return; }
     const cl = oaClientFields();
     body(`
       <div class="oa-qc-sum">
@@ -11554,6 +11644,33 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     syncCatsFromCatalog(arr);     // categorie create dall'utente o arrivate dal cloud
     return arr;
   };
+  /* Le schede costo di Production Sheet senza un articolo di catalogo con lo
+     stesso codice compaiono da sole tra gli Articoli: la scheda è il punto
+     di partenza, qui si aggiungono solo linea e categoria. Non si salvano
+     finché non le modifichi (allora diventano un articolo vero). */
+  const psVirtualArticles = (stored) => {
+    if(!psLoaded) return [];
+    const have = new Set(stored.map(a => normCode(a.code)).filter(Boolean));
+    const seen = new Set(), out = [];
+    const suff = { Junior: " · Kids", Donna: " · Donna", Uomo: " · Uomo" };
+    psSchede.forEach(sc => {   // già in ordine di aggiornamento, la più recente prima
+      const code = normCode(sc.codiceModello);
+      if(!code || have.has(code) || seen.has(code)) return;
+      seen.add(code);
+      const cat  = String(sc.categoria || "").trim();
+      const tipo = CATALOG_TIPI.find(t => cat.toLowerCase().includes(t.toLowerCase())) || "";
+      const nome = String(sc.nomeArticolo || "").trim() || String(sc.codiceModello).trim();
+      const sfx  = suff[sc.genere] && !nome.includes("·") ? suff[sc.genere] : "";
+      out.push(normArticle({ id: "ps:" + code, code: String(sc.codiceModello).trim(), name: nome + sfx, tipo,
+        genere: CATALOG_GENERI.includes(sc.genere) ? sc.genere : "Unisex",
+        linee: [code.startsWith("LS") ? "LS24" : "PREMIUM"], categoria: cat, fromPS: true }));
+    });
+    syncCatsFromCatalog(out);
+    return out;
+  };
+  // Catalogo da mostrare e da cui scegliere: articoli salvati + schede nuove
+  const getFullCatalog = () => { const st = getCatalog(); return [...st, ...psVirtualArticles(st)]; };
+
   const setCatalog = (arr) => {
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(arr)); } catch(e) {}
     syncCatalogToCloud(); // fire-and-forget: il catalogo sopravvive ai wipe di iOS
@@ -11599,7 +11716,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
   /* ─── Articoli render ─── */
   const renderArticoli = (fresh) => {
     if(fresh === true) catalogOpen.clear();
-    const catalog = getCatalog();
+    const catalog = getFullCatalog();
     fillCatSelect("catalogCategoria");
     fillLineChecks("catalogLinee");
     const listEl  = document.getElementById("catalogList");
@@ -11612,17 +11729,17 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       } else {
         if(emptyEl) emptyEl.style.display = "none";
         // Avanzamento della migrazione dei costi verso Production Sheet
-        const nPs = catalog.filter(a => psCostFor(a)).length;
+        const nPs = catalog.filter(a => costFor(a)).length;
         listEl.insertAdjacentHTML("afterbegin", `<div class="catalog-group hint" style="margin:0 0 10px">
-          Costo da <b>Production Sheet</b>: ${nPs} di ${catalog.length} articoli · gli altri usano il <b>file storico</b>.</div>`);
+          Costo verificato (<b>Production Sheet</b> o <b>prezzo d'acquisto</b>): ${nPs} di ${catalog.length} articoli${catalog.length > nPs ? ` · <b style="color:var(--bad)">${catalog.length - nPs} senza costo</b>: nel kit entrano a costo provvisorio finché non crei la scheda (o non metti il prezzo d'acquisto)` : ""}.</div>`);
 
         const rowHtml = (art, line) => {
-          const priceStr = `Costo: ${eur(catBase(art))}` + (catExtra(art) > 0 ? ` · Stampa/ricamo: ${eur(catExtra(art))}` : "");
+          const priceStr = costFor(art) ? `Costo: ${eur(catBase(art))}` : "Costo: —";
           const label = catalogLabel(art);
           const meta  = [catalogMeta(art), otherLinesTxt(art, line)].filter(Boolean).join(" · ");
           const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
-          const distintaBadge = catSrcBadge(art);
+          const distintaBadge = catSrcBadge(art) + (art.fromPS ? ' <span class="cat-badge" title="Scheda costo nuova in Production Sheet: controlla linea e categoria">nuovo</span>' : "");
           return `<div class="catalog-item">
             <div class="catalog-item-info">
               <div class="catalog-item-name">${esc(label)}${inKitBadge}${distintaBadge}</div>
@@ -11630,9 +11747,9 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
             </div>
             <div class="catalog-item-actions">
               <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cline="${esc(line)}" data-cact="add">+ Kit</button>
-              <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="costo">Distinta</button>
+              ${art.fromPS ? "" : `<button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="costo">Distinta</button>`}
               <button class="secondary" style="font-size:12px;padding:5px 8px" data-cid="${art.id}" data-cact="edit">Modifica</button>
-              <button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-cid="${art.id}" data-cact="del">✕</button>
+              ${art.fromPS ? "" : `<button class="ghost" style="font-size:12px;padding:5px 8px;color:var(--bad)" data-cid="${art.id}" data-cact="del">✕</button>`}
             </div>
           </div>`;
         };
@@ -11658,7 +11775,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
 
         listEl.querySelectorAll("[data-cact='add']").forEach(btn => {
           btn.addEventListener("click", () => {
-            const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+            const art = getFullCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
             const line = btn.getAttribute("data-cline") || artLines(art)[0];
             const label = catalogLabel(art);
@@ -11679,7 +11796,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
 
         listEl.querySelectorAll("[data-cact='edit']").forEach(btn => {
           btn.addEventListener("click", () => {
-            const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
+            const art = getFullCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
             document.getElementById("catalogEditId").value    = art.id;
             document.getElementById("catalogCode").value      = art.code || "";
@@ -11690,6 +11807,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
             setLineChecks("catalogLinee", artLines(art));
             document.getElementById("catalogBase").value      = art.base || "";
             document.getElementById("catalogExtra").value     = art.extra || "";
+            setAcquistoUI(isAcquisto(art));
             document.getElementById("catalogFormTitle").textContent = "Modifica articolo";
             const form = document.getElementById("catalogForm");
             form.style.display = "";
@@ -11720,6 +11838,17 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     if(sel) sel.innerHTML = CATALOG_TIPI.map(t => `<option value="${t}">${t}</option>`).join("");
   })();
 
+  // Prezzo d'acquisto visibile solo per i capi acquistati finiti
+  const setAcquistoUI = (on) => {
+    const cb = document.getElementById("catalogAcquisto");
+    if(cb) cb.checked = !!on;
+    const row = document.getElementById("catalogCostoRow");
+    const hint = document.getElementById("catalogCostoHint");
+    if(row) row.style.display = on ? "" : "none";
+    if(hint) hint.style.display = on ? "none" : "";
+  };
+  document.getElementById("catalogAcquisto")?.addEventListener("change", (e) => setAcquistoUI(e.target.checked));
+
   const resetCatalogForm = () => {
     document.getElementById("catalogEditId").value    = "";
     document.getElementById("catalogCode").value      = "";
@@ -11730,6 +11859,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     setLineChecks("catalogLinee", ["PREMIUM"]);
     document.getElementById("catalogBase").value      = "";
     document.getElementById("catalogExtra").value     = "";
+    setAcquistoUI(false);
   };
 
   const _btnAddCatalogItem = document.getElementById("btnAddCatalogItem");
@@ -11750,14 +11880,18 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     const categoria = catSelValue("catalogCategoria");
     const linee     = getLineChecks("catalogLinee");
     const base      = parseFloat(document.getElementById("catalogBase").value)  || 0;
+    const acquisto  = !!document.getElementById("catalogAcquisto")?.checked;
     const extra     = parseFloat(document.getElementById("catalogExtra").value) || 0;
     const editId    = document.getElementById("catalogEditId").value;
     const catalog   = getCatalog();
-    if(editId) {
+    // Scheda nuova da Production Sheet: salvandola diventa un articolo vero
+    if(editId && editId.startsWith("ps:")) {
+      catalog.push({ id: uid(), code, tipo, genere, name, linee, categoria, acquisto, base: acquisto ? base : 0, extra: 0 });
+    } else if(editId) {
       const idx = catalog.findIndex(a => a.id === editId);
       if(idx >= 0) {
         const prev = catalog[idx];
-        catalog[idx] = { ...prev, code, tipo, genere, name, linee, categoria, base, extra };
+        catalog[idx] = { ...prev, code, tipo, genere, name, linee, categoria, acquisto, base, extra };
         // Ritoccando base/extra a mano la distinta non somma più: tenerla
         // significherebbe mostrare un badge "distinta" che dice il falso.
         if(prev.costParts && (toNum(prev.base) !== base || toNum(prev.extra) !== extra)) {
@@ -11765,7 +11899,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
         }
       }
     } else {
-      catalog.push({ id: uid(), code, tipo, genere, name, linee, categoria, base, extra });
+      catalog.push({ id: uid(), code, tipo, genere, name, linee, categoria, acquisto, base, extra });
     }
     setCatalog(catalog);
     document.getElementById("catalogForm").style.display = "none";
