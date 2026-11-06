@@ -2691,7 +2691,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v136</span>
+            <span id="buildTxt">build v137</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4445,7 +4445,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v136";
+  const BUILD = "v137";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -8531,18 +8531,33 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   // Da riferimento salvato nel kit a club attuale in Order App. Una
   // trattativa vinta punta al cliente creato da Order App: stessa chiave.
+  // Clienti dell'anagrafica con esattamente questo nome (normalizzato).
+  const clientsByName = (name) => {
+    const n = normName(name);
+    return n ? oaClients.filter(c => normName(c.name) === n) : [];
+  };
   const resolveRef = (ref) => {
     if(!ref || !ref.id) return null;
     if(ref.src === "prospect") {
       const p = oaProspects.find(x => x.id === ref.id);
       if(p && p.client_id) {
         const c = oaClients.find(x => x.id === p.client_id);
-        return { kind: "cliente", key: "c:" + p.client_id, name: c?.name || p.name };
+        return { kind: "cliente", key: "c:" + p.client_id, name: c?.name || p.name, clientId: p.client_id };
       }
-      return { kind: "trattativa", key: "p:" + ref.id, name: p?.name || ref.name };
+      // Trattativa vinta ma senza aggancio, oppure non più in elenco (unita,
+      // cancellata, doppione): se in anagrafica c'è un solo cliente con lo
+      // stesso nome, il kit segue lui.
+      if(!p || p.stage === "won") {
+        const same = clientsByName(p?.name || ref.name);
+        if(same.length === 1) return { kind: "cliente", key: "c:" + same[0].id, name: same[0].name, clientId: same[0].id };
+      }
+      if(p) return { kind: "trattativa", key: "p:" + ref.id, name: p.name };
+      // Non trovata (o dati Order App non ancora caricati): lo stato non si
+      // conosce, quindi niente badge invece di un "Trattativa" falso.
+      return { kind: null, key: "p:" + ref.id, name: ref.name };
     }
     const c = oaClients.find(x => x.id === ref.id);
-    return { kind: "cliente", key: "c:" + ref.id, name: c?.name || ref.name };
+    return { kind: "cliente", key: "c:" + ref.id, name: c?.name || ref.name, clientId: ref.id };
   };
   const OA_KIND_LABEL = { cliente: "Cliente", trattativa: "Trattativa", none: "Non collegato" };
   const oaBadge = (kind) => kind ? `<span class="oa-badge oa-${kind}">${OA_KIND_LABEL[kind] || kind}</span>` : "";
@@ -9137,8 +9152,8 @@ ${tabQtaPDF ? `<div class="sec scala">
       city = oaClients.find(c => c.id === clientRef.id)?.city || null;
     } else if(clientRef?.src === "prospect") {
       const p = oaProspects.find(x => x.id === clientRef.id);
-      clientId = p?.client_id || null;
-      city = p?.city || null;
+      clientId = p?.client_id || r?.clientId || null;
+      city = p?.city || (r?.clientId ? oaClients.find(c => c.id === r.clientId)?.city : null) || null;
     }
     return { name: r?.name || clientRef?.name || clientName.value.trim(), clientId, city };
   };
@@ -10520,8 +10535,12 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     try {
       let clientId = null, city = null;
       if(ref.src === "client") { clientId = ref.id; city = oaClients.find(c => c.id === ref.id)?.city || null; }
-      else if(ref.src === "prospect") { const pr = oaProspects.find(x => x.id === ref.id); clientId = pr?.client_id || null; city = pr?.city || null; }
       const r0 = resolveRef(ref);
+      if(ref.src === "prospect") {
+        const pr = oaProspects.find(x => x.id === ref.id);
+        clientId = pr?.client_id || r0?.clientId || null;
+        city = pr?.city || (r0?.clientId ? oaClients.find(c => c.id === r0.clientId)?.city : null) || null;
+      }
       const id = await oaNextQuoteId();
       const ex0 = ordered[0].ex;
       const p_order = {
