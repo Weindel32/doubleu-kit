@@ -2696,7 +2696,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v140</span>
+            <span id="buildTxt">build v141</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4452,7 +4452,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v140";
+  const BUILD = "v141";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -7288,13 +7288,19 @@ ${tabQtaPDF ? `<div class="sec scala">
      cloud e vale per id: un articolo nuovo con lo stesso nome non è toccato. */
   const CATALOG_DELETED_KEY = "doubleu_catalog_deleted";
   // Eliminati senza passare dall'app, prima che esistesse l'elenco
+  /* Una lapide vale per id; con "esatto" solo per quell'id CON quel nome:
+     serve per le copie col nome vecchio che hanno lo stesso id
+     dell'articolo da tenere. */
   const CATALOG_DELETED_SEED = [
     { id: "6567ff47abc61a6a1a0393cfcb9", name: "Sweatshirt · Donna", code: "DUSP 217", at: 1795795200000 },  // modello inesistente (verificato col modellista)
+    { id: "8de8d10fd655f819f43a442dd", name: "Slam", code: "LS304", esatto: true, at: 1795810000000 },     // resta "T-Shirt Slam Uomo"
+    { id: "c257e7ebc21c219efde41bd6", name: "T-shirt IMOLA", code: "LS427", at: 1795810000000 },          // resta "T-Shirt Imola Uomo"
   ];
+  const deadKey = (d) => d.esatto ? d.id + "|" + String(d.name || "").toLowerCase() : d.id;
   const mergeDeleted = (...lists) => {
-    const byId = new Map();
-    lists.forEach(l => (Array.isArray(l) ? l : []).forEach(d => { if(d?.id && !byId.has(d.id)) byId.set(d.id, d); }));
-    return [...byId.values()];
+    const byKey = new Map();
+    lists.forEach(l => (Array.isArray(l) ? l : []).forEach(d => { if(d?.id && !byKey.has(deadKey(d))) byKey.set(deadKey(d), d); }));
+    return [...byKey.values()];
   };
   const getDeletedCatalog = () => {
     let arr = [];
@@ -7304,7 +7310,11 @@ ${tabQtaPDF ? `<div class="sec scala">
   const setDeletedCatalog = (arr) => {
     try { localStorage.setItem(CATALOG_DELETED_KEY, JSON.stringify(mergeDeleted(arr).slice(-1000))); } catch(e) {}
   };
-  const notDeleted = (dead) => { const ids = new Set(dead.map(d => d.id)); return (a) => !ids.has(a?.id); };
+  const notDeleted = (dead) => {
+    const ids   = new Set(dead.filter(d => !d.esatto).map(d => d.id));
+    const esatti = new Set(dead.filter(d => d.esatto).map(deadKey));
+    return (a) => !ids.has(a?.id) && !esatti.has((a?.id || "") + "|" + String(a?.name || "").toLowerCase());
+  };
 
   const syncCatalogToCloud = async () => {
     const row = await saveSpecialRow(CLOUD_CATALOG_NAME,
@@ -7815,7 +7825,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     // Il cloud ha ancora un eliminato, o non conosce tutte le lapidi (un
     // dispositivo con la versione vecchia le cancella salvando): va riscritto
     const cloudIndietro = cloudItems.length !== cloudRaw.length
-      || dead.some(d => !cloudDead.some(c => c?.id === d.id));
+      || dead.some(d => !cloudDead.some(c => c?.id && deadKey(c) === deadKey(d)));
     const local = getCatalog().filter(vivo);
     if(!cloudItems.length){
       // Cloud vuoto: non è una migrazione riuscita, il flag resta da fare così
@@ -7837,10 +7847,23 @@ ${tabQtaPDF ? `<div class="sec scala">
        direttamente nel database) veniva sovrascritta al primo salvataggio
        del catalogo. Dal locale si aggiungono solo gli articoli che il cloud
        non ha ancora. */
-    const byName = new Map();
-    local.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
-    cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
-    const merged = [...byName.values()];
+    /* Stesso articolo = stesso id. Confrontando solo il nome, un articolo
+       rinominato tornava con il nome vecchio dalla copia di un altro
+       dispositivo: due righe con lo stesso id ("Slam" accanto a "T-Shirt
+       Slam Uomo"), ed eliminarne una le cancellava entrambe. Nel cloud, se
+       un id compare due volte, vale la prima riga (le copie tornate dai
+       dispositivi finiscono in fondo). Dal locale si aggiungono solo
+       articoli con un id e un nome che il cloud non ha. */
+    const keyOf = (a) => a?.id ? "id:" + a.id : "nome:" + String(a?.name || "").toLowerCase();
+    const byKey = new Map(), nomiCloud = new Set();
+    cloudItems.forEach(a => {
+      if(!a?.name || byKey.has(keyOf(a))) return;
+      byKey.set(keyOf(a), a);
+      nomiCloud.add(a.name.toLowerCase());
+    });
+    const soloLocali = local.filter(a => a?.name && !byKey.has(keyOf(a)) && !nomiCloud.has(a.name.toLowerCase()));
+    soloLocali.forEach(a => { if(!byKey.has(keyOf(a))) byKey.set(keyOf(a), a); });
+    const merged = [...byKey.values()];
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(merged)); } catch(e) {}
     if(merged.length !== cloudItems.length || cloudIndietro) syncCatalogToCloud();
   };
