@@ -2218,6 +2218,8 @@
     .ao-in { width: 100%; max-width: 110px; text-align: right; padding: 6px 8px; font-size: 13.5px; font-variant-numeric: tabular-nums; margin-left: auto; display: block; }
     .ao-was { display: block; font-size: 11px; color: var(--muted); text-decoration: line-through; margin-top: 2px; min-height: 0; }
     .ao-was:empty { display: none; }
+    .ao-tot { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+    .ao-tot:empty { display: none; }
     .ao-tr.is-sim { background: rgba(232, 124, 43, .07); }
     .ao-gifts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .ao-gift { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
@@ -2696,7 +2698,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v141</span>
+            <span id="buildTxt">build v142</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4452,7 +4454,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v141";
+  const BUILD = "v142";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -9984,11 +9986,11 @@ ${tabQtaPDF ? `<div class="sec scala">
         <div id="aoTop"></div>
         <div class="rz-section">Per builder <span class="ao-sec-hint">prezzo e quantità si possono simulare</span></div>
         <div class="ao-table ao-table-sim">
-          <div class="ao-tr ao-th"><span>Builder</span><span>Quantità</span><span>Prezzo ${rows.some(r => r.base.vatOn) ? "(IVA incl.)" : ""}</span><span>Minimo trattativa</span><span>Margine</span><span>Margine €</span></div>
+          <div class="ao-tr ao-th"><span>Builder</span><span>Quantità</span><span>Prezzo cad. ${rows.some(r => r.base.vatOn) ? "(IVA incl.)" : ""}</span><span>Minimo cad.</span><span>Margine</span><span>Margine € (riga)</span></div>
           ${rows.map((r, i) => `<div class="ao-tr" data-ao-row="${i}">
             <span class="ao-td-name">${esc(variantName(r.k))}${r.base.staff ? ` <small>+ ${r.base.staff} staff omaggio</small>` : ""}</span>
             <span><input class="ao-in" data-ao-qty="${i}" inputmode="numeric" autocomplete="off" value="${r.ov?.qty || Math.round(r.base.qty)}"><small class="ao-was" data-ao-wasq="${i}"></small></span>
-            <span><input class="ao-in" data-ao-price="${i}" inputmode="decimal" autocomplete="off" value="${(r.ov?.price || Math.round(r.base.price * 100) / 100).toFixed(2).replace(".", ",")}"><small class="ao-was" data-ao-wasp="${i}"></small></span>
+            <span><input class="ao-in" data-ao-price="${i}" inputmode="decimal" autocomplete="off" value="${(r.ov?.price || Math.round(r.base.price * 100) / 100).toFixed(2).replace(".", ",")}"><small class="ao-was" data-ao-wasp="${i}"></small><small class="ao-tot" data-ao-tot="${i}"></small></span>
             <span data-ao-min="${i}"></span>
             <span data-ao-m="${i}"></span>
             <span data-ao-p="${i}"></span>
@@ -10311,6 +10313,9 @@ ${tabQtaPDF ? `<div class="sec scala">
       set(`[data-ao-p="${i}"]`, eur(e.profit));
       set(`[data-ao-wasq="${i}"]`, r.ov?.qty ? `era ${Math.round(r.base.qty)}` : "");
       set(`[data-ao-wasp="${i}"]`, r.ov?.price ? `era ${eur(r.base.price)}` : "");
+      // Totale della riga: prezzo e minimo sono per pezzo, il margine € è sulla riga
+      const q = Math.round(e.qty);
+      set(`[data-ao-tot="${i}"]`, q > 1 ? `${q} × ${eur(e.price)} = ${eur(q * e.price)}` : "");
       document.querySelector(`[data-ao-row="${i}"]`)?.classList.toggle("is-sim", !!r.ov);
     });
 
@@ -10421,10 +10426,10 @@ ${tabQtaPDF ? `<div class="sec scala">
   <span class="tag">USO INTERNO</span></div>
 ${simulating ? `<div class="cmp"><b>Simulazione</b> — margine ordine ${pct(B.margin)} → <b>${pct(S.margin)}</b> (${S.prof - B.prof >= 0 ? "+" : "−"}${eur(Math.abs(S.prof - B.prof))}) · a −20% ${pct(B.lmargin)} → <b>${pct(S.lmargin)}</b> · fatturato ${eur(B.inv)} → <b>${eur(S.inv)}</b></div>` : ""}
 <h2>Per builder</h2>
-<table><thead><tr><th>Builder</th><th>Quantità</th><th>Prezzo${S.vatOn ? " IVA incl." : ""}</th><th>Minimo trattativa</th><th>Margine</th><th>Margine €</th></tr></thead><tbody>
+<table><thead><tr><th>Builder</th><th>Quantità</th><th>Prezzo cad.${S.vatOn ? " IVA incl." : ""}</th><th>Minimo cad.</th><th>Margine</th><th>Margine € (riga)</th></tr></thead><tbody>
 ${rows.map(r => `<tr><td>${esc(variantName(r.k))}${r.sim.staff ? ` <span style="font-weight:400;color:#49769F">+ ${r.sim.staff} staff omaggio</span>` : ""}</td>
   <td>${cell(r.ov?.qty ? Math.round(r.base.qty) : null, Math.round(r.sim.qty), String)}</td>
-  <td>${cell(r.ov?.price ? r.base.price : null, r.sim.price, eur)}</td>
+  <td>${cell(r.ov?.price ? r.base.price : null, r.sim.price, eur)}${Math.round(r.sim.qty) > 1 ? `<div style="font-size:9px;color:#8a9ab5">${Math.round(r.sim.qty)} × ${eur(r.sim.price)} = ${eur(Math.round(r.sim.qty) * r.sim.price)}</div>` : ""}</td>
   <td class="${r.sim.price + 0.005 < r.sim.minPrice ? "bad" : ""}">${eur(r.sim.minPrice)}</td>
   <td class="${r.sim.margin + 5e-4 >= S.target ? "good" : r.sim.margin + 5e-4 >= S.mMin ? "warn" : "bad"}"><b>${pct(r.sim.margin)}</b></td>
   <td>${eur(r.sim.profit)}</td></tr>`).join("")}
