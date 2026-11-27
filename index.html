@@ -2026,7 +2026,7 @@
     /* Articoli come schede prodotto (da tablet in su; su telefono resta la lista) */
     @media (min-width: 861px) {
       #itemsBody { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-      #itemsBody > .hint { grid-column: 1 / -1; }
+      #itemsBody > .hint, #itemsBody > .art-filter-note, #itemsBody > .art-cat-results { grid-column: 1 / -1; }
       #itemsBody .art-card { margin-bottom: 0; display: flex; flex-direction: column; }
       #itemsBody .art-card-main {
         grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 0 12px; align-items: stretch; flex: 1;
@@ -2178,6 +2178,11 @@
     .art-filter-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; padding: 9px 12px;
       border-radius: 10px; background: var(--warn-bg); border: 1px solid var(--warn-bd); font-size: 13px; font-weight: 600; color: var(--text); }
     .art-filter-note button { font-size: 12px; padding: 5px 10px; }
+    .art-cat-results { margin: 4px 0 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); }
+    .art-cat-results-title { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); margin-bottom: 4px; }
+    .art-cat-results .catalog-item { padding: 8px 0; }
+    .art-cat-results .catalog-item-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .art-cat-results .catalog-item-actions button { font-size: 12px; padding: 5px 10px; }
     .oa-qt { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
     .oa-qt-title { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
     .oa-qt-title span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); margin-left: 6px; }
@@ -2691,7 +2696,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v139</span>
+            <span id="buildTxt">build v140</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -4447,7 +4452,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v139";
+  const BUILD = "v140";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -4887,15 +4892,17 @@ if("serviceWorker" in navigator) {
       if(!show) hidden++;
     });
     itemsBody.querySelector(".art-filter-note")?.remove();
+    itemsBody.querySelector(".art-cat-results")?.remove();
+    if(txt) showCatalogResults(txt);
     if(!txt && artFilterLine === "ALL") return;
     const note = document.createElement("div");
     note.className = "art-filter-note";
     const noMatch = txt && hidden === total;
     note.innerHTML = (noMatch
-        ? `Nessun articolo del kit corrisponde a «${esc(artFilterText.trim())}».`
+        ? `Nessun articolo del kit corrisponde a «${esc(artFilterText.trim())}»: sotto quelli del catalogo.`
         : `${hidden} ${hidden === 1 ? "articolo nascosto" : "articoli nascosti"} dal filtro.`)
       + ` <button type="button" class="ghost" data-af="all">Mostra tutti</button>`
-      + (noMatch ? ` <button type="button" class="secondary" data-af="catalog">Cerca nel catalogo</button>` : "");
+      + (noMatch ? ` <button type="button" class="secondary" data-af="catalog">Apri il catalogo</button>` : "");
     if(!hidden && !noMatch) return;
     itemsBody.prepend(note);
     note.querySelector('[data-af="all"]').addEventListener("click", () => { resetArtFilter(); applyArtFilter(); });
@@ -4905,6 +4912,54 @@ if("serviceWorker" in navigator) {
       togglePicker(true);
       if(pickerSearchInput) { pickerSearchInput.value = q; pickerFilterText = q; applyPickerFilter(); pickerSearchInput.focus(); }
     });
+  };
+  /* La ricerca del kit cerca subito anche nel catalogo: prima trovava solo
+     le righe già nel kit, e un articolo ancora da aggiungere sembrava non
+     esistere. I risultati compaiono sotto le righe, con "+ Aggiungi" per
+     linea; la linea scelta con le pill filtra anche questi. */
+  const showCatalogResults = (txt) => {
+    const LIMITE = 12;
+    const trovati = getFullCatalog()
+      .filter(a => artSearchText(a).includes(txt))
+      .filter(a => artFilterLine === "ALL" || artLines(a).includes(artFilterLine));
+    const box = document.createElement("div");
+    box.className = "art-cat-results";
+    if(!trovati.length){
+      box.innerHTML = `<div class="art-cat-results-title">Dal catalogo</div><div class="hint" style="margin:0">Nessun articolo del catalogo corrisponde a «${esc(txt)}».</div>`;
+      itemsBody.appendChild(box);
+      return;
+    }
+    const righe = trovati.slice(0, LIMITE).map(art => {
+      const label = catalogLabel(art);
+      const linee = artFilterLine === "ALL" ? artLines(art) : [artFilterLine];
+      const meta  = catalogMeta(art);
+      const costo = costFor(art) ? `Costo: ${eur(catBase(art))}` : "costo provvisorio";
+      const psNome = psNomeDiverso(art);
+      const inKit = items.filter(it => it.article === label).length;
+      return `<div class="catalog-item">
+        <div class="catalog-item-info">
+          <div class="catalog-item-name">${esc(label)}${inKit ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : ""}</div>
+          <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${costo}${psNome ? ` · in Production Sheet: «${esc(psNome)}»` : ""}</div>
+        </div>
+        <div class="catalog-item-actions">${linee.map(l =>
+          `<button type="button" class="primary" data-cat-add="${esc(art.id)}" data-cat-line="${esc(l)}">+ ${linee.length > 1 ? esc(LINE_LABEL[l] || l) : "Aggiungi"}</button>`).join("")}</div>
+      </div>`;
+    }).join("");
+    const altri = trovati.length - LIMITE;
+    box.innerHTML = `<div class="art-cat-results-title">Dal catalogo · ${trovati.length}</div>${righe}`
+      + (altri > 0 ? `<div class="hint" style="margin:6px 0 0">Altri ${altri}: scrivi qualcosa in più per restringere.</div>` : "");
+    box.querySelectorAll("[data-cat-add]").forEach(btn => btn.addEventListener("click", () => {
+      const art = getFullCatalog().find(a => a.id === btn.getAttribute("data-cat-add"));
+      if(!art) return;
+      const line  = btn.getAttribute("data-cat-line") || artLines(art)[0];
+      const label = catalogLabel(art);
+      items.push(kitItemFromCatalog(art, line, label));
+      resetArtFilter();   // la riga appena aggiunta deve vedersi
+      render();
+      renderPicker();
+      toast(`"${label}" aggiunto al kit come ${LINE_LABEL[line]} ✓`, "ok");
+    }));
+    itemsBody.appendChild(box);
   };
   const resetArtFilter = () => {
     artFilterText = ""; artFilterLine = "ALL";
