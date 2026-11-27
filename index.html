@@ -2691,7 +2691,7 @@
             <span id="jsDot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
             <span id="jsTxt">...</span>
             <span style="opacity:.35">|</span>
-            <span id="buildTxt">build v138</span>
+            <span id="buildTxt">build v139</span>
           </div>
           <button id="btnSettingsMobile" title="Impostazioni" aria-label="Impostazioni" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--muted);line-height:0">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -3665,6 +3665,7 @@
               <div class="dash-sub">Gestisci il tuo catalogo personale. Aggiungi articoli al kit con un tap.</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="secondary" id="btnRefreshPS" title="Rilegge subito le schede costo e i tessuti da Production Sheet">⟳ Aggiorna da Production Sheet</button>
               <button class="secondary" id="btnRecoverCatalog" title="Ricrea il catalogo dagli articoli dei kit salvati">↺ Recupera dai kit</button>
               <button class="secondary" id="btnImportListino" title="Rivedi e importa le righe del listino costi">⇩ Importa listino</button>
               <button class="primary" id="btnAddCatalogItem">+ Articolo</button>
@@ -3771,6 +3772,7 @@
           <!-- Catalog list -->
           <div class="card" style="margin-bottom:16px">
             <div class="card-title">I miei articoli</div>
+            <input type="search" id="catalogSearch" placeholder="Cerca per nome, codice o nome della scheda in Production Sheet…" autocomplete="off" style="margin-bottom:12px">
             <div id="catalogList">
               <div class="hint" id="catalogEmpty">Nessun articolo nel catalogo. Premi "+ Articolo" per aggiungerne uno, oppure "↺ Recupera dai kit" per ricostruirlo dagli articoli usati nei kit salvati.</div>
             </div>
@@ -4445,7 +4447,7 @@ if("serviceWorker" in navigator) {
   };
   sbloccaAuthSeIncastrata();
 
-  const BUILD = "v138";
+  const BUILD = "v139";
   const buildTxt = document.getElementById("buildTxt");
   if(buildTxt) buildTxt.textContent = "build " + BUILD;
   // Stessa versione anche in fondo alla dashboard, l'unico punto dove si legge
@@ -5295,10 +5297,11 @@ if("serviceWorker" in navigator) {
       const meta  = [catalogMeta(art), otherLinesTxt(art, line)].filter(Boolean).join(" · ");
       const inKit = items.filter(it => it.article === label).length;
       const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
-      return `<div class="catalog-item" data-name="${esc(label.toLowerCase())}" data-line="${esc(line)}">
+      const psNome = psNomeDiverso(art);
+      return `<div class="catalog-item" data-name="${esc(artSearchText(art))}" data-line="${esc(line)}">
         <div class="catalog-item-info">
           <div class="catalog-item-name">${esc(label)}${inKitBadge}</div>
-          <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
+          <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}${psNome ? ` · in Production Sheet: «${esc(psNome)}»` : ""}</div>
         </div>
         <div class="catalog-item-actions">
           <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cline="${esc(line)}">+ Aggiungi</button>
@@ -7223,9 +7226,34 @@ ${tabQtaPDF ? `<div class="sec scala">
     } catch(e){ console.error("Special row exception:", e); return null; }
   };
 
+  /* Articoli eliminati ("lapidi"). L'unione cloud + locale aggiunge dal
+     locale gli articoli che il cloud non ha: senza un elenco degli eliminati
+     un articolo cancellato su un dispositivo tornava al primo avvio di un
+     altro che ne aveva ancora la copia. L'elenco viaggia con il catalogo nel
+     cloud e vale per id: un articolo nuovo con lo stesso nome non è toccato. */
+  const CATALOG_DELETED_KEY = "doubleu_catalog_deleted";
+  // Eliminati senza passare dall'app, prima che esistesse l'elenco
+  const CATALOG_DELETED_SEED = [
+    { id: "6567ff47abc61a6a1a0393cfcb9", name: "Sweatshirt · Donna", code: "DUSP 217", at: 1795795200000 },  // modello inesistente (verificato col modellista)
+  ];
+  const mergeDeleted = (...lists) => {
+    const byId = new Map();
+    lists.forEach(l => (Array.isArray(l) ? l : []).forEach(d => { if(d?.id && !byId.has(d.id)) byId.set(d.id, d); }));
+    return [...byId.values()];
+  };
+  const getDeletedCatalog = () => {
+    let arr = [];
+    try { const r = localStorage.getItem(CATALOG_DELETED_KEY); arr = r ? JSON.parse(r) : []; } catch(e) { arr = []; }
+    return mergeDeleted(arr, CATALOG_DELETED_SEED);
+  };
+  const setDeletedCatalog = (arr) => {
+    try { localStorage.setItem(CATALOG_DELETED_KEY, JSON.stringify(mergeDeleted(arr).slice(-1000))); } catch(e) {}
+  };
+  const notDeleted = (dead) => { const ids = new Set(dead.map(d => d.id)); return (a) => !ids.has(a?.id); };
+
   const syncCatalogToCloud = async () => {
     const row = await saveSpecialRow(CLOUD_CATALOG_NAME,
-      { type:"catalog", items: getCatalog(), updatedAt: Date.now() }, cloudCatalogRow);
+      { type:"catalog", items: getCatalog(), deleted: getDeletedCatalog(), updatedAt: Date.now() }, cloudCatalogRow);
     if(row) cloudCatalogRow = row;
   };
 
@@ -7290,8 +7318,34 @@ ${tabQtaPDF ? `<div class="sec scala">
       if(error){ console.error("Production Sheet load error:", error); return; }
       psSchede = Array.isArray(data) ? data : [];
       psLoaded = true;
+      psLoadedAt = Date.now();
     } catch(e){ console.error("Production Sheet load exception:", e); }
   };
+  /* Le schede si leggevano solo all'avvio: una scheda creata in Production
+     Sheet con il Kit Builder già aperto restava invisibile finché non si
+     ricaricava la pagina. Ora si rileggono quando si torna sull'app (al più
+     una volta al minuto) e a mano con "Aggiorna da Production Sheet". */
+  let psLoadedAt = 0, psRefreshing = null;
+  const refreshDaPS = (manuale) => {
+    if(psRefreshing) return psRefreshing;
+    psRefreshing = (async () => {
+      const prima = new Set(psSchede.map(x => x.id));
+      await loadMateriali();      // anche i prezzi dei tessuti entrano nel costo
+      await loadCostiProduzione();
+      const nuove = psSchede.filter(x => !prima.has(x.id)).length;
+      renderArticoli();
+      renderPicker();
+      render();
+      if(manuale) toast(nuove ? `Production Sheet: ${nuove === 1 ? "1 scheda nuova" : nuove + " schede nuove"} ✓` : "Production Sheet: tutto aggiornato ✓", "ok");
+      else if(nuove) toast(`${nuove === 1 ? "1 scheda nuova" : nuove + " schede nuove"} da Production Sheet`, "ok");
+    })().catch(e => console.error("Production Sheet refresh:", e)).finally(() => { psRefreshing = null; });
+    return psRefreshing;
+  };
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState !== "visible" || !psLoaded) return;
+    if(Date.now() - psLoadedAt < 60000) return;
+    refreshDaPS(false);
+  });
   const psCostoUnitario = (m) => {
     if(m.unitaMisura === "pz") return toNum(m.costoMetro);
     if(toNum(m.costoMetro)) return toNum(m.costoMetro);
@@ -7313,17 +7367,45 @@ ${tabQtaPDF ? `<div class="sec scala">
       .reduce((a, v) => a + toNum(v), 0);
     return Math.round((mat + acc + lav) * 100) / 100;
   };
-  const normCode = (c) => String(c || "").trim().toUpperCase();
-  // Scheda più recente con lo stesso codice modello (sono già ordinate per data)
-  const psCostFor = (art) => {
-    const code = normCode(art?.code);
+  const normCode  = (c) => String(c || "").trim().toUpperCase();
+  const looseCode = (c) => normCode(c).replace(/\s+/g, "");
+  /* Scheda più recente di un codice (sono già ordinate per data). Prima il
+     codice identico; se non c'è, lo stesso codice con o senza spazi
+     ("DUSP217" = "DUSP 217"), ma solo se non è ambiguo: "DUSP 08" (Short
+     stripe) e "DUSP08" (Pantaloncino BASIC) sono due capi diversi, e un
+     codice che un altro articolo del catalogo ha identico resta suo. */
+  const psSchedaFor = (rawCode) => {
+    const code = normCode(rawCode);
     if(!code) return null;
-    const sc = psSchede.find(x => normCode(x.codiceModello) === code);
+    const exact = psSchede.find(x => normCode(x.codiceModello) === code);
+    if(exact) return exact;
+    const loose = psSchede.filter(x => looseCode(x.codiceModello) === looseCode(code));
+    const codici = new Set(loose.map(x => normCode(x.codiceModello)));
+    if(codici.size !== 1) return null;
+    const suo = [...codici][0];
+    if(getCatalog().some(a => normCode(a.code) === suo)) return null;
+    return loose[0];
+  };
+  const psCostFor = (art) => {
+    const sc = psSchedaFor(art?.code);
     // Schede generate in automatico (dal Kit Builder o da modello): si usano,
     // ma restano "da verificare" finché non si toglie la nota in Production Sheet
     return sc ? { totale: psTotale(sc), codice: sc.codice, costParts: psCostParts(sc),
+      nome: String(sc.nomeArticolo || "").trim(), codiceModello: String(sc.codiceModello || "").trim(),
       verifica: /^\s*DA VERIFICARE/i.test(sc.noteRapide || "") } : null;
   };
+  /* Nome della scheda in Production Sheet, se diverso da quello del catalogo:
+     l'articolo si ritrova cercando l'uno o l'altro. */
+  const psNomeDiverso = (art) => {
+    if(!art || art.fromPS) return "";
+    const c = costFor(art);
+    if(c?.src !== "ps" || !c.nome) return "";
+    const simp = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    return simp(catalogLabel(art)).includes(simp(c.nome)) ? "" : c.nome;
+  };
+  // Testo su cui si cerca un articolo: nome, codice e nome della scheda
+  const artSearchText = (art) => [catalogLabel(art), art?.code, psNomeDiverso(art)]
+    .filter(Boolean).join(" ").toLowerCase();
   /* Distinta per la riga del kit: il materiale principale (quello che costa
      di più, con un codice in anagrafica) resta cambiabile per il singolo
      preventivo; tutto il resto della scheda (secondari, accessori,
@@ -7669,8 +7751,17 @@ ${tabQtaPDF ? `<div class="sec scala">
 
   // Unione catalogo cloud + locale per nome (il locale, se presente, vince)
   const mergeCatalogFromCloud = () => {
-    const cloudItems = Array.isArray(cloudCatalogRow?.data?.items) ? cloudCatalogRow.data.items : [];
-    const local = getCatalog();
+    const cloudRaw   = Array.isArray(cloudCatalogRow?.data?.items) ? cloudCatalogRow.data.items : [];
+    const cloudDead  = Array.isArray(cloudCatalogRow?.data?.deleted) ? cloudCatalogRow.data.deleted : [];
+    const dead       = mergeDeleted(getDeletedCatalog(), cloudDead);
+    setDeletedCatalog(dead);
+    const vivo       = notDeleted(dead);
+    const cloudItems = cloudRaw.filter(vivo);
+    // Il cloud ha ancora un eliminato, o non conosce tutte le lapidi (un
+    // dispositivo con la versione vecchia le cancella salvando): va riscritto
+    const cloudIndietro = cloudItems.length !== cloudRaw.length
+      || dead.some(d => !cloudDead.some(c => c?.id === d.id));
+    const local = getCatalog().filter(vivo);
     if(!cloudItems.length){
       // Cloud vuoto: non è una migrazione riuscita, il flag resta da fare così
       // il prossimo avvio riprova invece di lasciare il dispositivo indietro.
@@ -7682,8 +7773,9 @@ ${tabQtaPDF ? `<div class="sec scala">
         localStorage.setItem(CATALOG_KEY, JSON.stringify(cloudItems));
         localStorage.setItem(CATALOG_MIGRATION_KEY, "1");
       } catch(e) {}
+      if(cloudIndietro) syncCatalogToCloud();
       renderArticoli();
-      return; // niente merge e niente risincronizzazione: il cloud è la verità
+      return; // niente merge: il cloud è la verità
     }
     /* Il cloud vince sugli articoli presenti in entrambi: prima vinceva la
        copia locale, così una correzione fatta da un altro dispositivo (o
@@ -7695,7 +7787,7 @@ ${tabQtaPDF ? `<div class="sec scala">
     cloudItems.forEach(a => { if(a?.name) byName.set(a.name.toLowerCase(), a); });
     const merged = [...byName.values()];
     try { localStorage.setItem(CATALOG_KEY, JSON.stringify(merged)); } catch(e) {}
-    if(merged.length !== cloudItems.length) syncCatalogToCloud();
+    if(merged.length !== cloudItems.length || cloudIndietro) syncCatalogToCloud();
   };
 
   /* ─── Impostazioni (predefiniti nuovi preventivi) ─── */
@@ -11659,6 +11751,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
     let arr = [];
     try { const r = localStorage.getItem(CATALOG_KEY); arr = r ? JSON.parse(r) : []; } catch(e) { arr = []; }
     if(!Array.isArray(arr)) arr = [];
+    arr = arr.filter(notDeleted(getDeletedCatalog()));
     arr = arr.map(normArticle);   // linea/categoria separate anche sui dati vecchi
     syncCatsFromCatalog(arr);     // categorie create dall'utente o arrivate dal cloud
     return arr;
@@ -11669,7 +11762,9 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
      finché non le modifichi (allora diventano un articolo vero). */
   const psVirtualArticles = (stored) => {
     if(!psLoaded) return [];
+    // Codici già agganciati a un articolo (anche scritti con o senza spazi)
     const have = new Set(stored.map(a => normCode(a.code)).filter(Boolean));
+    stored.forEach(a => { const sc = !isAcquisto(a) && psSchedaFor(a.code); if(sc) have.add(normCode(sc.codiceModello)); });
     const seen = new Set(), out = [];
     const suff = { Junior: " · Kids", Donna: " · Donna", Uomo: " · Uomo" };
     psSchede.forEach(sc => {   // già in ordine di aggiornamento, la più recente prima
@@ -11724,13 +11819,39 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
       });
     }));
     const catalog = getCatalog();
-    const have    = new Set(catalog.map(a => catalogLabel(a).toLowerCase()));
+    const have    = new Set([...catalog.map(a => catalogLabel(a).toLowerCase()),
+      ...getDeletedCatalog().map(d => String(d.name || "").toLowerCase())]);
     const added   = [...found.values()].filter(a => !have.has(catalogLabel(a).toLowerCase()));
     if(!added.length){ toast("Nessun nuovo articolo trovato nei kit salvati", "warn"); return; }
     setCatalog([...catalog, ...added]);
     renderArticoli();
     toast(`${added.length} articoli recuperati dai kit salvati ✓`, "ok");
   };
+
+  /* Ricerca nella pagina Articoli: nome, codice e nome della scheda in
+     Production Sheet. Con una ricerca le linee si aprono da sole; senza,
+     tornano come le aveva lasciate l'utente. */
+  const applyCatalogSearch = () => {
+    const listEl = document.getElementById("catalogList");
+    if(!listEl) return;
+    const txt = (document.getElementById("catalogSearch")?.value || "").trim().toLowerCase();
+    listEl.querySelectorAll(".catalog-group").forEach(group => {
+      const head = group.querySelector(".catalog-group-head");
+      if(!head) return;   // la riga di riepilogo in cima
+      let visibili = 0;
+      group.querySelectorAll(".catalog-item").forEach(card => {
+        const show = !txt || (card.getAttribute("data-name") || "").includes(txt);
+        card.style.display = show ? "" : "none";
+        if(show) visibili++;
+      });
+      group.querySelectorAll(".catalog-subgroup").forEach(sg => {
+        sg.style.display = !txt || [...sg.querySelectorAll(".catalog-item")].some(c => c.style.display !== "none") ? "" : "none";
+      });
+      group.style.display = visibili ? "" : "none";
+      group.classList.toggle("collapsed", !txt && !catalogOpen.has(head.getAttribute("data-line")));
+    });
+  };
+  document.getElementById("catalogSearch")?.addEventListener("input", applyCatalogSearch);
 
   /* ─── Articoli render ─── */
   const renderArticoli = (fresh) => {
@@ -11759,10 +11880,11 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
           const inKit = items.filter(it => it.article === label).length;
           const inKitBadge = inKit > 0 ? ` <span class="cat-badge" style="background:var(--good);color:#fff">nel kit ×${inKit}</span>` : "";
           const distintaBadge = catSrcBadge(art) + (art.fromPS ? ' <span class="cat-badge" title="Scheda costo nuova in Production Sheet: controlla linea e categoria">nuovo</span>' : "");
-          return `<div class="catalog-item">
+          const psNome = psNomeDiverso(art);
+          return `<div class="catalog-item" data-name="${esc(artSearchText(art))}">
             <div class="catalog-item-info">
               <div class="catalog-item-name">${esc(label)}${inKitBadge}${distintaBadge}</div>
-              <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}</div>
+              <div class="catalog-item-prices">${meta ? esc(meta) + " · " : ""}${priceStr}${psNome ? ` · in Production Sheet: «${esc(psNome)}»` : ""}</div>
             </div>
             <div class="catalog-item-actions">
               <button class="primary" style="font-size:12px;padding:5px 10px" data-cid="${art.id}" data-cline="${esc(line)}" data-cact="add">+ Kit</button>
@@ -11840,11 +11962,13 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
             const art = getCatalog().find(a => a.id === btn.getAttribute("data-cid"));
             if(!art) return;
             if(!confirm(`Eliminare "${catalogLabel(art)}" dal catalogo?`)) return;
+            setDeletedCatalog([...getDeletedCatalog(), { id: art.id, name: catalogLabel(art), code: art.code || "", at: Date.now() }]);
             setCatalog(getCatalog().filter(a => a.id !== art.id));
             renderArticoli();
             toast("Articolo eliminato ✓", "ok");
           });
         });
+        applyCatalogSearch();
       }
     }
 
@@ -12098,6 +12222,7 @@ ${P.steps.map(st => `<tr><td>${st.when}</td><td>${pct(st.pct)}</td><td>${eur(st.
 
   const _btnRecoverCatalog = document.getElementById("btnRecoverCatalog");
   if(_btnRecoverCatalog) _btnRecoverCatalog.addEventListener("click", recoverCatalogFromKits);
+  document.getElementById("btnRefreshPS")?.addEventListener("click", () => refreshDaPS(true));
 
   /* ─── Costo articolo: distinta di costo di un singolo capo ───
      Le voci ricalcano il listino costi usato finora fuori dall'app (tessuto,
